@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 115 50% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 115 50% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 115 50% 10%;
+    /* 1. Xanh lục rừng già (#0E6106) làm màu thương hiệu chính */
+    --primary: 114.7 88.3% 20.2%;
+    --primary-foreground: 0 0% 100%;
+    /* 2. Kem bơ nhẹ nhàng (#FFF4A6) làm nền phụ & pill badges */
+    --secondary: 52.6 80% 93%;
+    --secondary-foreground: 114.7 88.3% 20.2%;
+    --muted: 50 20% 95%;
+    --muted-foreground: 115 15% 40%;
+    /* 3. Cam năng lượng rực cháy (#F97B00) làm điểm nhấn & calo */
+    --accent: 29.6 100% 48.8%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 12 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+    /* 4. Vàng mơ ấm (#FED26A) cho warning/sao/thành tích */
+    --warning: 42.2 98.7% 70.6%;
+    --warning-foreground: 30 90% 20%;
+    --energy: 29.6 100% 48.8%;
+    --energy-foreground: 0 0% 100%;
+    --border: 115 18% 88%;
+    --input: 115 18% 88%;
+    --ring: 114.7 88.3% 20.2%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    /* Nền xanh đen rừng đêm huyền bí & sang trọng */
+    --background: 115 35% 6%;
+    --foreground: 52.6 60% 96%;
+    --card: 115 25% 10%;
+    --card-foreground: 52.6 60% 96%;
+    --popover: 115 25% 10%;
+    --popover-foreground: 52.6 60% 96%;
+    /* Xanh lục sáng tươi cho dark mode */
+    --primary: 115 65% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 115 20% 15%;
+    --secondary-foreground: 52.6 60% 96%;
+    --muted: 115 20% 15%;
+    --muted-foreground: 52.6 25% 72%;
+    --accent: 29.6 100% 48.8%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 12 80% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 42.2 98.7% 70.6%;
+    --warning-foreground: 30 90% 15%;
+    --energy: 29.6 100% 48.8%;
+    --energy-foreground: 0 0% 100%;
+    --border: 115 20% 17%;
+    --input: 115 20% 17%;
+    --ring: 115 65% 42%;
+  }
+}
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-energy: hsl(var(--energy));
+  --color-energy-foreground: hsl(var(--energy-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* Tiện ích class màu thương hiệu trực tiếp */
+  --color-brand-forest: #0E6106;
+  --color-brand-orange: #F97B00;
+  --color-brand-amber: #FED26A;
+  --color-brand-cream: #FFF4A6;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}

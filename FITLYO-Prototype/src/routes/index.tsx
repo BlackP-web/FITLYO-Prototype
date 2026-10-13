@@ -1,35 +1,31 @@
 import { createBrowserRouter } from "react-router-dom"
 import { AppLayout } from "@/components/layout/AppLayout"
-import { DashboardPage } from "@/pages/DashboardPage"
-import { WorkoutsPage } from "@/pages/WorkoutsPage"
-import { CreateWorkoutPage } from "@/pages/CreateWorkoutPage"
-import { NutritionPage } from "@/pages/NutritionPage"
-import { ProgressPage } from "@/pages/ProgressPage"
-import { SchedulePage } from "@/pages/SchedulePage"
-import { CommunityPage } from "@/pages/CommunityPage"
-import { TrainersPage } from "@/pages/TrainersPage"
-import { StorePage } from "@/pages/StorePage"
-import { ReportsPage } from "@/pages/ReportsPage"
-import { ProfilePage } from "@/pages/ProfilePage"
-import { SettingsPage } from "@/pages/SettingsPage"
+import { LandingPage } from "@/pages/LandingPage"
+import { MatchFeedPage } from "@/pages/MatchFeedPage"
+import { MatchDetailPage } from "@/pages/MatchDetailPage"
+import { CourtCalendarPage } from "@/pages/CourtCalendarPage"
+import { CoachDashboardPage } from "@/pages/CoachDashboardPage"
+import { CoachDirectoryPage } from "@/pages/CoachDirectoryPage"
+import { AdminApprovalsPage } from "@/pages/AdminApprovalsPage"
+import { VenuesPage } from "@/pages/VenuesPage"
+import { ProfileDuprPage } from "@/pages/ProfileDuprPage"
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <AppLayout />,
     children: [
-      { index: true, element: <DashboardPage /> },
-      { path: "workouts", element: <WorkoutsPage /> },
-      { path: "workouts/create", element: <CreateWorkoutPage /> },
-      { path: "nutrition", element: <NutritionPage /> },
-      { path: "progress", element: <ProgressPage /> },
-      { path: "schedule", element: <SchedulePage /> },
-      { path: "community", element: <CommunityPage /> },
-      { path: "trainers", element: <TrainersPage /> },
-      { path: "store", element: <StorePage /> },
-      { path: "reports", element: <ReportsPage /> },
-      { path: "profile", element: <ProfilePage /> },
-      { path: "settings", element: <SettingsPage /> },
+      { index: true, element: <LandingPage /> },
+      { path: "matches", element: <MatchFeedPage /> },
+      { path: "matches/detail", element: <MatchDetailPage /> },
+      { path: "fm/calendar", element: <CourtCalendarPage /> },
+      { path: "coach/dashboard", element: <CoachDashboardPage /> },
+      { path: "coaches", element: <CoachDirectoryPage /> },
+      { path: "admin/approvals", element: <AdminApprovalsPage /> },
+      { path: "venues", element: <VenuesPage /> },
+      { path: "profile", element: <ProfileDuprPage /> },
+      // Fallback
+      { path: "*", element: <MatchFeedPage /> },
     ],
   },
 ])

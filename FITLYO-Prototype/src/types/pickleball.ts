@@ -1,0 +1,165 @@
+export type UserRole = 'player' | 'fm' | 'coach' | 'admin'
+
+export interface UserPlayer {
+  id: string
+  name: string
+  avatarUrl: string
+  dupr: number
+  reputationScore: number // e.g. 98 (%)
+  isHost?: boolean
+  isDeposited?: boolean
+  isCurrentUser?: boolean
+  phone?: string
+}
+
+export type MatchFormat = 'doubles' | 'singles'
+export type MatchStatus = 'OPEN' | 'FULL' | 'IN_PROGRESS' | 'FINISHED' | 'CANCELLED'
+
+export interface MatchRoom {
+  id: string // e.g. "MM-9023"
+  title: string
+  courtId: string
+  courtName: string
+  courtSubName: string
+  surfaceType: 'Trong nhà' | 'Ngoài trời' | 'Mái che'
+  address: string
+  distanceKm: number
+  slotNumber: number // 1 to 6
+  timeRange: string
+  dateStr: string
+  format: MatchFormat
+  targetDuprMin: number
+  targetDuprMax: number
+  currentPlayers: number
+  maxPlayers: number
+  depositFee: number
+  status: MatchStatus
+  participants: UserPlayer[]
+  amenities: string[]
+  note?: string
+  qrToken?: string
+  isVipEarlyAccess?: boolean
+  isBookedByMe?: boolean
+}
+
+export type SlotStatus =
+  | 'AVAILABLE'
+  | 'MATCH_PUBLISHED'
+  | 'COACHING'
+  | 'PRIVATE_BOOKED'
+  | 'MAINTENANCE'
+
+export interface CourtSlot {
+  slotNumber: number // 1 to 6
+  timeRange: string
+  status: SlotStatus
+  price: number
+  isPeak?: boolean
+  matchRoomId?: string
+  matchTitle?: string
+  duprRange?: string
+  playersCount?: string
+  bookedNote?: string
+  bookedContact?: string
+}
+
+export interface CourtInventory {
+  id: string
+  name: string
+  courtType: 'indoor' | 'outdoor' | 'covered'
+  slots: CourtSlot[]
+}
+
+export interface CoachItem {
+  id: string
+  name: string
+  avatarUrl: string
+  isCertified: boolean
+  certTitle: string
+  rating: number
+  reviewCount: number
+  experienceYears: number
+  achievements: string
+  serviceLocations: string[]
+  ratePerSession: number
+  ratePerMonthCourse: number
+  specialties: string[]
+  featuredCourse?: string
+  isVipExclusive?: boolean
+}
+
+export interface StudentProgress {
+  id: string
+  name: string
+  avatarUrl: string
+  dupr: number
+  attendance: 'present' | 'absent' | 'makeup'
+}
+
+export interface CoachCourse {
+  id: string
+  title: string
+  coachId: string
+  coachName: string
+  duration: string
+  frequency: string
+  venue: string
+  fee: number
+  currentStudents: number
+  maxStudents: number
+  completedSessions: number
+  totalSessions: number
+  status: 'IN_PROGRESS' | 'RECRUITING' | 'COMPLETED'
+  students: StudentProgress[]
+}
+
+export interface AuditDocument {
+  id: string
+  name: string
+  type: 'pdf' | 'jpg' | 'png'
+  fileSize: string
+}
+
+export interface AuditApplication {
+  id: string
+  type: 'VENUE' | 'COACH'
+  title: string
+  ownerName: string
+  phone: string
+  address: string
+  details: string
+  documents: AuditDocument[]
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  inspectorNotes: string
+  submittedDate: string
+  rejectionReason?: string
+}
+
+export interface VenueItem {
+  id: string
+  name: string
+  address: string
+  area: string
+  totalCourts: number
+  availableSlotsToday: number
+  rating: number
+  reviewCount: number
+  amenities: string[]
+  imageUrl: string
+  priceRange: string
+}
+
+export interface UserAccount {
+  id: string
+  name: string
+  phone: string
+  email: string
+  role: UserRole
+  avatarUrl: string
+  duprRating: number
+  reputationScore: number
+  isPremium: boolean
+  matchesPlayed: number
+  winRate: number
+  joinedDate: string
+}

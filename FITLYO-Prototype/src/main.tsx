@@ -4,9 +4,15 @@ import './index.css'
 import App from './App'
 
 async function prepareApp() {
-  if (import.meta.env.DEV) {
+  // Bật MSW cho môi trường Dev và Prototype Demo trên production
+  if (import.meta.env.DEV || import.meta.env.VITE_ENABLE_MOCK !== 'false') {
     const { worker } = await import('./mocks/browser')
-    await worker.start()
+    await worker.start({
+      serviceWorker: {
+        url: `${import.meta.env.BASE_URL}mockServiceWorker.js`,
+      },
+      quiet: false,
+    })
   }
 }
 

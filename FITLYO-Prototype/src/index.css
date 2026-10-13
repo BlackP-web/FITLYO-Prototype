@@ -88,9 +88,18 @@
 
   /* Tiện ích class màu thương hiệu trực tiếp */
   --color-brand-forest: #0E6106;
+  --color-brand-lime: #84CC16;
+  --color-brand-blue: #0284C7;
   --color-brand-orange: #F97B00;
   --color-brand-amber: #FED26A;
   --color-brand-cream: #FFF4A6;
+
+  /* Trạng thái Slot sân Pickleball */
+  --color-slot-available: #22C55E;
+  --color-slot-match: #3B82F6;
+  --color-slot-coaching: #A855F7;
+  --color-slot-private: #F97316;
+  --color-slot-maintenance: #64748B;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

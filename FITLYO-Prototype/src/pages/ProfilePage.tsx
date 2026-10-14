@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { User, CheckCircle2, Save } from "lucide-react"
+import { User, CheckCircle2, Save, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -34,6 +35,7 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>
 
 export function ProfilePage() {
+  const navigate = useNavigate()
   const { user, setUser } = useAppStore()
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -80,13 +82,25 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Hồ Sơ Cá Nhân & Mục Tiêu</h1>
-        <p className="text-muted-foreground mt-1">
-          Cập nhật thông tin thể trạng để thuật toán AI cá nhân hóa lịch tập chính xác nhất.
-        </p>
-      </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-20">
+        <div className="flex items-center gap-3 border-b border-border/60 pb-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/')}
+            className="rounded-xl border hover:bg-muted"
+            title="Về Trang Chủ"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Hồ Sơ Cá Nhân & Mục Tiêu</h1>
+            <p className="text-muted-foreground text-xs mt-0.5">
+              Cập nhật thông tin thể trạng để thuật toán AI cá nhân hóa lịch tập chính xác nhất.
+            </p>
+          </div>
+        </div>
 
       {success && (
         <div className="flex items-center gap-2 rounded-lg bg-brand-forest/15 p-4 text-sm font-medium text-brand-forest dark:text-brand-cream border border-brand-forest/30">
@@ -207,6 +221,7 @@ export function ProfilePage() {
           </Form>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Award,
   Calendar,
@@ -12,6 +13,7 @@ import {
   Edit,
   DollarSign,
   TrendingUp,
+  ArrowLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +23,7 @@ import { useFitlyoStore } from '@/store/useFitlyoStore'
 import type { CoachCourse } from '@/types/pickleball'
 
 export const CoachDashboardPage: React.FC = () => {
+  const navigate = useNavigate()
   const { coachCourses, showToast } = useFitlyoStore()
 
   const [activeTab, setActiveTab] = useState<'courses' | 'schedule' | 'students'>('courses')
@@ -33,15 +36,25 @@ export const CoachDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Top Coach Profile & Verification Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
-        <div className="flex items-center gap-4">
-          <img
-            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"
-            alt="HLV Đặng Tuấn Kiệt"
-            className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-md ring-2 ring-primary/10"
-          />
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-20">
+        {/* Top Coach Profile & Verification Banner */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+              className="rounded-xl border hover:bg-muted"
+              title="Về Trang Chủ"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <img
+              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"
+              alt="HLV Đặng Tuấn Kiệt"
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-md ring-2 ring-primary/10"
+            />
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="default" className="text-xs">
@@ -293,6 +306,7 @@ export const CoachDashboardPage: React.FC = () => {
         open={isAttendanceModalOpen}
         onOpenChange={setIsAttendanceModalOpen}
       />
+      </div>
     </div>
   )
 }

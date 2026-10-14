@@ -12,6 +12,17 @@
 | **Căn cứ tài liệu** | [PRD FITLYO v1.0.0](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_PRD_Yeu_Cau_Phan_Mem.md) |
 | **Đối tượng áp dụng** | Business Analyst (BA), UI/UX Designer, Frontend Engineer, QA/QC |
 
+> [!IMPORTANT]
+> **HỆ THỐNG TÀI LIỆU ĐẶC TẢ CHI TIẾT TỪNG PHÂN HỆ ĐỘC LẬP (DEDICATED SCREEN SPECS):**
+> Nhằm đáp ứng tiêu chuẩn chi tiết hóa 100% từng màn hình theo chuẩn Screen Analysis & Design Framework, FITLYO đã hoàn thiện các tập tài liệu đặc tả chuyên sâu cho từng phân hệ riêng biệt (Tổng cộng 36 màn hình):
+> 1. **Phân hệ Chủ sân / Field Manager:** [`FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) (`SCR_FM_01` – `SCR_FM_08`)
+> 2. **Phân hệ Kèo Đấu Pickleball & Ghép Trận DUPR:** [`FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md) (`SCR_MATCH_01` – `SCR_MATCH_04`)
+> 3. **Phân hệ Huấn Luyện Viên & Đặt Lịch PT / Khóa Học:** [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) (`SCR_COACH_01`–`04`, `SCR_BOOK_01`–`03`)
+> 4. **Phân hệ Cụm Sân & Ma Trận 6 Slot:** [`FITLYO_Dac_Ta_Man_Hinh_SCR_VENUE.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_VENUE.md) (`SCR_VENUE_01` – `SCR_VENUE_02`)
+> 5. **Phân hệ Hồ Sơ Người Chơi, DUPR & VIP:** [`FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) (`SCR_USER_01` – `SCR_USER_03`)
+> 6. **Phân hệ Quản Trị Hệ Thống Sàn:** [`FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) (`SCR_ADMIN_01` – `SCR_ADMIN_05`)
+> 7. **Phân hệ Landing Page, Xác Thực & Onboarding:** [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) (`SCR_PUB_01`, `SCR_AUTH_01`–`06`)
+
 ---
 
 ## MỤC LỤC
@@ -454,44 +465,46 @@ flowchart TD
 
 ---
 
-## 4. BẢNG ĐẶC TẢ TỔNG QUAN DANH SÁCH TOÀN BỘ MÀN HÌNH HỆ THỐNG
+## 4. BẢNG ĐẶC TẢ TỔNG QUAN DANH SÁCH TOÀN BỘ 36 MÀN HÌNH HỆ THỐNG
 
-| Mã Màn hình | Tên màn hình chức năng | Phân hệ | Actor chính | Điểm vào (Entry) | Điểm thoát chính (Exit) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `SCR_PUB_01` | Trang chủ Landing Page | Public | Khách / All | Trực tiếp URL `/` | `SCR_AUTH_01`, `SCR_AUTH_02`, `SCR_MATCH_01` |
-| `SCR_AUTH_01` | Đăng nhập Đa kênh | Auth | Chưa login | Header / Modal | `SCR_MATCH_01` hoặc Dashboard theo vai trò |
-| `SCR_AUTH_02` | Đăng ký Chọn Vai trò | Auth | Chưa login | Header `[Đăng ký]` | `SCR_AUTH_03` (OTP Phone) |
-| `SCR_AUTH_03` | Xác thực OTP Số điện thoại | Auth | User mới | Sau đăng ký | `SCR_AUTH_04` hoặc Dashboard |
-| `SCR_AUTH_04` | Khảo sát Trình độ DUPR ban đầu | Auth | Player mới | Sau verify OTP | `SCR_MATCH_01` (Bảng tin ghép trận) |
-| `SCR_AUTH_05` | Nộp Hồ sơ Thẩm định Coach | Auth | Coach mới | Sau verify OTP | Trang chờ duyệt chứng chỉ |
-| `SCR_AUTH_06` | Nộp Hồ sơ Pháp lý Chủ sân | Auth | FM mới | Sau verify OTP | Trang chờ thẩm định cụm sân |
-| `SCR_MATCH_01` | Bảng tin Ghép trận DUPR | Matchmaking | Player | Menu chính `/matches` | `SCR_MATCH_02` (Chi tiết kèo) |
-| `SCR_MATCH_02` | Chi tiết Kèo & Cọc Giữ chỗ | Matchmaking | Player | Click card từ Feed | `SCR_MATCH_03` (Vé QR) |
-| `SCR_MATCH_03` | Vé Điện tử & QR Check-in | Matchmaking | Player | Khi phòng `FULL` | Check-in xong chuyển sang `IN_PROGRESS` |
-| `SCR_MATCH_04` | Đánh giá sau trận & Chấm DUPR | Matchmaking | Player | Trận đấu `FINISHED` | Cập nhật điểm uy tín & về lại Feed |
-| `SCR_VENUE_01` | Tìm kiếm Cụm sân & Slot trống | Venues | Player / Coach | Menu `/venues` | `SCR_VENUE_02` |
-| `SCR_VENUE_02` | Chi tiết Cụm sân & Ma trận giá | Venues | Player / Coach | Click 1 cụm sân | Xem 6 slot trống hoặc đặt sân |
-| `SCR_BOOK_01` | Danh bạ Huấn luyện viên | PT Booking | Player | Menu `/coaches` | `SCR_BOOK_02` |
-| `SCR_BOOK_02` | Hồ sơ HLV & Chi tiết Khóa học | PT Booking | Player | Click chọn HLV | `SCR_BOOK_03` |
-| `SCR_BOOK_03` | Thanh toán Đặt lịch HLV / Khóa | PT Booking | Player | Bấm Đặt lịch | Trang xác nhận & Lịch cá nhân |
-| `SCR_USER_01` | Hồ sơ Cá nhân & Chỉ số DUPR | Profile | All | Avatar Menu | Cập nhật thông tin / Lịch sử trận |
-| `SCR_USER_02` | Đăng ký Gói FITLYO Premium | Subscription | Player | Banner / Nút VIP | Thanh toán thành công $\rightarrow$ Cấp badge VIP |
-| `SCR_USER_03` | Lịch Hoạt động của tôi | Schedule | Player | Menu `/my-schedule` | Xem vé QR / Xin dời lịch học |
-| `SCR_FM_01` | Ma trận Lịch sân & 6 Slot chuẩn | Field Manager | Field Manager | Menu `/fm/calendar` | `SCR_FM_02`, Chi tiết slot |
-| `SCR_FM_02` | Modal Publish Phòng Ghép trận | Field Manager | Field Manager | Click slot trống | Đẩy kèo lên `SCR_MATCH_01` |
-| `SCR_FM_03` | Quản lý Sân con (Court Inventory)| Field Manager | Field Manager | Menu `/fm/courts` | Đổi trạng thái Active/Maintenance |
-| `SCR_FM_04` | Cấu hình Tiện ích & Thông tin Sân| Field Manager | Field Manager | Menu `/fm/settings` | Lưu thông tin cơ sở kinh doanh |
-| `SCR_FM_05` | Quản lý HLV Liên kết tại Sân | Field Manager | Field Manager | Menu `/fm/coaches` | Duyệt / Tạm dừng quyền HLV |
-| `SCR_FM_06` | Báo cáo Doanh thu & Tỷ lệ lấp đầy| Field Manager | Field Manager | Menu `/fm/reports` | Xuất file đối soát |
-| `SCR_COACH_01` | Dashboard & Khóa học của Coach | Coach | Coach | Menu `/coach/dashboard`| `SCR_COACH_02` |
-| `SCR_COACH_02` | Tạo / Chỉnh sửa Khóa học mới | Coach | Certified Coach | Bấm Tạo khóa | Lưu vào danh mục khóa học |
-| `SCR_COACH_03` | Điểm danh & Nhận xét Học viên | Coach | Coach | Bấm Điểm danh lớp | Cập nhật điểm DUPR cho học viên |
-| `SCR_COACH_04` | Đăng ký Liên kết Cụm sân mới | Coach | Coach | Menu `/coach/venues` | Gửi yêu cầu tới Field Manager |
-| `SCR_ADMIN_01` | Trung tâm Thẩm định Đối tác | Admin | Admin | Menu `/admin/approvals`| Phê duyệt / Từ chối hồ sơ |
-| `SCR_ADMIN_02` | Quản lý Tài khoản & Phân quyền | Admin | Admin | Menu `/admin/users` | Khóa / Mở khóa tài khoản |
-| `SCR_ADMIN_03` | Xử lý Tranh chấp & Báo cáo Gian lận| Admin | Admin | Menu `/admin/disputes`| Hoàn tiền / Trừ điểm uy tín |
-| `SCR_ADMIN_04` | Cấu hình Tham số Hệ thống & DUPR| Admin | Admin | Menu `/admin/config` | Cài đặt hoa hồng sàn & 6 slot |
-| `SCR_ADMIN_05` | Dashboard Báo cáo Doanh thu Toàn sàn| Admin | Admin | Menu `/admin/dashboard`| Biểu đồ CCU & Doanh thu tổng |
+| Mã Màn hình | Tên màn hình chức năng | Phân hệ | Actor chính | Điểm vào (Entry) | Điểm thoát chính (Exit) | File Đặc Tả Chi Tiết |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `SCR_PUB_01` | Trang chủ Landing Page | Public | Khách / All | Trực tiếp URL `/` | `SCR_AUTH_01`, `SCR_AUTH_02` | [`SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
+| `SCR_AUTH_01` | Đăng nhập Đa kênh (SĐT/Google) | Auth | Chưa login | Header / Modal | `SCR_MATCH_01` / Dashboard | [`SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
+| `SCR_AUTH_02` | Đăng ký Chọn Vai trò | Auth | Chưa login | Header `[Đăng ký]` | `SCR_AUTH_03` (OTP Phone) | [`SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
+| `SCR_AUTH_03` | Xác thực OTP Số điện thoại | Auth | User mới | Sau đăng ký | `SCR_AUTH_04` hoặc Dashboard | [`SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
+| `SCR_AUTH_04` | Khảo sát Trình độ DUPR ban đầu | Auth | Player mới | Sau verify OTP | `SCR_MATCH_01` (Feed kèo) | [`SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
+| `SCR_AUTH_05` | Nộp Hồ sơ Thẩm định Coach | Auth | Coach mới | Sau verify OTP | Chờ duyệt chứng chỉ | [`SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
+| `SCR_AUTH_06` | Nộp Hồ sơ Pháp lý Chủ sân | Auth | FM mới | Sau verify OTP | Chờ thẩm định cụm sân | [`SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
+| `SCR_MATCH_01` | Bảng tin Ghép trận DUPR (Feed) | Matchmaking | Player | Menu chính `/matches` | `SCR_MATCH_02` (Chi tiết kèo) | [`SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md) |
+| `SCR_MATCH_02` | Chi tiết Kèo & Cọc Giữ chỗ Escrow | Matchmaking | Player | Click card từ Feed | `SCR_MATCH_03` (Vé QR) | [`SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md) |
+| `SCR_MATCH_03` | Vé Điện tử Dynamic QR Check-in | Matchmaking | Player | Sau khi cọc giữ chỗ | Quét tại tiếp tân (`SCR_FM_07`) | [`SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md) |
+| `SCR_MATCH_04` | Đánh giá sau trận & Chấm DUPR | Matchmaking | Player | Trận đấu kết thúc | Cập nhật điểm DUPR & Uy tín | [`SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md) |
+| `SCR_VENUE_01` | Khám phá Cụm sân & Bản đồ GPS | Venues | Player / Coach | Menu `/venues` | `SCR_VENUE_02` | [`SCR_VENUE.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_VENUE.md) |
+| `SCR_VENUE_02` | Chi tiết Cụm sân & Ma trận 6 Slot | Venues | Player / Coach | Click 1 cụm sân | Bao sân hoặc Mở kèo Social | [`SCR_VENUE.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_VENUE.md) |
+| `SCR_BOOK_01` | Danh bạ Tìm kiếm HLV | PT Booking | Player | Menu `/coaches` | `SCR_BOOK_02` | [`SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| `SCR_BOOK_02` | Hồ sơ HLV & Chi tiết Khóa học | PT Booking | Player | Click chọn HLV | `SCR_BOOK_03` | [`SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| `SCR_BOOK_03` | Đặt lịch HLV & Ký quỹ Học phí | PT Booking | Player | Bấm Đặt lịch | Vé khóa học & Lịch cá nhân | [`SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| `SCR_USER_01` | Hồ sơ Cá nhân, DUPR & Kỹ năng | Profile | All | Avatar Menu | Cập nhật hồ sơ / Đổi mật khẩu | [`SCR_USER.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) |
+| `SCR_USER_02` | Nâng cấp Gói Hội viên VIP | Subscription | Player | Banner / Nút VIP | Kích hoạt đặc quyền 14 ngày | [`SCR_USER.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) |
+| `SCR_USER_03` | Lịch Hoạt động & Quản lý Vé | Schedule | Player | Menu `/my-schedule` | Mở vé QR / Hủy cọc hoàn tiền | [`SCR_USER.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) |
+| `SCR_FM_01` | Ma trận Lịch sân & 6 Slot chuẩn | Field Manager | Field Manager | Menu `/fm/calendar` | `SCR_FM_02`, `SCR_FM_08` | [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| `SCR_FM_02` | Modal Publish Kèo Ghép Social | Field Manager | Field Manager | Click slot trống | Đẩy kèo lên `SCR_MATCH_01` | [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| `SCR_FM_03` | Quản lý Sân con & Lịch bảo trì | Field Manager | Field Manager | Menu `/fm/courts` | Đổi trạng thái Active/Maintenance | [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| `SCR_FM_04` | Cấu hình Cụm sân, Tiện ích & Giá | Field Manager | Field Manager | Menu `/fm/settings` | Lưu thông tin cụm sân | [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| `SCR_FM_05` | Quản lý & Phê duyệt HLV Liên kết | Field Manager | Field Manager | Menu `/fm/coaches` | Duyệt / Chiết khấu tiền sân | [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| `SCR_FM_06` | Báo cáo Doanh thu & Lấp đầy Slot | Field Manager | Field Manager | Menu `/fm/reports` | Xuất file Excel / PDF đối soát | [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| `SCR_FM_07` | Quầy Tiếp đón & Quét QR Check-in | Field Manager | Tiếp tân / FM | Menu `/fm/checkin` | Xác nhận vào sân 1 chạm | [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| `SCR_FM_08` | Khóa Slot Khách Vãng Lai Trực tiếp | Field Manager | Tiếp tân / FM | Click slot trống trên Ma trận | Khóa slot Private khách trực tiếp | [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| `SCR_COACH_01` | Dashboard Lịch dạy Coach 6 Slot | Coach | Coach | Menu `/coach/dashboard`| Chi tiết lớp dạy / Điểm danh | [`SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| `SCR_COACH_02` | Quản lý & Thiết lập Khóa học PT | Coach | Certified Coach | Nút Tạo khóa mới | Công bố khóa học lên sàn | [`SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| `SCR_COACH_03` | Điểm danh & Chấm DUPR Tốt nghiệp | Coach | Coach | Buổi dạy diễn ra | Giải ngân học phí Escrow | [`SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| `SCR_COACH_04` | Quản lý Liên kết Cụm sân dạy | Coach | Coach | Menu `/coach/venues` | Gửi hồ sơ liên kết tới FM | [`SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| `SCR_ADMIN_01` | Thẩm định & Duyệt Đối tác (KYC) | Admin | Admin | Menu `/admin/approvals`| Phê duyệt / Yêu cầu bổ sung | [`SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| `SCR_ADMIN_02` | Quản lý User, RBAC & Khóa TK | Admin | Admin | Menu `/admin/users` | Khóa / Cảnh cáo gian lận | [`SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| `SCR_ADMIN_03` | Xử lý Tranh chấp & Ký quỹ Escrow | Admin | Admin | Menu `/admin/disputes`| Phán quyết hoàn tiền / Phạt | [`SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| `SCR_ADMIN_04` | Cấu hình Tham số Toàn sàn 6 Slot | Admin | Admin | Menu `/admin/config` | Lưu cấu hình hoa hồng sàn | [`SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| `SCR_ADMIN_05` | Dashboard Doanh thu Toàn sàn | Admin | Admin | Menu `/admin/dashboard`| Báo cáo GMV & Xuất file kiểm toán | [`SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
 
 ---
 

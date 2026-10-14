@@ -13,6 +13,20 @@
 | **Phiên bản tài liệu** | 1.0.0 (Bản hoàn thiện) |
 | **Trạng thái** | Đã duyệt yêu cầu phát triển |
 
+> [!IMPORTANT]
+> **HỆ THỐNG TÀI LIỆU THIẾT KẾ & ĐẶC TẢ CHI TIẾT ĐỒNG BỘ:**
+> PRD này là căn cứ nghiệp vụ cao nhất, đã được chuẩn hóa đồng bộ với:
+> 1. [Tài liệu Thiết kế Luồng Nghiệp vụ (WF-01 đến WF-13)](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Tai_Lieu_Luong_Nghiep_Vu.md)
+> 2. [Tài liệu Đặc tả Tổng quan Màn hình & Site Map](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_Screen_Spec.md)
+> 3. Hệ thống 7 tập tài liệu đặc tả chi tiết 36 màn hình:
+>    - [Phân hệ Chủ sân SCR_FM (8 màn hình)](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md)
+>    - [Phân hệ Kèo đấu DUPR SCR_MATCH (4 màn hình)](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md)
+>    - [Phân hệ Huấn luyện viên SCR_COACH & BOOK (7 màn hình)](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md)
+>    - [Phân hệ Cụm sân SCR_VENUE (2 màn hình)](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_VENUE.md)
+>    - [Phân hệ Hồ sơ Người chơi & VIP SCR_USER (3 màn hình)](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md)
+>    - [Phân hệ Quản trị Sàn SCR_ADMIN (5 màn hình)](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md)
+>    - [Phân hệ Landing & Xác thực SCR_AUTH (7 màn hình)](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md)
+
 ---
 
 ## MỤC LỤC

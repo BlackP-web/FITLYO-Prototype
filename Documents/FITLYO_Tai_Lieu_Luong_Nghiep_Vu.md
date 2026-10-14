@@ -122,6 +122,26 @@ flowchart LR
 
 ---
 
+### 1.4. Bảng Ánh xạ Luồng Nghiệp vụ sang Hệ thống 36 Màn hình Giao diện
+
+| Mã Luồng Nghiệp vụ | Tên Luồng Xử lý Nghiệp vụ | Mã Màn hình Phụ trách | File Đặc tả Giao diện Chi tiết |
+| :--- | :--- | :--- | :--- |
+| **`WF-01`** | Đăng ký, Đăng nhập & Xác thực 2 bước (2FA) | `SCR_PUB_01`, `SCR_AUTH_01`, `SCR_AUTH_02`, `SCR_AUTH_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
+| **`WF-02`** | Đăng ký & Thẩm định Hồ sơ Chủ sân | `SCR_AUTH_06`, `SCR_ADMIN_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md), [`SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| **`WF-03`** | Đăng ký & Kiểm duyệt Chứng chỉ Coach | `SCR_AUTH_05`, `SCR_ADMIN_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md), [`SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| **`WF-04`** | Đăng ký Liên kết Coach và Cụm sân | `SCR_COACH_04`, `SCR_FM_05` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md), [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| **`WF-05`** | Quản lý Sân & Điều phối Ma trận 6 Slot | `SCR_FM_01`, `SCR_FM_03`, `SCR_FM_08`, `SCR_VENUE_02` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md), [`SCR_VENUE.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_VENUE.md) |
+| **`WF-06`** | Tạo & Công bố Phòng Ghép Social DUPR | `SCR_FM_01`, `SCR_FM_02`, `SCR_MATCH_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md), [`SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md) |
+| **`WF-07`** | Tìm kiếm, Đăng ký Cọc Escrow & Check-in QR | `SCR_MATCH_01`, `SCR_MATCH_02`, `SCR_MATCH_03`, `SCR_FM_07` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md), [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| **`WF-08`** | Kết thúc Trận, Chấm Điểm Uy tín & DUPR | `SCR_MATCH_04`, `SCR_USER_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md), [`SCR_USER.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) |
+| **`WF-09`** | Đặt lịch Huấn luyện viên Buổi lẻ PT | `SCR_BOOK_01`, `SCR_BOOK_02`, `SCR_BOOK_03`, `SCR_COACH_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| **`WF-10`** | Vận hành Khóa học Dài hạn (Boot Camp) | `SCR_COACH_02`, `SCR_BOOK_02`, `SCR_BOOK_03`, `SCR_COACH_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| **`WF-11`** | Nâng cấp Gói VIP & Kích hoạt Đặc quyền | `SCR_USER_01`, `SCR_USER_02`, `SCR_USER_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) |
+| **`WF-12`** | Hủy Slot do Bất khả kháng (Mưa/Sự cố) | `SCR_ADMIN_03`, `SCR_FM_01`, `SCR_MATCH_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| **`WF-13`** | Xử lý Khiếu nại, Tố cáo Gian lận DUPR & Bùng cọc | `SCR_MATCH_04`, `SCR_ADMIN_03`, `SCR_ADMIN_02` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+
+---
+
 ## 2. PHÂN TÍCH & THIẾT KẾ CÁC LUỒNG NGHIỆP VỤ CHI TIẾT
 
 ### NHÓM 1: XÁC THỰC, ONBOARDING & PHÂN QUYỀN

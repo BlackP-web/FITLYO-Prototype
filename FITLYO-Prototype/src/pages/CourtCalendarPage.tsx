@@ -1,14 +1,12 @@
 import React, { useState } from 'react'
 import {
   CalendarDays,
-  Plus,
   Flame,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   Lock,
   Wrench,
-  Clock,
   TrendingUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -21,9 +19,11 @@ export const CourtCalendarPage: React.FC = () => {
   const {
     courtInventory,
     selectedDate,
+    setSelectedDate,
     openPublishModal,
     lockSlotAsPrivate,
     setSlotMaintenance,
+    releaseSlot,
     showToast,
   } = useFitlyoStore()
 
@@ -37,16 +37,29 @@ export const CourtCalendarPage: React.FC = () => {
 
   // 6 standard slot definitions
   const standardSlots = [
-    { num: 1, time: '06:00 - 07:30', isPeak: false },
-    { num: 2, time: '07:30 - 09:00', isPeak: false },
-    { num: 3, time: '15:30 - 17:00', isPeak: false },
-    { num: 4, time: '17:00 - 18:30', isPeak: false },
-    { num: 5, time: '18:30 - 20:00', isPeak: true },
-    { num: 6, time: '20:00 - 21:30', isPeak: false },
+    { num: 1, time: '06:00 - 07:30', isPeak: false, timelineColumn: 1 },
+    { num: 2, time: '07:30 - 09:00', isPeak: false, timelineColumn: 4 },
+    { num: 3, time: '15:30 - 17:00', isPeak: false, timelineColumn: 20 },
+    { num: 4, time: '17:00 - 18:30', isPeak: false, timelineColumn: 23 },
+    { num: 5, time: '18:30 - 20:00', isPeak: true, timelineColumn: 26 },
+    { num: 6, time: '20:00 - 21:30', isPeak: false, timelineColumn: 29 },
   ]
+
+  const timelineHours = Array.from({ length: 16 }, (_, index) => {
+    const hour = index + 6
+    return {
+      label: `${hour.toString().padStart(2, '0')}:00`,
+      gridColumn: index * 2 + 2,
+    }
+  })
 
   // Calculate stats
   const totalSlots = courtInventory.reduce((acc, c) => acc + c.slots.length, 0)
+  const maintenanceSlots = courtInventory.reduce(
+    (acc, court) => acc + court.slots.filter((slot) => slot.status === 'MAINTENANCE').length,
+    0,
+  )
+  const activeSlots = totalSlots - maintenanceSlots
   const bookedSlots = courtInventory.reduce(
     (acc, c) =>
       acc +
@@ -58,7 +71,7 @@ export const CourtCalendarPage: React.FC = () => {
       ).length,
     0
   )
-  const occupancyRate = Math.round((bookedSlots / (totalSlots || 1)) * 100)
+  const occupancyRate = Math.round((bookedSlots / (activeSlots || 1)) * 100)
   const estimatedRevenue = courtInventory.reduce(
     (acc, c) =>
       acc +
@@ -70,6 +83,15 @@ export const CourtCalendarPage: React.FC = () => {
 
   const handleSlotClick = (courtId: string, courtName: string, slot: CourtSlot) => {
     setSelectedSlotDetails({ courtId, courtName, slot })
+  }
+
+  const changeDate = (days: number) => {
+    const [day, month, year] = selectedDate.split('/').map(Number)
+    const nextDate = new Date(year, month - 1, day)
+    nextDate.setDate(nextDate.getDate() + days)
+    const formattedDate = nextDate.toLocaleDateString('vi-VN')
+    setSelectedDate(formattedDate)
+    showToast(`Đang hiển thị lịch ngày ${formattedDate} (dữ liệu demo).`, 'info')
   }
 
   const handleOpenPublish = () => {
@@ -121,39 +143,30 @@ export const CourtCalendarPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Date Selector & Add Court Action */}
+        {/* Date Selector */}
         <div className="flex items-center gap-2.5">
           <div className="flex items-center bg-card border rounded-xl p-1 shadow-xs">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => showToast('Đã chuyển sang ngày hôm trước', 'info')}
+              onClick={() => changeDate(-1)}
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div className="flex items-center gap-1.5 px-3 text-xs sm:text-sm font-bold text-foreground">
               <CalendarDays className="w-4 h-4 text-primary" />
-              <span>Hôm nay: {selectedDate}</span>
+              <span>Ngày: {selectedDate}</span>
             </div>
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => showToast('Đã chuyển sang ngày mai', 'info')}
+              onClick={() => changeDate(1)}
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
-
-          <Button
-            size="sm"
-            onClick={() => showToast('Tính năng thêm sân mới đã mở!', 'info')}
-            className="gap-1.5 shadow-xs active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Thêm sân con</span>
-          </Button>
         </div>
       </div>
 
@@ -184,193 +197,115 @@ export const CourtCalendarPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Real-Time 6-Slot Grid */}
+      {/* Timeline Calendar: each row is a court and every card keeps its original slot logic. */}
       <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-sm">
-        <table className="w-full border-collapse text-left text-xs sm:text-sm">
-          <thead>
-            <tr className="border-b bg-muted/60 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              <th className="p-3.5 sm:p-4 min-w-[130px] sm:min-w-[160px] border-r">
-                KHUNG GIỜ (SLOT)
-              </th>
-              {courtInventory.map((court) => (
-                <th
-                  key={court.id}
-                  className="p-3.5 sm:p-4 min-w-[180px] sm:min-w-[220px] border-r last:border-r-0"
-                >
-                  <div className="font-bold text-foreground text-sm">{court.name}</div>
-                  <div className="text-[11px] font-normal text-muted-foreground">
-                    {court.courtType === 'indoor'
-                      ? 'Mặt sân trong nhà'
-                      : court.courtType === 'outdoor'
-                      ? 'Mặt sân ngoài trời'
-                      : 'Mặt sân mái che'}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {standardSlots.map((standardSlot) => (
-              <tr key={standardSlot.num} className="hover:bg-muted/10 transition-colors">
-                {/* Slot Info Header Cell */}
-                <td className="p-3.5 sm:p-4 border-r bg-muted/20 font-semibold align-top">
-                  <div className="flex items-center gap-1.5 text-foreground font-bold text-sm">
-                    <span>Slot {standardSlot.num}</span>
-                    {standardSlot.isPeak && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-500/15 text-orange-600 dark:text-orange-400">
-                        <Flame className="w-3 h-3 animate-pulse" /> Giờ Vàng
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>{standardSlot.time}</span>
-                  </div>
-                </td>
-
-                {/* Court Cells */}
-                {courtInventory.map((court) => {
-                  const slotData = court.slots.find(
-                    (s) => s.slotNumber === standardSlot.num
-                  ) || {
-                    slotNumber: standardSlot.num,
-                    timeRange: standardSlot.time,
-                    status: 'AVAILABLE' as const,
-                    price: 180000,
-                  }
-
-                  const isAvailable = slotData.status === 'AVAILABLE'
-                  const isMatch = slotData.status === 'MATCH_PUBLISHED'
-                  const isCoaching = slotData.status === 'COACHING'
-                  const isPrivate = slotData.status === 'PRIVATE_BOOKED'
-                  const isMaintenance = slotData.status === 'MAINTENANCE'
-
-                  return (
-                    <td
-                      key={court.id}
-                      className="p-2.5 sm:p-3 border-r last:border-r-0 align-top"
-                    >
-                      <div
-                        onClick={() => handleSlotClick(court.id, court.name, slotData)}
-                        className={`group relative flex flex-col justify-between rounded-xl p-3 border transition-all duration-200 cursor-pointer text-xs min-h-[92px] ${
-                          isAvailable
-                            ? 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500 hover:bg-emerald-500/10 hover:shadow-sm'
-                            : isMatch
-                            ? 'border-blue-500/30 bg-blue-500/10 hover:border-blue-500/60 shadow-xs'
-                            : isCoaching
-                            ? 'border-purple-500/30 bg-purple-500/10 hover:border-purple-500/60 shadow-xs'
-                            : isPrivate
-                            ? 'border-orange-500/30 bg-orange-500/10 hover:border-orange-500/60 shadow-xs'
-                            : 'border-slate-500/30 bg-slate-500/10 opacity-70 cursor-not-allowed'
-                        }`}
-                      >
-                        {/* Status Label */}
-                        <div className="flex items-center justify-between mb-1">
-                          <span
-                            className={`font-bold uppercase text-[11px] flex items-center gap-1 ${
-                              isAvailable
-                                ? 'text-emerald-700 dark:text-emerald-300'
-                                : isMatch
-                                ? 'text-blue-700 dark:text-blue-300'
-                                : isCoaching
-                                ? 'text-purple-700 dark:text-purple-300'
-                                : isPrivate
-                                ? 'text-orange-700 dark:text-orange-300'
-                                : 'text-slate-600 dark:text-slate-400'
-                            }`}
-                          >
-                            <span
-                              className={`w-2 h-2 rounded-full ${
-                                isAvailable
-                                  ? 'bg-emerald-500 animate-pulse'
-                                  : isMatch
-                                  ? 'bg-blue-500'
-                                  : isCoaching
-                                  ? 'bg-purple-500'
-                                  : isPrivate
-                                  ? 'bg-orange-500'
-                                  : 'bg-slate-400'
-                              }`}
-                            />
-                            {isAvailable
-                              ? 'TRỐNG'
-                              : isMatch
-                              ? 'KÈO SOCIAL'
-                              : isCoaching
-                              ? 'LỚP COACH'
-                              : isPrivate
-                              ? 'BAO RIÊNG'
-                              : 'BẢO TRÌ'}
-                          </span>
-
-                          {slotData.price > 0 && (
-                            <span className="font-semibold text-foreground text-[11px]">
-                              {new Intl.NumberFormat('vi-VN', {
-                                style: 'currency',
-                                currency: 'VND',
-                              }).format(slotData.price)}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Extra Details */}
-                        <div className="mt-1 space-y-0.5">
-                          {isAvailable && (
-                            <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 group-hover:underline">
-                              <Plus className="w-3 h-3" /> Mở Kèo Social
-                            </div>
-                          )}
-
-                          {isMatch && (
-                            <>
-                              <p className="font-bold text-foreground text-xs truncate">
-                                {slotData.matchTitle || 'Kèo Ghép Trận DUPR'}
-                              </p>
-                              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                <span>{slotData.duprRange}</span>
-                                <span className="font-bold text-blue-600 bg-blue-500/10 px-1 rounded">
-                                  {slotData.playersCount}
-                                </span>
-                              </div>
-                            </>
-                          )}
-
-                          {isCoaching && (
-                            <>
-                              <p className="font-bold text-foreground text-xs truncate">
-                                {slotData.bookedNote}
-                              </p>
-                              <p className="text-[11px] text-muted-foreground truncate">
-                                Liên hệ: {slotData.bookedContact}
-                              </p>
-                            </>
-                          )}
-
-                          {isPrivate && (
-                            <>
-                              <p className="font-bold text-foreground text-xs truncate">
-                                {slotData.bookedNote}
-                              </p>
-                              <p className="text-[11px] text-muted-foreground truncate">
-                                {slotData.bookedContact}
-                              </p>
-                            </>
-                          )}
-
-                          {isMaintenance && (
-                            <p className="text-[11px] text-muted-foreground">
-                              {slotData.bookedNote || 'Tạm đóng bảo dưỡng'}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                  )
-                })}
-              </tr>
+        <div className="min-w-[1120px]">
+          <div
+            className="grid min-h-11 items-center border-b bg-muted/60 text-[10px] font-bold text-muted-foreground"
+            style={{ gridTemplateColumns: '112px repeat(32, minmax(28px, 1fr))' }}
+          >
+            <div className="border-r px-3 uppercase tracking-wider">Sân đấu</div>
+            {timelineHours.map((hour) => (
+              <div
+                key={hour.label}
+                className="border-r text-center last:border-r-0"
+                style={{ gridColumn: `${hour.gridColumn} / span 2` }}
+              >
+                {hour.label}
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+
+          {courtInventory.map((court) => (
+            <div
+              key={court.id}
+              className="grid min-h-[82px] items-center border-b last:border-b-0"
+              style={{ gridTemplateColumns: '112px repeat(32, minmax(28px, 1fr))' }}
+            >
+              <div className="self-stretch border-r bg-muted/20 px-3 py-3">
+                <p className="text-xs font-bold text-foreground">{court.name}</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  {court.courtType === 'indoor'
+                    ? 'Trong nhà'
+                    : court.courtType === 'outdoor'
+                    ? 'Ngoài trời'
+                    : 'Mái che'}
+                </p>
+              </div>
+
+              {standardSlots.map((standardSlot) => {
+                const slotData = court.slots.find((slot) => slot.slotNumber === standardSlot.num) || {
+                  slotNumber: standardSlot.num,
+                  timeRange: standardSlot.time,
+                  status: 'AVAILABLE' as const,
+                  price: 180000,
+                }
+                const isAvailable = slotData.status === 'AVAILABLE'
+                const isMatch = slotData.status === 'MATCH_PUBLISHED'
+                const isCoaching = slotData.status === 'COACHING'
+                const isPrivate = slotData.status === 'PRIVATE_BOOKED'
+                const statusLabel = isAvailable
+                  ? 'Trống'
+                  : isMatch
+                  ? 'Kèo Social'
+                  : isCoaching
+                  ? 'Lớp Coach'
+                  : isPrivate
+                  ? 'Bao riêng'
+                  : 'Bảo trì'
+
+                return (
+                  <button
+                    key={slotData.slotNumber}
+                    type="button"
+                    onClick={() => handleSlotClick(court.id, court.name, slotData)}
+                    title={`Slot ${standardSlot.num}: ${standardSlot.time} - ${statusLabel}`}
+                    style={{ gridColumn: `${standardSlot.timelineColumn + 1} / span 3` }}
+                    className={`group mx-0.5 flex min-w-0 flex-col justify-center rounded-md border px-2 py-1.5 text-left text-[10px] transition-all duration-200 hover:z-10 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/60 ${
+                      isAvailable
+                        ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-800 hover:border-emerald-500 hover:bg-emerald-500/15 dark:text-emerald-300'
+                        : isMatch
+                        ? 'border-blue-500/35 bg-blue-500/10 text-blue-800 hover:border-blue-500 dark:text-blue-300'
+                        : isCoaching
+                        ? 'border-purple-500/35 bg-purple-500/10 text-purple-800 hover:border-purple-500 dark:text-purple-300'
+                        : isPrivate
+                        ? 'border-orange-500/35 bg-orange-500/10 text-orange-800 hover:border-orange-500 dark:text-orange-300'
+                        : 'border-slate-400/40 bg-slate-500/10 text-slate-600 hover:border-slate-500 dark:text-slate-300'
+                    }`}
+                  >
+                    <span className="flex min-w-0 items-center gap-1 font-bold">
+                      <span
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                          isAvailable
+                            ? 'bg-emerald-500'
+                            : isMatch
+                            ? 'bg-blue-500'
+                            : isCoaching
+                            ? 'bg-purple-500'
+                            : isPrivate
+                            ? 'bg-orange-500'
+                            : 'bg-slate-400'
+                        }`}
+                      />
+                      <span className="truncate">{statusLabel}</span>
+                      {standardSlot.isPeak && <Flame className="ml-auto h-3 w-3 shrink-0 text-orange-500" />}
+                    </span>
+
+                    <span className="mt-0.5 truncate text-[9px] opacity-85">
+                      {isAvailable
+                        ? 'Mở bán kèo'
+                        : isMatch
+                        ? `${slotData.duprRange || 'DUPR'} · ${slotData.playersCount || '0/4'}`
+                        : isCoaching || isPrivate
+                        ? slotData.bookedNote || slotData.bookedContact || 'Đã đặt'
+                        : slotData.bookedNote || 'Tạm khóa sân'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Daily Summary & Occupancy Bar */}
@@ -382,7 +317,7 @@ export const CourtCalendarPage: React.FC = () => {
               <span>Tổng Kết Hiệu Suất Cụm Sân Hôm Nay</span>
             </h4>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Đã lấp đầy {bookedSlots} / {totalSlots} slot hoạt động trong ngày
+              Đã lấp đầy {bookedSlots} / {activeSlots} slot hoạt động trong ngày
             </p>
           </div>
 
@@ -510,20 +445,11 @@ export const CourtCalendarPage: React.FC = () => {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    // Reset to available
-                    useFitlyoStore.getState().courtInventory.forEach((c) => {
-                      if (c.id === selectedSlotDetails.courtId) {
-                        const s = c.slots.find(
-                          (x) => x.slotNumber === selectedSlotDetails.slot.slotNumber
-                        )
-                        if (s) s.status = 'AVAILABLE'
-                      }
-                    })
-                    useFitlyoStore.setState({
-                      courtInventory: [...useFitlyoStore.getState().courtInventory],
-                    })
+                    releaseSlot(
+                      selectedSlotDetails.courtId,
+                      selectedSlotDetails.slot.slotNumber,
+                    )
                     setSelectedSlotDetails(null)
-                    showToast('Đã mở lại slot thành Available!', 'info')
                   }}
                   className="w-full text-xs"
                 >
@@ -550,3 +476,5 @@ export const CourtCalendarPage: React.FC = () => {
     </div>
   )
 }
+
+export default CourtCalendarPage

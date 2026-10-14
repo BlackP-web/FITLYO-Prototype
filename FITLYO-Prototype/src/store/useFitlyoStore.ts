@@ -58,6 +58,7 @@ interface FitlyoState {
 
   // Actions
   setActiveRole: (role: UserRole) => void
+  setSelectedDate: (date: string) => void
   toggleSidebar: () => void
   togglePremium: () => void
   setFeedFilter: (filter: Partial<FitlyoState['feedFilter']>) => void
@@ -79,6 +80,7 @@ interface FitlyoState {
   }) => void
   lockSlotAsPrivate: (courtId: string, slotNumber: number, contact: string) => void
   setSlotMaintenance: (courtId: string, slotNumber: number) => void
+  releaseSlot: (courtId: string, slotNumber: number) => void
   updateStudentAttendance: (
     courseId: string,
     studentId: string,
@@ -88,6 +90,19 @@ interface FitlyoState {
   rejectAuditApplication: (id: string, reason: string) => void
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void
   clearToast: () => void
+}
+
+const roleStorageKey = 'fitlyo-active-role'
+
+const getInitialRole = (): UserRole => {
+  if (typeof window === 'undefined') return 'player'
+
+  const savedRole = window.localStorage.getItem(roleStorageKey)
+  const allowedRoles: UserRole[] = ['player', 'fm', 'coach', 'admin', 'field_manager']
+
+  return savedRole && allowedRoles.includes(savedRole as UserRole)
+    ? (savedRole as UserRole)
+    : 'player'
 }
 
 const initialUser: UserAccount = {
@@ -501,8 +516,8 @@ const initialVenues: VenueItem[] = [
 ]
 
 export const useFitlyoStore = create<FitlyoState>((set, get) => ({
-  activeRole: 'player',
-  currentUser: initialUser,
+  activeRole: getInitialRole(),
+  currentUser: { ...initialUser, role: getInitialRole() },
   isSidebarOpen: true,
   notificationCount: 3,
 
@@ -534,12 +549,15 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   toastMessage: null,
 
   setActiveRole: (role) => {
+    window.localStorage.setItem(roleStorageKey, role)
     set((state) => ({
       activeRole: role,
       currentUser: { ...state.currentUser, role },
     }))
     get().showToast(`Đã chuyển sang vai trò: ${role.toUpperCase()}`, 'info')
   },
+
+  setSelectedDate: (date) => set({ selectedDate: date }),
 
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
@@ -659,6 +677,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
 
   publishSlotAsMatch: (data) => {
     const { courtInventory, matches } = get()
+    const maxPlayers = data.format === 'doubles' ? 4 : 2
 
     // Update court slot status to MATCH_PUBLISHED
     const updatedCourts = courtInventory.map((court) => {
@@ -672,7 +691,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
                 status: 'MATCH_PUBLISHED' as const,
                 matchTitle: `Kèo Social DUPR ${data.duprMin}-${data.duprMax}`,
                 duprRange: `DUPR ${data.duprMin}-${data.duprMax}`,
-                playersCount: '0/4',
+                playersCount: `0/${maxPlayers}`,
               }
             }
             return s
@@ -709,23 +728,13 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       format: data.format,
       targetDuprMin: data.duprMin,
       targetDuprMax: data.duprMax,
-      currentPlayers: 1,
-      maxPlayers: data.format === 'doubles' ? 4 : 2,
+      currentPlayers: 0,
+      maxPlayers,
       depositFee: data.fee,
       status: 'OPEN',
       amenities: data.amenities,
       note: data.note,
-      participants: [
-        {
-          id: 'usr_fm',
-          name: 'Trần Văn Hùng (Host Chủ Sân)',
-          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-          dupr: data.duprMin,
-          reputationScore: 99,
-          isHost: true,
-          isDeposited: true,
-        },
-      ],
+      participants: [],
     }
 
     set({
@@ -780,6 +789,33 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     })
     set({ courtInventory: updated })
     get().showToast(`Đã chuyển Slot ${slotNumber} sang trạng thái Bảo trì.`, 'info')
+  },
+
+  releaseSlot: (courtId, slotNumber) => {
+    const updated = get().courtInventory.map((court) => {
+      if (court.id !== courtId) return court
+
+      return {
+        ...court,
+        slots: court.slots.map((slot) =>
+          slot.slotNumber === slotNumber
+            ? {
+                ...slot,
+                status: 'AVAILABLE' as const,
+                matchRoomId: undefined,
+                matchTitle: undefined,
+                duprRange: undefined,
+                playersCount: undefined,
+                bookedNote: undefined,
+                bookedContact: undefined,
+              }
+            : slot,
+        ),
+      }
+    })
+
+    set({ courtInventory: updated })
+    get().showToast(`Đã mở lại Slot ${slotNumber} thành Trống.`, 'info')
   },
 
   updateStudentAttendance: (courseId, studentId, status) => {

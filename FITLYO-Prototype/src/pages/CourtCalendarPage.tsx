@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PublishMatchModal } from '@/components/modals/PublishMatchModal'
+import { WalkInBookingModal } from '@/components/modals/WalkInBookingModal'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import type { CourtSlot } from '@/types/pickleball'
 
@@ -21,7 +22,7 @@ export const CourtCalendarPage: React.FC = () => {
     selectedDate,
     setSelectedDate,
     openPublishModal,
-    lockSlotAsPrivate,
+    openWalkInModal,
     setSlotMaintenance,
     releaseSlot,
     showToast,
@@ -32,8 +33,6 @@ export const CourtCalendarPage: React.FC = () => {
     courtName: string
     slot: CourtSlot
   } | null>(null)
-
-  const [quickContactName, setQuickContactName] = useState('')
 
   // 6 standard slot definitions
   const standardSlots = [
@@ -107,13 +106,13 @@ export const CourtCalendarPage: React.FC = () => {
 
   const handleLockPrivate = () => {
     if (!selectedSlotDetails) return
-    lockSlotAsPrivate(
-      selectedSlotDetails.courtId,
-      selectedSlotDetails.slot.slotNumber,
-      quickContactName || 'Khách vãng lai tại quầy'
-    )
+    openWalkInModal({
+      courtId: selectedSlotDetails.courtId,
+      courtName: selectedSlotDetails.courtName,
+      slotNumber: selectedSlotDetails.slot.slotNumber,
+      timeRange: selectedSlotDetails.slot.timeRange,
+    })
     setSelectedSlotDetails(null)
-    setQuickContactName('')
   }
 
   const handleMaintenance = () => {
@@ -385,27 +384,19 @@ export const CourtCalendarPage: React.FC = () => {
                   <span>1. Mở Bán Kèo Social DUPR (Lên Feed)</span>
                 </Button>
 
-                <div className="rounded-xl border p-3 bg-muted/30 space-y-2">
-                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleLockPrivate}
+                  className="w-full rounded-xl border border-orange-500/25 bg-orange-500/5 p-3 text-left transition hover:border-orange-500/50 hover:bg-orange-500/10"
+                >
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                     <Lock className="w-3.5 h-3.5 text-orange-500" />
-                    <span>2. Khóa Cho Khách Bao Sân Riêng</span>
+                    <span>2. Khóa Cho Khách Vãng Lai</span>
                   </span>
-                  <input
-                    type="text"
-                    placeholder="Tên & SĐT khách (VD: Anh Hùng 0908...)"
-                    value={quickContactName}
-                    onChange={(e) => setQuickContactName(e.target.value)}
-                    className="w-full rounded-lg border bg-background px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleLockPrivate}
-                    className="w-full text-xs active:scale-[0.98]"
-                  >
-                    Xác nhận Khóa Slot Bao Sân
-                  </Button>
-                </div>
+                  <span className="mt-1 block text-[11px] text-muted-foreground">
+                    Mở SCR_FM_08 để nhập khách, thanh toán, VietQR và phiếu thu.
+                  </span>
+                </button>
 
                 <Button
                   variant="ghost"
@@ -473,6 +464,7 @@ export const CourtCalendarPage: React.FC = () => {
 
       {/* Publish Match Modal Integration */}
       <PublishMatchModal />
+      <WalkInBookingModal />
     </div>
   )
 }

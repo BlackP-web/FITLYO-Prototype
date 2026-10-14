@@ -8,6 +8,11 @@ import type {
   CoachCourse,
   AuditApplication,
   VenueItem,
+  CheckInTicket,
+  CheckInLog,
+  WalkInBooking,
+  WalkInPaymentMethod,
+  WalkInSource,
 } from '@/types/pickleball'
 
 interface FitlyoState {
@@ -41,6 +46,10 @@ interface FitlyoState {
     slotNumber: number
     timeRange: string
   } | null
+  isWalkInModalOpen: boolean
+  walkInSlotData: FitlyoState['publishingSlotData']
+  checkInTickets: CheckInTicket[]
+  checkInLogs: CheckInLog[]
 
   // Coach & Courses
   coachCourses: CoachCourse[]
@@ -68,6 +77,8 @@ interface FitlyoState {
   cancelMatchHold: (matchId: string) => boolean
   openPublishModal: (slot: FitlyoState['publishingSlotData']) => void
   closePublishModal: () => void
+  openWalkInModal: (slot: FitlyoState['walkInSlotData']) => void
+  closeWalkInModal: () => void
   publishSlotAsMatch: (data: {
     courtId: string
     slotNumber: number
@@ -79,6 +90,16 @@ interface FitlyoState {
     note: string
   }) => void
   lockSlotAsPrivate: (courtId: string, slotNumber: number, contact: string) => void
+  createWalkInBooking: (data: {
+    customerName: string
+    phone: string
+    source: WalkInSource
+    paymentMethod: WalkInPaymentMethod
+    extraFee: number
+    paidAmount: number
+    note: string
+  }) => WalkInBooking | null
+  confirmTicketCheckIn: (ticketCode: string) => boolean
   setSlotMaintenance: (courtId: string, slotNumber: number) => void
   releaseSlot: (courtId: string, slotNumber: number) => void
   updateStudentAttendance: (
@@ -311,6 +332,106 @@ const initialCourts: CourtInventory[] = [
   },
 ]
 
+const checkInPlayers = [
+  {
+    id: 'usr_p1',
+    name: 'Trần Văn Hùng',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+    role: 'Host',
+    checkedInAt: '18:18',
+  },
+  {
+    id: 'usr_p2',
+    name: 'Lê Thị Mai',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+    checkedInAt: '18:21',
+  },
+  {
+    id: 'usr_me',
+    name: 'Nguyễn An',
+    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+  },
+  {
+    id: 'usr_p8',
+    name: 'Vũ Thảo Vy',
+    avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
+  },
+]
+
+const initialCheckInTickets: CheckInTicket[] = [
+  {
+    code: 'PKB-1310-8849',
+    venueName: 'D-Sports Pickleball Thủ Đức',
+    courtName: 'Sân 3',
+    slotNumber: 5,
+    timeRange: '18:30 - 20:00',
+    dateStr: 'Hôm nay, 13/10/2026',
+    matchLabel: 'Đôi nam nữ',
+    duprRange: 'DUPR 2.5 - 3.0',
+    holderId: 'usr_me',
+    scenario: 'VALID',
+    participants: checkInPlayers,
+  },
+  {
+    code: 'PKB-1310-7721',
+    venueName: 'D-Sports Pickleball Thủ Đức',
+    courtName: 'Sân 1',
+    slotNumber: 5,
+    timeRange: '18:30 - 20:00',
+    dateStr: 'Hôm nay, 13/10/2026',
+    matchLabel: 'Đôi nam phong trào',
+    duprRange: 'DUPR 3.5 - 4.0',
+    holderId: 'usr_p1',
+    scenario: 'ALREADY_CHECKED_IN',
+    participants: checkInPlayers.map((player) =>
+      player.id === 'usr_p1' ? { ...player, checkedInAt: '18:22' } : player,
+    ),
+  },
+  {
+    code: 'PKB-1310-4404',
+    venueName: 'Thủ Thiêm Sports Hub',
+    courtName: 'Sân 2',
+    slotNumber: 4,
+    timeRange: '17:00 - 18:30',
+    dateStr: 'Hôm nay, 13/10/2026',
+    matchLabel: 'Đôi nam nữ',
+    duprRange: 'DUPR 3.0 - 3.5',
+    holderId: 'usr_me',
+    scenario: 'WRONG_VENUE',
+    participants: checkInPlayers,
+  },
+  {
+    code: 'PKB-1310-0650',
+    venueName: 'D-Sports Pickleball Thủ Đức',
+    courtName: 'Sân 2',
+    slotNumber: 1,
+    timeRange: '06:00 - 07:30',
+    dateStr: 'Ngày mai, 14/10/2026',
+    matchLabel: 'Giao lưu buổi sáng',
+    duprRange: 'DUPR 2.0 - 2.5',
+    holderId: 'usr_me',
+    scenario: 'WRONG_TIME',
+    participants: checkInPlayers.map((player) => ({ ...player, checkedInAt: undefined })),
+  },
+]
+
+const initialCheckInLogs: CheckInLog[] = [
+  {
+    id: 'log_1825',
+    time: '18:25',
+    courtName: 'Sân 1',
+    description: 'Kèo DUPR 3.5 · 4/4 người đã check-in',
+    tone: 'success',
+  },
+  {
+    id: 'log_1820',
+    time: '18:20',
+    courtName: 'Sân 2',
+    description: 'Khách bao riêng: Anh Thành · Đã vào sân',
+    tone: 'info',
+  },
+]
+
 const initialCoachCourses: CoachCourse[] = [
   {
     id: 'crs_01',
@@ -538,6 +659,10 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   courtInventory: initialCourts,
   isPublishModalOpen: false,
   publishingSlotData: null,
+  isWalkInModalOpen: false,
+  walkInSlotData: null,
+  checkInTickets: initialCheckInTickets,
+  checkInLogs: initialCheckInLogs,
 
   coachCourses: initialCoachCourses,
   coaches: initialCoaches,
@@ -675,6 +800,12 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   closePublishModal: () =>
     set({ isPublishModalOpen: false, publishingSlotData: null }),
 
+  openWalkInModal: (slot) =>
+    set({ isWalkInModalOpen: true, walkInSlotData: slot }),
+
+  closeWalkInModal: () =>
+    set({ isWalkInModalOpen: false, walkInSlotData: null }),
+
   publishSlotAsMatch: (data) => {
     const { courtInventory, matches } = get()
     const maxPlayers = data.format === 'doubles' ? 4 : 2
@@ -773,6 +904,116 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     get().showToast(`Đã khóa Slot ${slotNumber} thành Khách bao riêng.`, 'info')
   },
 
+  createWalkInBooking: (data) => {
+    const { walkInSlotData, courtInventory } = get()
+    if (!walkInSlotData) return null
+
+    const targetCourt = courtInventory.find((court) => court.id === walkInSlotData.courtId)
+    const targetSlot = targetCourt?.slots.find(
+      (slot) => slot.slotNumber === walkInSlotData.slotNumber,
+    )
+
+    if (!targetSlot || targetSlot.status !== 'AVAILABLE') {
+      get().showToast('Slot vừa được đặt bởi giao dịch khác. Vui lòng tải lại lịch.', 'error')
+      return null
+    }
+
+    const booking: WalkInBooking = {
+      id: `WALK-${Date.now().toString().slice(-6)}`,
+      customerName: data.customerName.trim(),
+      phone: data.phone,
+      source: data.source,
+      paymentMethod: data.paymentMethod,
+      courtFee: targetSlot.price,
+      extraFee: data.extraFee,
+      paidAmount: data.paidAmount,
+      note: data.note.trim(),
+      createdAt: new Date().toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    }
+
+    const updatedCourts = courtInventory.map((court) =>
+      court.id === walkInSlotData.courtId
+        ? {
+            ...court,
+            slots: court.slots.map((slot) =>
+              slot.slotNumber === walkInSlotData.slotNumber
+                ? {
+                    ...slot,
+                    status: 'PRIVATE_BOOKED' as const,
+                    bookedNote:
+                      booking.paidAmount >= booking.courtFee + booking.extraFee
+                        ? 'Khách vãng lai · Đã thu đủ'
+                        : 'Khách vãng lai · Còn nợ',
+                    bookedContact: `${booking.customerName} · ${booking.phone}`,
+                    walkInBooking: booking,
+                  }
+                : slot,
+            ),
+          }
+        : court,
+    )
+
+    set({
+      courtInventory: updatedCourts,
+      isWalkInModalOpen: false,
+      walkInSlotData: null,
+    })
+    get().showToast(
+      `Đã khóa Slot ${walkInSlotData.slotNumber} cho ${booking.customerName}.`,
+      'success',
+    )
+    return booking
+  },
+
+  confirmTicketCheckIn: (ticketCode) => {
+    const normalizedCode = ticketCode.trim().toUpperCase()
+    const targetTicket = get().checkInTickets.find((ticket) => ticket.code === normalizedCode)
+    if (!targetTicket || targetTicket.scenario !== 'VALID') return false
+
+    const holder = targetTicket.participants.find(
+      (participant) => participant.id === targetTicket.holderId,
+    )
+    if (!holder || holder.checkedInAt) return false
+
+    const checkInTime = new Date().toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const updatedTickets = get().checkInTickets.map((ticket) =>
+      ticket.code === normalizedCode
+        ? {
+            ...ticket,
+            scenario: 'ALREADY_CHECKED_IN' as const,
+            participants: ticket.participants.map((participant) =>
+              participant.id === ticket.holderId
+                ? { ...participant, checkedInAt: checkInTime }
+                : participant,
+            ),
+          }
+        : ticket,
+    )
+    const checkedInCount = targetTicket.participants.filter(
+      (participant) => participant.checkedInAt || participant.id === targetTicket.holderId,
+    ).length
+    const newLog: CheckInLog = {
+      id: `log_${Date.now()}`,
+      time: checkInTime,
+      courtName: targetTicket.courtName,
+      description: `${holder.name} · ${checkedInCount}/${targetTicket.participants.length} người đã check-in`,
+      tone: 'success',
+    }
+
+    set((state) => ({
+      checkInTickets: updatedTickets,
+      checkInLogs: [newLog, ...state.checkInLogs].slice(0, 5),
+    }))
+    get().showToast(`Đã xác nhận ${holder.name} vào ${targetTicket.courtName}.`, 'success')
+    return true
+  },
+
   setSlotMaintenance: (courtId, slotNumber) => {
     const updated = get().courtInventory.map((court) => {
       if (court.id === courtId) {
@@ -808,6 +1049,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
                 playersCount: undefined,
                 bookedNote: undefined,
                 bookedContact: undefined,
+                walkInBooking: undefined,
               }
             : slot,
         ),

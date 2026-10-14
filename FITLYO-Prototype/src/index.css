@@ -119,3 +119,25 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
 }
+
+@keyframes kiosk-scan {
+  0%, 100% {
+    top: 10%;
+    opacity: 0.45;
+  }
+  50% {
+    top: 88%;
+    opacity: 1;
+  }
+}
+
+.kiosk-scan-line {
+  animation: kiosk-scan 1.35s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-scan-line {
+    animation: none;
+    top: 50%;
+  }
+}

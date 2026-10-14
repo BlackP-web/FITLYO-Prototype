@@ -1,13 +1,10 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   MapPin,
   Star,
   Clock,
-  Sparkles,
   Search,
-  CheckCircle2,
-  Calendar,
   ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -130,3 +127,5 @@ export const VenuesPage: React.FC = () => {
     </div>
   )
 }
+
+export default VenuesPage

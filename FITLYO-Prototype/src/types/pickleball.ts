@@ -61,6 +61,55 @@ export interface CourtSlot {
   playersCount?: string
   bookedNote?: string
   bookedContact?: string
+  walkInBooking?: WalkInBooking
+}
+
+export type WalkInSource = 'AT_COUNTER' | 'PHONE_CALL'
+export type WalkInPaymentMethod = 'CASH' | 'VIETQR' | 'DEBT'
+
+export interface WalkInBooking {
+  id: string
+  customerName: string
+  phone: string
+  source: WalkInSource
+  paymentMethod: WalkInPaymentMethod
+  courtFee: number
+  extraFee: number
+  paidAmount: number
+  note: string
+  createdAt: string
+}
+
+export interface CheckInParticipant {
+  id: string
+  name: string
+  avatarUrl: string
+  role?: string
+  checkedInAt?: string
+}
+
+export type TicketScenario = 'VALID' | 'ALREADY_CHECKED_IN' | 'WRONG_VENUE' | 'WRONG_TIME'
+
+export interface CheckInTicket {
+  code: string
+  venueName: string
+  courtName: string
+  slotNumber: number
+  timeRange: string
+  dateStr: string
+  matchLabel: string
+  duprRange: string
+  holderId: string
+  scenario: TicketScenario
+  participants: CheckInParticipant[]
+}
+
+export interface CheckInLog {
+  id: string
+  time: string
+  courtName: string
+  description: string
+  tone: 'success' | 'info'
 }
 
 export interface CourtInventory {

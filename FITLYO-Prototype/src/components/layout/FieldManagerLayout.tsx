@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Building2, CalendarDays, LogOut, Settings, ShieldCheck } from 'lucide-react'
+import { BarChart3, BookOpen, Building2, CalendarDays, LogOut, QrCode, Settings, ShieldCheck, Sparkles } from 'lucide-react'
 import { Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
@@ -6,39 +6,39 @@ import { useFitlyoStore } from '@/store/useFitlyoStore'
 const ownerNavigation = [
   {
     label: 'Lịch sân',
-    description: 'SCR_FM_01',
     to: '/fm/calendar',
     icon: CalendarDays,
   },
   {
     label: 'Quản lý sân',
-    description: 'SCR_FM_03',
     to: '/fm/courts',
     icon: Building2,
   },
   {
     label: 'Thông tin sân',
-    description: 'SCR_FM_04',
     to: '/fm/settings',
     icon: Settings,
   },
   {
     label: 'HLV liên kết',
-    description: 'SCR_FM_05',
     to: '/fm/coaches',
     icon: BookOpen,
   },
   {
     label: 'Báo cáo doanh thu',
-    description: 'SCR_FM_06',
     to: '/fm/reports',
     icon: BarChart3,
+  },
+  {
+    label: 'Quầy QR Check-in',
+    to: '/fm/checkin',
+    icon: QrCode,
   },
 ]
 
 export default function FieldManagerLayout() {
   const navigate = useNavigate()
-  const { activeRole, currentUser, setActiveRole } = useFitlyoStore()
+  const { activeRole, currentUser, setActiveRole, toastMessage, clearToast } = useFitlyoStore()
   const isFieldManager = activeRole === 'fm' || activeRole === 'field_manager'
 
   if (!isFieldManager) {
@@ -60,7 +60,15 @@ export default function FieldManagerLayout() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border bg-card px-2.5 py-1.5">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/fm/checkin')}
+            className="hidden items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary/10 sm:flex"
+          >
+            <QrCode className="h-4 w-4" /> Kiosk QR
+          </button>
+          <div className="flex items-center gap-2 rounded-xl border bg-card px-2.5 py-1.5">
           <img
             src={currentUser.avatarUrl}
             alt={currentUser.name}
@@ -82,6 +90,7 @@ export default function FieldManagerLayout() {
           >
             <LogOut className="h-4 w-4" />
           </button>
+          </div>
         </div>
       </header>
 
@@ -118,7 +127,6 @@ export default function FieldManagerLayout() {
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.label}</span>
-                  <span className="ml-auto text-[10px] opacity-75">{item.description}</span>
                 </NavLink>
               )
             })}
@@ -129,6 +137,16 @@ export default function FieldManagerLayout() {
           <Outlet />
         </main>
       </div>
+
+      {toastMessage && (
+        <div className="fixed right-4 top-20 z-[80] animate-in fade-in slide-in-from-top-3 duration-200">
+          <div className={`flex max-w-sm items-center gap-3 rounded-2xl border px-4 py-3 text-xs font-medium shadow-xl sm:text-sm ${toastMessage.type === 'success' ? 'border-emerald-500 bg-emerald-600 text-white shadow-emerald-500/20' : toastMessage.type === 'error' ? 'border-destructive/80 bg-destructive text-destructive-foreground shadow-destructive/20' : 'border-border bg-card text-foreground shadow-md'}`}>
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span>{toastMessage.text}</span>
+            <button type="button" onClick={clearToast} className="ml-2 opacity-80 hover:opacity-100" aria-label="Đóng thông báo">✕</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

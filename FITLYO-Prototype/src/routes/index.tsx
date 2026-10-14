@@ -11,6 +11,7 @@ import { OwnerReportsPage } from "@/pages/OwnerReportsPage"
 import { CoachDashboardPage } from "@/pages/CoachDashboardPage"
 import { CoachDirectoryPage } from "@/pages/CoachDirectoryPage"
 import { VenuesPage } from "@/pages/VenuesPage"
+import { CheckInKioskPage } from "@/pages/CheckInKioskPage"
 
 export const router = createBrowserRouter([
   {
@@ -34,10 +35,10 @@ export const router = createBrowserRouter([
       { path: "settings", element: <OwnerSettingsPage /> },
       { path: "coaches", element: <OwnerCoachesPage /> },
       { path: "reports", element: <OwnerReportsPage /> },
+      { path: "checkin", element: <CheckInKioskPage /> },
     ],
   },
 ])
-
 
 
 

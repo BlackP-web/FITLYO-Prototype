@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BarChart3, BookOpen, Building2, CalendarDays, LogOut, QrCode, Settings, ShieldCheck, Sparkles } from 'lucide-react'
 import { Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -39,11 +40,13 @@ const ownerNavigation = [
 export default function FieldManagerLayout() {
   const navigate = useNavigate()
   const { activeRole, currentUser, setActiveRole, toastMessage, clearToast } = useFitlyoStore()
-  const isFieldManager = activeRole === 'fm' || activeRole === 'field_manager'
 
-  if (!isFieldManager) {
-    return <Navigate to="/" replace />
-  }
+  // Tự động kích hoạt vai trò Chủ sân khi truy cập vào cổng /fm
+  useEffect(() => {
+    if (activeRole !== 'fm' && activeRole !== 'field_manager') {
+      setActiveRole('fm')
+    }
+  }, [activeRole, setActiveRole])
 
   return (
     <div className="min-h-screen bg-muted/30 text-foreground">

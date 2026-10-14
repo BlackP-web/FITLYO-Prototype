@@ -24,6 +24,7 @@
     "react-hook-form": "^7.90.0",
     "react-router-dom": "^7.18.4",
     "tailwind-merge": "^3.7.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.6.7",
     "zustand": "^5.0.15"
   },

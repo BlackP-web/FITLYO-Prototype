@@ -1,4 +1,4 @@
-﻿# TÀI LIỆU THIẾT KẾ CÁC LUỒNG XỬ LÝ NGHIỆP VỤ (BUSINESS PROCESS SPECIFICATION)
+# TÀI LIỆU THIẾT KẾ CÁC LUỒNG XỬ LÝ NGHIỆP VỤ (BUSINESS PROCESS SPECIFICATION)
 # DỰ ÁN: FITLYO - NỀN TẢNG QUẢN LÝ SÂN PICKLEBALL, SOCIAL MATCHMAKING & PT BOOKING
 
 ---
@@ -7,7 +7,7 @@
 | :--- | :--- |
 | **Dự án** | FITLYO (Môn học: EXE101 - Khởi nghiệp đổi mới sáng tạo, FPT University) |
 | **Tác giả / Vai trò** | Business Analyst (BA) Agent |
-| **Tài liệu căn cứ** | `FITLYO_PRD_Yeu_Cau_Phan_Mem - Publish.md` |
+| **Tài liệu căn cứ** | `FITLYO_PRD_Yeu_Cau_Phan_Mem.md` |
 | **Phạm vi áp dụng** | Giai đoạn 1 (Web Responsive tại khu vực TP. Thủ Đức) & Chuẩn bị nền tảng cho Giai đoạn 2 (PWA Web-App) |
 | **Mục đích tài liệu** | Đặc tả chi tiết hành vi hệ thống, luồng nghiệp vụ tương tác giữa các bên (Chủ sân - HLV - Người chơi - Admin), sơ đồ luồng dữ liệu, quy tắc nghiệp vụ ràng buộc và kịch bản ngoại lệ làm cơ sở trực tiếp cho đội ngũ UI/UX, Backend, Frontend và QA/QC. |
 | **Phiên bản** | 1.0 (Bản chính thức) |
@@ -126,19 +126,19 @@ flowchart LR
 
 | Mã Luồng Nghiệp vụ | Tên Luồng Xử lý Nghiệp vụ | Mã Màn hình Phụ trách | File Đặc tả Giao diện Chi tiết |
 | :--- | :--- | :--- | :--- |
-| **`WF-01`** | Đăng ký, Đăng nhập & Xác thực 2 bước (2FA) | `SCR_PUB_01`, `SCR_AUTH_01`, `SCR_AUTH_02`, `SCR_AUTH_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
-| **`WF-02`** | Đăng ký & Thẩm định Hồ sơ Chủ sân | `SCR_AUTH_06`, `SCR_ADMIN_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md), [`SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
-| **`WF-03`** | Đăng ký & Kiểm duyệt Chứng chỉ Coach | `SCR_AUTH_05`, `SCR_ADMIN_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md), [`SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
-| **`WF-04`** | Đăng ký Liên kết Coach và Cụm sân | `SCR_COACH_04`, `SCR_FM_05` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md), [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
-| **`WF-05`** | Quản lý Sân & Điều phối Ma trận 6 Slot | `SCR_FM_01`, `SCR_FM_03`, `SCR_FM_08`, `SCR_VENUE_02` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md), [`SCR_VENUE.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_VENUE.md) |
-| **`WF-06`** | Tạo & Công bố Phòng Ghép Social DUPR | `SCR_FM_01`, `SCR_FM_02`, `SCR_MATCH_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md), [`SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md) |
-| **`WF-07`** | Tìm kiếm, Đăng ký Cọc Escrow & Check-in QR | `SCR_MATCH_01`, `SCR_MATCH_02`, `SCR_MATCH_03`, `SCR_FM_07` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md), [`SCR_FM.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
-| **`WF-08`** | Kết thúc Trận, Chấm Điểm Uy tín & DUPR | `SCR_MATCH_04`, `SCR_USER_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md), [`SCR_USER.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) |
-| **`WF-09`** | Đặt lịch Huấn luyện viên Buổi lẻ PT | `SCR_BOOK_01`, `SCR_BOOK_02`, `SCR_BOOK_03`, `SCR_COACH_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
-| **`WF-10`** | Vận hành Khóa học Dài hạn (Boot Camp) | `SCR_COACH_02`, `SCR_BOOK_02`, `SCR_BOOK_03`, `SCR_COACH_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
-| **`WF-11`** | Nâng cấp Gói VIP & Kích hoạt Đặc quyền | `SCR_USER_01`, `SCR_USER_02`, `SCR_USER_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) |
-| **`WF-12`** | Hủy Slot do Bất khả kháng (Mưa/Sự cố) | `SCR_ADMIN_03`, `SCR_FM_01`, `SCR_MATCH_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
-| **`WF-13`** | Xử lý Khiếu nại, Tố cáo Gian lận DUPR & Bùng cọc | `SCR_MATCH_04`, `SCR_ADMIN_03`, `SCR_ADMIN_02` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md`](file:///D:/FPTU/Term%207/EXE101/FITLYO/Documents/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| **`WF-01`** | Đăng ký, Đăng nhập & Xác thực 2 bước (2FA) | `SCR_PUB_01`, `SCR_AUTH_01`, `SCR_AUTH_02`, `SCR_AUTH_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md) |
+| **`WF-02`** | Đăng ký & Thẩm định Hồ sơ Chủ sân | `SCR_AUTH_06`, `SCR_ADMIN_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md), [`FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| **`WF-03`** | Đăng ký & Kiểm duyệt Chứng chỉ Coach | `SCR_AUTH_05`, `SCR_ADMIN_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_AUTH.md), [`FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| **`WF-04`** | Đăng ký Liên kết Coach và Cụm sân | `SCR_COACH_04`, `SCR_FM_05` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md), [`FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| **`WF-05`** | Quản lý Sân & Điều phối Ma trận 6 Slot | `SCR_FM_01`, `SCR_FM_03`, `SCR_FM_08`, `SCR_VENUE_02` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md), [`FITLYO_Dac_Ta_Man_Hinh_SCR_VENUE.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_VENUE.md) |
+| **`WF-06`** | Tạo & Công bố Phòng Ghép Social DUPR | `SCR_FM_01`, `SCR_FM_02`, `SCR_MATCH_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md), [`FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md) |
+| **`WF-07`** | Tìm kiếm, Đăng ký Cọc Escrow & Check-in QR | `SCR_MATCH_01`, `SCR_MATCH_02`, `SCR_MATCH_03`, `SCR_FM_07` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md), [`FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_FM.md) |
+| **`WF-08`** | Kết thúc Trận, Chấm Điểm Uy tín & DUPR | `SCR_MATCH_04`, `SCR_USER_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_MATCH.md), [`FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) |
+| **`WF-09`** | Đặt lịch Huấn luyện viên Buổi lẻ PT | `SCR_BOOK_01`, `SCR_BOOK_02`, `SCR_BOOK_03`, `SCR_COACH_01` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| **`WF-10`** | Vận hành Khóa học Dài hạn (Boot Camp) | `SCR_COACH_02`, `SCR_BOOK_02`, `SCR_BOOK_03`, `SCR_COACH_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_COACH.md) |
+| **`WF-11`** | Nâng cấp Gói VIP & Kích hoạt Đặc quyền | `SCR_USER_01`, `SCR_USER_02`, `SCR_USER_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_USER.md) |
+| **`WF-12`** | Hủy Slot do Bất khả kháng (Mưa/Sự cố) | `SCR_ADMIN_03`, `SCR_FM_01`, `SCR_MATCH_03` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
+| **`WF-13`** | Xử lý Khiếu nại, Tố cáo Gian lận DUPR & Bùng cọc | `SCR_MATCH_04`, `SCR_ADMIN_03`, `SCR_ADMIN_02` | [`FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md`](./FITLYO_Dac_Ta_Man_Hinh_Screen_Spec/FITLYO_Dac_Ta_Man_Hinh_SCR_ADMIN.md) |
 
 ---
 
@@ -146,7 +146,9 @@ flowchart LR
 
 ### NHÓM 1: XÁC THỰC, ONBOARDING & PHÂN QUYỀN
 
----### WF-01: Đăng ký, Đăng nhập & Xác thực 2 bước (2FA)
+---
+
+### WF-01: Đăng ký, Đăng nhập & Xác thực 2 bước (2FA)
 
 #### 1. Mô tả nghiệp vụ
 Đảm bảo xác thực đa kênh tiện lợi (Tài khoản, Google OAuth, SĐT OTP), bắt buộc định danh số điện thoại để đạt trạng thái `Verified`, và áp dụng 2FA bắt buộc cho các vai trò quản trị tài sản (Field Manager, Admin).
@@ -252,10 +254,12 @@ flowchart TD
 ```
 
 #### 3. Quy tắc nghiệp vụ (Business Rules)
-- **BR-04:** Trường `total_courts` không được thay đổi tùy tiện sau khi đã duyệt. Nếu muốn mở rộng thêm sân, FM phải gửi yêu cầu nâng hạn mức kèm hình ảnh nghiệm thu thực tế.
-- **BR-05:** Cụm sân chưa ở trạng thái `APPROVED` sẽ hoàn toàn ẩn khỏi kết quả tìm kiếm của Người chơi.
+- **[BR-04](#br-04) (Hạn mức Sân tối đa):** Trường `total_courts` không được thay đổi tùy tiện sau khi đã duyệt. Nếu muốn mở rộng thêm sân, FM phải gửi yêu cầu nâng hạn mức kèm hình ảnh nghiệm thu thực tế.
+- **[BR-05](#br-05) (Hiển thị Sân trên sàn):** Cụm sân chưa ở trạng thái `APPROVED` sẽ hoàn toàn ẩn khỏi kết quả tìm kiếm của Người chơi.
 
----### WF-03: Đăng ký & Kiểm duyệt Chứng chỉ Huấn luyện viên (Coach Certification)
+---
+
+### WF-03: Đăng ký & Kiểm duyệt Chứng chỉ Huấn luyện viên (Coach Certification)
 
 #### 1. Mô tả nghiệp vụ
 Xác thực năng lực chuyên môn của Huấn luyện viên Pickleball, bảo vệ quyền lợi người học và là điều kiện tiên quyết để phân phối học viên gói FITLYO Premium.
@@ -292,8 +296,8 @@ sequenceDiagram
 ```
 
 #### 3. Quy tắc nghiệp vụ (Business Rules)
-- **BR-06:** **Uncertified Coach** chỉ được nhận học viên thông thường, không được quyền nhận lịch từ học viên đặt qua danh mục Certified Coach của gói Premium, và bị giới hạn trần học phí tối đa (không quá 200.000 VNĐ / slot 90p).
-- **BR-07:** **Certified Coach** được gắn huy hiệu Tích xanh trên profile, được quyền tạo Khóa học dài hạn (Courses) và nhận học viên gói FITLYO Premium.
+- **[BR-06](#br-06) (Giới hạn Uncertified Coach):** Uncertified Coach chỉ được nhận học viên thông thường, không được nhận học viên gói Premium, trần học phí tối đa ≤ 200.000 VNĐ / slot 90p.
+- **[BR-07](#br-07) (Quyền hạn Certified Coach):** Certified Coach được gắn huy hiệu Tích xanh trên profile, toàn quyền tạo Khóa học dài hạn và nhận học viên gói FITLYO Premium.
 
 ---
 
@@ -366,10 +370,12 @@ stateDiagram-v2
 ```
 
 #### 4. Quy tắc nghiệp vụ (Business Rules)
-- **BR-08 (Khóa slot chống trùng lịch):** Áp dụng cơ chế Khóa nguyên tử (Atomic Lock) khi có giao dịch cọc slot, tuyệt đối chống trùng lịch (Overbooking).
-- **BR-09 (Xử lý sân Inactive):** Khi chuyển sân sang `Inactive`, tự động khóa các slot trống; slot đã có người đặt bắt buộc điều chuyển sang sân trống tương đương hoặc hoàn tiền.
+- **[BR-08](#br-08) (Khóa slot chống trùng lịch):** Áp dụng cơ chế Khóa nguyên tử (Atomic Lock) khi có giao dịch cọc slot, tuyệt đối chống trùng lịch (Overbooking).
+- **[BR-09](#br-09) (Xử lý sân Inactive):** Khi chuyển sân sang `Inactive`, tự động khóa các slot trống; slot đã có người đặt bắt buộc điều chuyển sang sân trống tương đương hoặc hoàn tiền.
 
----### NHÓM 3: SOCIAL MATCHMAKING (GHÉP TRẬN THEO TRÌNH ĐỘ)
+---
+
+### NHÓM 3: SOCIAL MATCHMAKING (GHÉP TRẬN THEO TRÌNH ĐỘ)
 
 ---
 
@@ -441,11 +447,9 @@ flowchart TD
 ```
 
 #### 3. Quy tắc nghiệp vụ (Business Rules)
-- **BR-10 (Kiểm soát trình độ DUPR):** Người chơi không được tham gia phòng có độ lệch DUPR quá $\pm 0.5$ điểm.
-- **BR-11 (Chính sách hủy trận từ Player):**
-  - **Player Free:** Được hủy trận và nhận lại 100% cọc nếu hủy trước giờ bắt đầu ít nhất **12 tiếng**. Sau 12 tiếng, mất toàn bộ cọc.
-  - **Player Premium:** Hưởng đặc quyền hủy trận miễn phí trước giờ bắt đầu **4 tiếng**.
-- **BR-12 (Tự động giải tán phòng):** Nếu trước giờ thi đấu 60 phút mà phòng vẫn chưa đạt đủ số lượng người tối thiểu (tối thiểu 4 người cho đôi, 2 người cho đơn), phòng tự động hủy (`CANCELLED`) và hệ thống hoàn trả tiền cọc 100% ngay lập tức.
+- **[BR-10](#br-10) (Kiểm soát trình độ DUPR):** Người chơi không được tham gia phòng có độ lệch DUPR quá $\pm 0.5$ điểm.
+- **[BR-11](#br-11) (Chính sách hủy trận từ Player):** Player Free được hủy hoàn cọc trước ≥ 12 tiếng; Player Premium được hủy hoàn cọc trước ≥ 4 tiếng.
+- **[BR-12](#br-12) (Tự động giải tán phòng):** Nếu trước giờ thi đấu 60 phút phòng chưa đủ số lượng người chơi tối thiểu, hệ thống tự động giải tán phòng và hoàn 100% cọc ngay lập tức.
 
 ---
 
@@ -462,7 +466,9 @@ Sau khi kết thúc 90 phút thi đấu, hệ thống kích hoạt form đánh g
 | Bỏ trận không báo trước (No-show) | Vắng mặt, không check-in | **-20 Điểm Uy tín**, phạt 100% cọc |
 | Gian lận hạ điểm DUPR ("Smurfing") | Trình cao cố tình đánh phòng người mới | Kích hoạt cờ cảnh báo, chuyển Admin thẩm tra |
 
----### NHÓM 4: ĐẶT LỊCH HUẤN LUYỆN VIÊN & KHÓA HỌC (COACH BOOKING & COURSES)
+---
+
+### NHÓM 4: ĐẶT LỊCH HUẤN LUYỆN VIÊN & KHÓA HỌC (COACH BOOKING & COURSES)
 
 ---
 
@@ -536,11 +542,9 @@ stateDiagram-v2
 ```
 
 #### 3. Quy tắc nghiệp vụ (Business Rules)
-- **BR-13 (Quyền hạn tạo Khóa học):** Chỉ **Certified Coach** mới được quyền tạo khóa học dài hạn (Courses).
-- **BR-14 (Tiêu chuẩn Khóa học):**
-  - Thời lượng khóa học: Mặc định **1 tháng (4 tuần)**. Giới hạn tối thiểu **1 tuần**, tối đa **3 tháng**.
-  - Tần suất học: Mặc định **2 buổi / tuần**.
-- **BR-15 (Dời lịch học):** Học viên được xin dời lịch tối đa **2 lần / khóa**, bắt buộc gửi yêu cầu trên hệ thống trước giờ học ít nhất **24 tiếng**.
+- **[BR-13](#br-13) (Quyền hạn tạo Khóa học):** Chỉ Certified Coach mới được phép thiết lập và công bố Khóa học (Courses).
+- **[BR-14](#br-14) (Tiêu chuẩn Khóa học):** Thời lượng chuẩn 1 tháng (4 tuần) (tối thiểu 1 tuần, tối đa 3 tháng). Tần suất chuẩn 2 buổi / tuần.
+- **[BR-15](#br-15) (Dời lịch học Khóa học):** Học viên được dời lịch tối đa 2 lần / khóa, bắt buộc gửi yêu cầu trước giờ học ít nhất 24 tiếng.
 
 ---
 
@@ -564,7 +568,9 @@ Mô hình thuê bao (Subscription) mang lại nguồn doanh thu ổn định cho
 | Đặt lịch Huấn luyện viên Certified (Có chứng chỉ) | Giới hạn / Không | **Toàn quyền đặt lịch** |
 | Cá nhân hóa Lịch học & Giáo trình riêng | ✗ | **Được hỗ trợ xếp lịch linh hoạt** |
 
----### NHÓM 6: XỬ LÝ NGOẠI LỆ, TRANH CHẤP & BẤT KHẢ KHÁNG
+---
+
+### NHÓM 6: XỬ LÝ NGOẠI LỆ, TRANH CHẤP & BẤT KHẢ KHÁNG
 
 ---
 
@@ -645,26 +651,26 @@ flowchart TD
 
 | Mã BR | Tên quy tắc nghiệp vụ | Phân hệ áp dụng | Nội dung quy định chi tiết |
 | :---: | :--- | :--- | :--- |
-| **BR-01** | Bắt buộc Xác thực SĐT | Authentication | Mọi tài khoản mới tạo mặc định là `UNVERIFIED`. Bắt buộc nhập OTP số điện thoại để đạt `VERIFIED`. Chỉ tài khoản `VERIFIED` mới được thực hiện đặt cọc, thanh toán và thi đấu. |
-| **BR-02** | 2FA Bắt buộc Quản trị | Security / Admin | Mọi tài khoản có quyền `FIELD_MANAGER` hoặc `ADMIN` bắt buộc kích hoạt xác thực 2 lớp qua Email hoặc SMS OTP khi đăng nhập. |
-| **BR-03** | Khóa đăng nhập chống Brute-force | Security | Khóa tạm thời 15 phút nếu người dùng nhập sai mật khẩu hoặc mã OTP quá 5 lần liên tiếp. |
-| **BR-04** | Hạn mức Sân tối đa | Quản lý sân | Số lượng sân hoạt động không được vượt quá số lượng sân (`total_courts`) đã đăng ký trong Giấy phép kinh doanh được Admin duyệt. |
-| **BR-05** | Hiển thị Sân trên sàn | Quản lý sân | Cụm sân chỉ hiển thị trên sàn tìm kiếm khi trạng thái pháp lý là `APPROVED` và cờ `is_active = true`. |
-| **BR-06** | Giới hạn Uncertified Coach | Huấn luyện viên | HLV chưa qua thẩm định chứng chỉ không được nhận học viên Certified của gói Premium và mức học phí không vượt quá 200.000 VNĐ / slot 90p. |
-| **BR-07** | Quyền hạn Certified Coach | Huấn luyện viên | HLV có chứng chỉ quốc tế được gắn Tích Xanh, toàn quyền mở Khóa học dài hạn và nhận dạy học viên Premium. |
-| **BR-08** | Khóa slot chống trùng lịch | Vận hành Slot | Áp dụng cơ chế Khóa nguyên tử (Atomic Lock) khi có giao dịch cọc slot, tuyệt đối chống trùng lịch (Overbooking). |
-| **BR-09** | Xử lý Sân đóng cửa | Vận hành Sân | Khi chuyển sân sang `Inactive`, tự động khóa các slot trống; slot đã có người đặt bắt buộc điều chuyển sang sân trống tương đương hoặc hoàn tiền. |
-| **BR-10** | Biên độ ghép trận DUPR | Social Matchmaking | Điểm DUPR của người chơi không được chênh lệch quá $\pm 0.5$ điểm so với yêu cầu phòng đấu. |
-| **BR-11** | Chính sách hủy trận Social | Social Matchmaking | Người chơi Free được hủy hoàn cọc trước **12 tiếng**. Người chơi Premium được hủy hoàn cọc trước **4 tiếng**. |
-| **BR-12** | Tự động hủy phòng thiếu người | Social Matchmaking | Trước giờ thi đấu **60 phút**, nếu phòng chưa đủ số lượng người chơi tối thiểu, hệ thống tự động giải tán phòng và hoàn 100% cọc ngay lập tức. |
-| **BR-13** | Quyền hạn tạo Khóa học | Đào tạo Coach | Chỉ Huấn luyện viên đạt chuẩn `Certified Coach` mới được phép thiết lập và công bố Khóa học (Courses). |
-| **BR-14** | Tiêu chuẩn Khóa học | Đào tạo Coach | Thời lượng khóa học: Mặc định **1 tháng (4 tuần)** (min 1 tuần, max 3 tháng). Tần suất: Mặc định **2 buổi / tuần**. |
-| **BR-15** | Dời lịch học Khóa học | Đào tạo Coach | Học viên được xin dời lịch tối đa **2 lần / khóa**, bắt buộc gửi yêu cầu trên hệ thống trước giờ học ít nhất **24 tiếng**. |
-| **BR-16** | Hoàn tiền Bất khả kháng | Bất khả kháng | Khi FM hủy slot do thời tiết mưa lớn hoặc sự cố sân, hệ thống hoàn tiền 100% gốc cho toàn bộ người chơi và HLV. |
-| **BR-17** | Điểm Uy tín sàn FITLYO | Đánh giá & Kỷ luật | Điểm uy tín khởi điểm: 100. Dưới 80 điểm bị hạn chế ghép trận giờ vàng; dưới 50 điểm bị đình chỉ tài khoản tạm thời. |
+| <span id="br-01">**BR-01**</span> | Bắt buộc Xác thực SĐT | Authentication | Mọi tài khoản mới tạo mặc định là `UNVERIFIED`. Bắt buộc nhập OTP số điện thoại để đạt `VERIFIED`. Chỉ tài khoản `VERIFIED` mới được thực hiện đặt cọc, thanh toán và thi đấu. |
+| <span id="br-02">**BR-02**</span> | 2FA Bắt buộc Quản trị | Security / Admin | Mọi tài khoản có quyền `FIELD_MANAGER` hoặc `ADMIN` bắt buộc kích hoạt xác thực 2 lớp qua Email hoặc SMS OTP khi đăng nhập. |
+| <span id="br-03">**BR-03**</span> | Khóa đăng nhập chống Brute-force | Security | Khóa tạm thời 15 phút nếu người dùng nhập sai mật khẩu hoặc mã OTP quá 5 lần liên tiếp. |
+| <span id="br-04">**BR-04**</span> | Hạn mức Sân tối đa | Quản lý sân | Số lượng sân hoạt động không được vượt quá số lượng sân (`total_courts`) đã đăng ký trong Giấy phép kinh doanh được Admin duyệt. |
+| <span id="br-05">**BR-05**</span> | Hiển thị Sân trên sàn | Quản lý sân | Cụm sân chỉ hiển thị trên sàn tìm kiếm khi trạng thái pháp lý là `APPROVED` và cờ `is_active = true`. |
+| <span id="br-06">**BR-06**</span> | Giới hạn Uncertified Coach | Huấn luyện viên | HLV chưa qua thẩm định chứng chỉ không được nhận học viên Certified của gói Premium và mức học phí không vượt quá 200.000 VNĐ / slot 90p. |
+| <span id="br-07">**BR-07**</span> | Quyền hạn Certified Coach | Huấn luyện viên | HLV có chứng chỉ quốc tế được gắn Tích Xanh, toàn quyền mở Khóa học dài hạn và nhận dạy học viên Premium. |
+| <span id="br-08">**BR-08**</span> | Khóa slot chống trùng lịch | Vận hành Slot | Áp dụng cơ chế Khóa nguyên tử (Atomic Lock) khi có giao dịch cọc slot, tuyệt đối chống trùng lịch (Overbooking). |
+| <span id="br-09">**BR-09**</span> | Xử lý Sân đóng cửa | Vận hành Sân | Khi chuyển sân sang `Inactive`, tự động khóa các slot trống; slot đã có người đặt bắt buộc điều chuyển sang sân trống tương đương hoặc hoàn tiền. |
+| <span id="br-10">**BR-10**</span> | Biên độ ghép trận DUPR | Social Matchmaking | Điểm DUPR của người chơi không được chênh lệch quá $\pm 0.5$ điểm so với yêu cầu phòng đấu. |
+| <span id="br-11">**BR-11**</span> | Chính sách hủy trận Social | Social Matchmaking | Người chơi Free được hủy hoàn cọc trước **12 tiếng**. Người chơi Premium được hủy hoàn cọc trước **4 tiếng**. |
+| <span id="br-12">**BR-12**</span> | Tự động hủy phòng thiếu người | Social Matchmaking | Trước giờ thi đấu **60 phút**, nếu phòng chưa đủ số lượng người chơi tối thiểu, hệ thống tự động giải tán phòng và hoàn 100% cọc ngay lập tức. |
+| <span id="br-13">**BR-13**</span> | Quyền hạn tạo Khóa học | Đào tạo Coach | Chỉ Huấn luyện viên đạt chuẩn `Certified Coach` mới được phép thiết lập và công bố Khóa học (Courses). |
+| <span id="br-14">**BR-14**</span> | Tiêu chuẩn Khóa học | Đào tạo Coach | Thời lượng khóa học: Mặc định **1 tháng (4 tuần)** (min 1 tuần, max 3 tháng). Tần suất: Mặc định **2 buổi / tuần**. |
+| <span id="br-15">**BR-15**</span> | Dời lịch học Khóa học | Đào tạo Coach | Học viên được xin dời lịch tối đa **2 lần / khóa**, bắt buộc gửi yêu cầu trên hệ thống trước giờ học ít nhất **24 tiếng**. |
+| <span id="br-16">**BR-16**</span> | Hoàn tiền Bất khả kháng | Bất khả kháng | Khi FM hủy slot do thời tiết mưa lớn hoặc sự cố sân, hệ thống hoàn tiền 100% gốc cho toàn bộ người chơi và HLV. |
+| <span id="br-17">**BR-17**</span> | Điểm Uy tín sàn FITLYO | Đánh giá & Kỷ luật | Điểm uy tín khởi điểm: 100. Dưới 80 điểm bị hạn chế ghép trận giờ vàng; dưới 50 điểm bị đình chỉ tài khoản tạm thời. |
 
 ---
 
 > **Khuyến nghị triển khai kỹ thuật dành cho Team Dev:**  
-> - Các luồng nghiệp vụ trên đã được thiết kế tương thích trực tiếp với sơ đồ dữ liệu và quy định tại `FITLYO_PRD_Yeu_Cau_Phan_Mem - Publish.md`.  
+> - Các luồng nghiệp vụ trên đã được thiết kế tương thích trực tiếp với sơ đồ dữ liệu và quy định tại `FITLYO_PRD_Yeu_Cau_Phan_Mem.md`.  
 > - Khuyến nghị Backend sử dụng Redis Distributed Lock cho **BR-08** (đặt slot) và Message Queue (RabbitMQ / BullMQ) cho **BR-12** (tự động kiểm tra và hủy phòng lúc T-60 phút).

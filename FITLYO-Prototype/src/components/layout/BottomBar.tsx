@@ -1,12 +1,21 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { Users, Calendar, Award, ShieldCheck, UserCheck } from 'lucide-react'
+import { Users, Calendar, Award, ShieldCheck, UserCheck, Building2, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFitlyoStore } from '@/store/useFitlyoStore'
 
 export const BottomBar: React.FC = () => {
+  const { activeRole, currentUser } = useFitlyoStore()
+  const currentRole =
+    activeRole === 'fm' || (activeRole as string) === 'field_manager'
+      ? 'field_manager'
+      : activeRole || currentUser?.role || 'player'
+
   const items = [
     { label: 'Ghép trận', href: '/matches', icon: Users },
-    { label: 'Lịch 6 Slot', href: '/fm/calendar', icon: Calendar },
+    currentRole === 'field_manager'
+      ? { label: 'Manager', href: '/app/field-manager', icon: Building2 }
+      : { label: 'Cụm sân', href: '/venues', icon: MapPin },
     { label: 'HLV & Khóa', href: '/coaches', icon: Award },
     { label: 'Thẩm định', href: '/admin/approvals', icon: ShieldCheck },
     { label: 'Hồ sơ DUPR', href: '/profile', icon: UserCheck },

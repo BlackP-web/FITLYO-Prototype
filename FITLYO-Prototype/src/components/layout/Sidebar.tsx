@@ -12,19 +12,25 @@ import {
   MapPin,
   Sparkles,
   Crown,
+  Building2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 
+export interface NavItem {
+  title?: string
+  label?: string
+  href?: string
+  path?: string
+  icon: React.ComponentType<{ className?: string }>
+  badge?: string
+  screenId?: string
+  roles?: string[]
+}
+
 interface NavGroup {
   groupName: string
-  items: {
-    title: string
-    href: string
-    icon: React.ComponentType<{ className?: string }>
-    badge?: string
-    screenId: string
-  }[]
+  items: NavItem[]
 }
 
 const navGroups: NavGroup[] = [
@@ -50,6 +56,12 @@ const navGroups: NavGroup[] = [
         href: '/venues',
         icon: MapPin,
         screenId: 'SCR_VENUE_01',
+      },
+      {
+        icon: Building2,
+        label: 'Field Manager',
+        path: '/app/field-manager',
+        roles: ['field_manager'],
       },
     ],
   },
@@ -115,17 +127,36 @@ const navGroups: NavGroup[] = [
 ]
 
 export function Sidebar() {
-  const { isSidebarOpen, currentUser } = useFitlyoStore()
+  const { isSidebarOpen, currentUser, activeRole } = useFitlyoStore()
 
   if (!isSidebarOpen) {
     return null
   }
 
+  const currentRole =
+    activeRole === 'fm' || (activeRole as string) === 'field_manager'
+      ? 'field_manager'
+      : activeRole || currentUser?.role || 'player'
+
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (!item.roles || item.roles.length === 0) return true
+        return (
+          item.roles.includes(currentRole) ||
+          (item.roles.includes('field_manager') &&
+            currentRole === 'field_manager')
+        )
+      }),
+    }))
+    .filter((group) => group.items.length > 0)
+
   return (
     <aside className="sticky top-16 h-[calc(100vh-4rem)] w-68 shrink-0 border-r bg-card/70 backdrop-blur-md p-4 overflow-y-auto hidden md:block">
       <div className="flex h-full flex-col justify-between space-y-6">
         <div className="space-y-5">
-          {navGroups.map((group, gIdx) => (
+          {visibleGroups.map((group, gIdx) => (
             <div key={gIdx} className="space-y-1">
               <p className="px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 mb-1.5">
                 {group.groupName}
@@ -133,11 +164,13 @@ export function Sidebar() {
               <nav className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon
+                  const toPath = item.path || item.href || '/'
+                  const itemTitle = item.label || item.title || ''
                   return (
                     <NavLink
-                      key={item.href}
-                      to={item.href}
-                      end={item.href === '/'}
+                      key={toPath}
+                      to={toPath}
+                      end={toPath === '/'}
                       className={({ isActive }) =>
                         cn(
                           "group flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200 outline-none",
@@ -149,7 +182,7 @@ export function Sidebar() {
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         <Icon className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
-                        <span className="truncate">{item.title}</span>
+                        <span className="truncate">{itemTitle}</span>
                       </div>
 
                       {item.badge && (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X, Sparkles, MapPin, Clock, Info, Check } from 'lucide-react'
+import { X, Sparkles, MapPin, Clock, Info, Check, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 
@@ -10,6 +10,8 @@ export const PublishMatchModal: React.FC = () => {
     publishingSlotData,
     closePublishModal,
     publishSlotAsMatch,
+    courtInventory,
+    selectedDate,
   } = useFitlyoStore()
 
   const [duprMin, setDuprMin] = useState<number>(2.5)
@@ -25,6 +27,17 @@ export const PublishMatchModal: React.FC = () => {
   )
 
   if (!publishingSlotData) return null
+
+  const capacity = format === 'doubles' ? 4 : 2
+  const courtCost =
+    courtInventory
+      .find((court) => court.id === publishingSlotData.courtId)
+      ?.slots.find((slot) => slot.slotNumber === publishingSlotData.slotNumber)?.price ?? 180000
+  const estimatedRevenue = entryFee * capacity
+  const estimatedDifference = estimatedRevenue - courtCost
+  const isDuprValid = duprMin <= duprMax
+  const isFeeValid = entryFee >= 20000 && entryFee <= 300000
+  const isFormValid = isDuprValid && isFeeValid
 
   const availableAmenities = [
     '2 quả bóng thi đấu tiêu chuẩn',
@@ -43,6 +56,8 @@ export const PublishMatchModal: React.FC = () => {
   }
 
   const handlePublish = () => {
+    if (!isFormValid) return
+
     publishSlotAsMatch({
       courtId: publishingSlotData.courtId,
       slotNumber: publishingSlotData.slotNumber,
@@ -76,7 +91,7 @@ export const PublishMatchModal: React.FC = () => {
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-primary" />
-                  Slot {publishingSlotData.slotNumber} ({publishingSlotData.timeRange}) • 13/10/2026
+                  Slot {publishingSlotData.slotNumber} ({publishingSlotData.timeRange}) • {selectedDate}
                 </span>
               </div>
             </div>
@@ -130,8 +145,13 @@ export const PublishMatchModal: React.FC = () => {
               </div>
               <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-1">
                 <Info className="w-3.5 h-3.5 text-primary" />
-                Khuyến nghị: Chênh lệch Min - Max $\le 0.5$ để đảm bảo trận đấu cân sức, không bị lệch trình.
+                Khuyến nghị: Chênh lệch DUPR không quá 0.5 để trận đấu cân sức.
               </p>
+              {!isDuprValid && (
+                <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5" /> DUPR tối thiểu phải nhỏ hơn hoặc bằng DUPR tối đa.
+                </p>
+              )}
             </div>
 
             {/* 2. Thể thức */}
@@ -151,7 +171,7 @@ export const PublishMatchModal: React.FC = () => {
                 >
                   <div>
                     <p className="text-sm font-bold text-foreground">Đánh Đôi (Doubles)</p>
-                    <p className="text-xs text-muted-foreground">Tối đa 4 người chơi / sân</p>
+                  <p className="text-xs text-muted-foreground">Mở 4 chỗ cho người chơi</p>
                   </div>
                   {format === 'doubles' && <Check className="w-4 h-4 text-primary" />}
                 </button>
@@ -167,7 +187,7 @@ export const PublishMatchModal: React.FC = () => {
                 >
                   <div>
                     <p className="text-sm font-bold text-foreground">Đánh Đơn (Singles)</p>
-                    <p className="text-xs text-muted-foreground">Tối đa 2 người chơi / sân</p>
+                  <p className="text-xs text-muted-foreground">Mở 2 chỗ cho người chơi</p>
                   </div>
                   {format === 'singles' && <Check className="w-4 h-4 text-primary" />}
                 </button>
@@ -178,7 +198,7 @@ export const PublishMatchModal: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="font-semibold text-foreground">
-                  3. Mức phí cọc slot mỗi người:
+                  3. Mức phí tham gia mỗi người:
                 </label>
                 <span className="text-xs font-bold text-primary">
                   {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(entryFee)}
@@ -196,6 +216,31 @@ export const PublishMatchModal: React.FC = () => {
               <p className="mt-1 text-xs text-muted-foreground">
                 Gợi ý: Giá sân 180.000đ/90 phút chia 4 người = 45.000đ + 5.000đ phụ phí bóng = 50.000đ/người.
               </p>
+              {!isFeeValid && (
+                <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Phí tham gia phải từ 20.000đ đến 300.000đ.
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 rounded-xl border border-primary/15 bg-primary/5 p-3 text-xs">
+              <div>
+                <p className="text-muted-foreground">Số chỗ mở</p>
+                <p className="mt-1 font-bold text-foreground">{capacity} người</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Tổng thu dự kiến</p>
+                <p className="mt-1 font-bold text-foreground">
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(estimatedRevenue)}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Chênh lệch dự kiến</p>
+                <p className={`mt-1 font-bold ${estimatedDifference >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                  {estimatedDifference >= 0 ? '+' : ''}
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(estimatedDifference)}
+                </p>
+              </div>
             </div>
 
             {/* 4. Tiện ích */}
@@ -261,6 +306,7 @@ export const PublishMatchModal: React.FC = () => {
             <Button
               type="button"
               onClick={handlePublish}
+              disabled={!isFormValid}
               className="gap-2 shadow-md active:scale-[0.98]"
             >
               <Sparkles className="w-4 h-4" /> Xác nhận Công bố Kèo ngay

@@ -4,18 +4,12 @@ import {
   Home,
   Users,
   QrCode,
-  Calendar,
   Award,
-  BookOpen,
-  ShieldCheck,
-  UserCheck,
   MapPin,
-  Sparkles,
-  Crown,
-  Building2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
+import { BrandLogo } from '@/components/brand/BrandLogo'
 
 export interface NavItem {
   title?: string
@@ -25,7 +19,6 @@ export interface NavItem {
   icon: React.ComponentType<{ className?: string }>
   badge?: string
   screenId?: string
-  roles?: string[]
 }
 
 interface NavGroup {
@@ -57,35 +50,11 @@ const navGroups: NavGroup[] = [
         icon: MapPin,
         screenId: 'SCR_VENUE_01',
       },
-      {
-        icon: Building2,
-        label: 'Field Manager',
-        path: '/app/field-manager',
-        roles: ['field_manager'],
-      },
     ],
   },
   {
-    groupName: 'Chủ Sân (Field Manager)',
+    groupName: 'Khám phá hệ sinh thái',
     items: [
-      {
-        title: 'Ma trận Lịch & 6 Slot Chuẩn',
-        href: '/fm/calendar',
-        icon: Calendar,
-        badge: '6 Slot',
-        screenId: 'SCR_FM_01',
-      },
-    ],
-  },
-  {
-    groupName: 'Huấn Luyện Viên (Coach)',
-    items: [
-      {
-        title: 'Quản lý Khóa học của Coach',
-        href: '/coach/dashboard',
-        icon: BookOpen,
-        screenId: 'SCR_COACH_01',
-      },
       {
         title: 'Danh bạ HLV & PT Booking',
         href: '/coaches',
@@ -96,29 +65,11 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    groupName: 'Quản Trị Viên (Admin Portal)',
+    groupName: 'Tài khoản người chơi',
     items: [
-      {
-        title: 'Trung tâm Thẩm định Đối tác',
-        href: '/admin/approvals',
-        icon: ShieldCheck,
-        badge: '3 Chờ',
-        screenId: 'SCR_ADMIN_01',
-      },
-    ],
-  },
-  {
-    groupName: 'Tài Khoản & Hội Viên',
-    items: [
-      {
-        title: 'Hồ sơ DUPR & FITLYO Premium',
-        href: '/profile',
-        icon: UserCheck,
-        screenId: 'SCR_USER_01',
-      },
       {
         title: 'Landing Page Nền tảng',
-        href: '/',
+        href: '/player',
         icon: Home,
         screenId: 'SCR_PUB_01',
       },
@@ -127,36 +78,17 @@ const navGroups: NavGroup[] = [
 ]
 
 export function Sidebar() {
-  const { isSidebarOpen, currentUser, activeRole } = useFitlyoStore()
+  const { isSidebarOpen, currentUser } = useFitlyoStore()
 
   if (!isSidebarOpen) {
     return null
   }
 
-  const currentRole =
-    activeRole === 'fm' || (activeRole as string) === 'field_manager'
-      ? 'field_manager'
-      : activeRole || currentUser?.role || 'player'
-
-  const visibleGroups = navGroups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => {
-        if (!item.roles || item.roles.length === 0) return true
-        return (
-          item.roles.includes(currentRole) ||
-          (item.roles.includes('field_manager') &&
-            currentRole === 'field_manager')
-        )
-      }),
-    }))
-    .filter((group) => group.items.length > 0)
-
   return (
     <aside className="sticky top-16 h-[calc(100vh-4rem)] w-68 shrink-0 border-r bg-card/70 backdrop-blur-md p-4 overflow-y-auto hidden md:block">
       <div className="flex h-full flex-col justify-between space-y-6">
         <div className="space-y-5">
-          {visibleGroups.map((group, gIdx) => (
+          {navGroups.map((group, gIdx) => (
             <div key={gIdx} className="space-y-1">
               <p className="px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 mb-1.5">
                 {group.groupName}
@@ -212,13 +144,13 @@ export function Sidebar() {
         {/* Footer info box */}
         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 text-xs text-muted-foreground space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-foreground">FITLYO Pickleball</span>
+            <BrandLogo className="h-5 w-auto" />
             <span className="text-[10px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">
               v1.0.0
             </span>
           </div>
           <p className="text-[11px] leading-relaxed">
-            Thiết kế chuẩn hóa theo tài liệu Screen Spec & Skill frontend-ui-ux-design.
+            Trải nghiệm thống nhất theo nhận diện FITLYO mới.
           </p>
           <div className="pt-1 border-t border-border/40 flex items-center justify-between text-[11px]">
             <span>DUPR hiện tại:</span>

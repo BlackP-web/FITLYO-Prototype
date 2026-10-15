@@ -3,14 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Sparkles,
   Users,
-  Calendar,
   Award,
   ArrowRight,
-  ShieldCheck,
   CheckCircle2,
   Clock,
-  MapPin,
-  TrendingUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,19 +17,21 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="space-y-16 pb-20">
       {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-emerald-500/10 via-card to-card p-6 sm:p-12 md:p-16 shadow-lg">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <section className="brand-card relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-secondary/70 via-card to-accent/25 p-6 sm:p-12 md:p-16">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-secondary/60 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-accent/30 blur-3xl" />
+        <div className="pointer-events-none absolute right-8 top-8 hidden h-28 w-28 rotate-12 rounded-[2rem] border border-primary/10 bg-card/30 lg:block" />
 
         <div className="relative z-10 max-w-2xl space-y-5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-bold shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-primary/10 bg-card/70 px-3 py-1.5 text-[11px] font-bold text-primary shadow-sm backdrop-blur sm:text-xs">
+            <Sparkles className="w-3.5 h-3.5 text-orange-500" />
             <span>NỀN TẢNG THỂ THAO PICKLEBALL TIÊN PHONG</span>
             <span className="text-muted-foreground">• TP. THỦ ĐỨC</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground leading-[1.15]">
             Ghép Trận Pickleball Cân Trình{' '}
-            <span className="text-primary underline decoration-primary/30 decoration-wavy">
+            <span className="text-primary underline decoration-accent decoration-[5px] underline-offset-4">
               DUPR
             </span>{' '}
             & Đặt Sân Trong 3 Phút
@@ -55,25 +53,25 @@ export const LandingPage: React.FC = () => {
             <Button
               size="lg"
               variant="outline"
-              onClick={() => navigate('/fm/calendar')}
+              onClick={() => navigate('/venues')}
               className="font-semibold active:scale-[0.98]"
             >
-              Dành Cho Chủ Sân (6 Slot)
+              Khám Phá Cụm Sân
             </Button>
           </div>
 
           {/* Social Proof */}
-          <div className="pt-4 flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
               <CheckCircle2 className="w-4 h-4" />
               <span>1.200+ Trận đã ghép</span>
             </div>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
               <CheckCircle2 className="w-4 h-4" />
               <span>28 Cụm sân liên kết</span>
             </div>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
               <CheckCircle2 className="w-4 h-4" />
               <span>99.2% Đúng giờ</span>
@@ -98,8 +96,8 @@ export const LandingPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1 */}
-          <div className="rounded-2xl border border-border/70 bg-card p-6 space-y-3 shadow-xs hover:border-primary/50 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+          <div className="brand-card group space-y-3 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:border-primary/35">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-primary transition-transform group-hover:scale-105">
               <Users className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg text-foreground">
@@ -118,8 +116,8 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Card 2 */}
-          <div className="rounded-2xl border border-border/70 bg-card p-6 space-y-3 shadow-xs hover:border-primary/50 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center font-bold">
+          <div className="brand-card group space-y-3 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:border-primary/35">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/55 text-orange-700 transition-transform group-hover:scale-105 dark:text-orange-300">
               <Clock className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg text-foreground">
@@ -129,17 +127,17 @@ export const LandingPage: React.FC = () => {
               Quy chuẩn hóa thời gian chơi từ 06:00 đến 21:30. Chủ sân quản lý công suất 1 chạm, tự động chia sẻ slot trống cho cộng đồng.
             </p>
             <Link
-              to="/fm/calendar"
+              to="/venues"
               className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline pt-2"
             >
-              <span>Khám phá lịch 6 slot</span>
+              <span>Xem cụm sân liên kết</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {/* Card 3 */}
-          <div className="rounded-2xl border border-border/70 bg-card p-6 space-y-3 shadow-xs hover:border-primary/50 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold">
+          <div className="brand-card group space-y-3 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:border-primary/35">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-105">
               <Award className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg text-foreground">

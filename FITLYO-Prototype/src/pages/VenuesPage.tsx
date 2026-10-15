@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   MapPin,
   Star,
@@ -12,8 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 
 export const VenuesPage: React.FC = () => {
-  const navigate = useNavigate()
-  const { venues } = useFitlyoStore()
+  const { venues, showToast } = useFitlyoStore()
   const [search, setSearch] = useState('')
 
   const filteredVenues = venues.filter((v) => {
@@ -74,7 +72,7 @@ export const VenuesPage: React.FC = () => {
                 <span className="absolute top-3 left-3 bg-background/90 backdrop-blur-xs px-2.5 py-1 rounded-full text-xs font-bold text-foreground">
                   {venue.totalCourts} sân tiêu chuẩn
                 </span>
-                <span className="absolute top-3 right-3 bg-emerald-600 text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm">
+                <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground shadow-sm">
                   <Clock className="w-3 h-3" /> Còn {venue.availableSlotsToday} slot hôm nay
                 </span>
               </div>
@@ -114,7 +112,7 @@ export const VenuesPage: React.FC = () => {
               </div>
               <Button
                 size="sm"
-                onClick={() => navigate('/fm/calendar')}
+                onClick={() => showToast('Luồng đặt sân dành cho Player sẽ được hoàn thiện trong phân hệ Player.', 'info')}
                 className="gap-1.5 text-xs font-semibold"
               >
                 <span>Xem 6 Slot Trống</span>

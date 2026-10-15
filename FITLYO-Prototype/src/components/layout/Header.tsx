@@ -3,16 +3,15 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Bell,
   Menu,
-  User,
   Sparkles,
   MapPin,
   Crown,
-  ShieldCheck,
-  ChevronDown,
-  CheckCircle2,
+  LogOut,
+  UserRound,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { BrandLogo } from '@/components/brand/BrandLogo'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,34 +21,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
-import type { UserRole } from '@/types/pickleball'
+import { useAuthStore } from '@/store/useAuthStore'
 
 export function Header() {
   const navigate = useNavigate()
   const {
     toggleSidebar,
-    activeRole,
-    setActiveRole,
     currentUser,
     notificationCount,
     toastMessage,
     clearToast,
     togglePremium,
   } = useFitlyoStore()
+  const { session, logout } = useAuthStore()
 
-  const roles: { id: UserRole; label: string; icon: string }[] = [
-    { id: 'player', label: 'Player (Người chơi)', icon: '🎾' },
-    { id: 'fm', label: 'Field Manager (Chủ sân)', icon: '🏢' },
-    { id: 'coach', label: 'Coach (Huấn luyện viên)', icon: '👨‍🏫' },
-    { id: 'admin', label: 'Admin (Quản trị viên)', icon: '🛡️' },
-  ]
-
-  const handleRoleSelect = (role: UserRole) => {
-    setActiveRole(role)
-    if (role === 'player') navigate('/matches')
-    else if (role === 'fm') navigate('/fm/calendar')
-    else if (role === 'coach') navigate('/coach/dashboard')
-    else if (role === 'admin') navigate('/admin/approvals')
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -67,24 +55,8 @@ export function Header() {
             <Menu className="h-5 w-5" />
           </Button>
 
-          <Link to="/" className="flex items-center gap-2.5 font-black text-xl tracking-tight text-foreground group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm group-hover:scale-105 transition-transform">
-              {/* Pickleball Paddle SVG Logo */}
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12c0 3.2 1.52 6.04 3.87 7.84L5.1 21.6c-.32.65.15 1.4.87 1.4h2.06c.38 0 .73-.21.9-.55l1.64-3.28C11.17 19.64 11.58 20 12 20c5.52 0 10-4.48 10-10S17.52 2 12 2zm-2 11c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm4 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-2-4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
-              </svg>
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="font-extrabold tracking-tight text-primary">FITLYO</span>
-                <span className="text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                  PICKLEBALL
-                </span>
-              </div>
-              <span className="text-[10px] text-muted-foreground font-semibold tracking-wider">
-                DUPR MATCHMAKING
-              </span>
-            </div>
+          <Link to="/player" className="group flex items-center" aria-label="FITLYO - Trang chủ">
+            <BrandLogo className="h-7 w-auto transition-transform duration-200 group-hover:scale-[1.02] sm:h-8" />
           </Link>
 
           {/* Location Picker */}
@@ -97,45 +69,10 @@ export function Header() {
 
         {/* Right: Role Switcher & Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Role Switcher Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 px-2.5 sm:px-3 text-xs font-semibold gap-1.5 border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary active:scale-[0.98]"
-              >
-                <span className="text-sm">
-                  {roles.find((r) => r.id === activeRole)?.icon}
-                </span>
-                <span className="hidden sm:inline">
-                  {roles.find((r) => r.id === activeRole)?.label.split(' ')[0]}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 p-1">
-              <DropdownMenuLabel className="text-xs font-semibold uppercase text-muted-foreground">
-                Đổi Vai Trò Trải Nghiệm (RBAC)
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {roles.map((r) => (
-                <DropdownMenuItem
-                  key={r.id}
-                  onClick={() => handleRoleSelect(r.id)}
-                  className={`text-xs font-medium cursor-pointer flex items-center justify-between ${
-                    activeRole === r.id ? 'bg-primary/10 text-primary font-bold' : ''
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span>{r.icon}</span>
-                    <span>{r.label}</span>
-                  </span>
-                  {activeRole === r.id && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ThemeToggle />
+          <div className="hidden items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs font-bold text-primary sm:flex">
+            <UserRound className="h-4 w-4" /> Player
+          </div>
 
           {/* VIP Premium Toggle Pill */}
           <Button
@@ -173,8 +110,8 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full border hover:bg-muted p-0.5">
                 <img
-                  src={currentUser.avatarUrl}
-                  alt={currentUser.name}
+                  src={session?.avatarUrl ?? currentUser.avatarUrl}
+                  alt={session?.name ?? currentUser.name}
                   className="h-8 w-8 rounded-full object-cover"
                 />
               </Button>
@@ -182,8 +119,8 @@ export function Header() {
             <DropdownMenuContent align="end" className="w-60">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-bold text-foreground">{currentUser.name}</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <p className="text-sm font-bold text-foreground">{session?.name ?? currentUser.name}</p>
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
                     <span>DUPR: {currentUser.duprRating}</span>
                     <span>•</span>
                     <span className="text-emerald-600 font-semibold">{currentUser.reputationScore}% uy tín</span>
@@ -192,17 +129,18 @@ export function Header() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/profile">Hồ sơ DUPR & Gói Premium</Link>
+                <Link to="/player">Trang chủ người chơi</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/matches">Kèo ghép trận của tôi</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/fm/calendar">Lịch quản lý 6 slot</Link>
+                <Link to="/matches/detail">Kèo ghép trận của tôi</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={togglePremium} className="cursor-pointer">
                 {currentUser.isPremium ? 'Tắt VIP Premium (Test)' : 'Kích hoạt VIP Premium'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+                <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

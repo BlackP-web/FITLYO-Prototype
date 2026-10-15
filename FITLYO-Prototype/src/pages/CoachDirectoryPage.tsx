@@ -92,11 +92,11 @@ export const CoachDirectoryPage: React.FC = () => {
             onClick={() => setFilterCertifiedOnly(!filterCertifiedOnly)}
             className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border font-semibold transition-all ${
               filterCertifiedOnly
-                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500'
+                ? 'border-primary/40 bg-secondary/60 text-primary ring-1 ring-primary/25'
                 : 'border-border bg-card text-muted-foreground'
             }`}
           >
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
             <span>Certified Coach (Tích xanh)</span>
           </button>
         </div>

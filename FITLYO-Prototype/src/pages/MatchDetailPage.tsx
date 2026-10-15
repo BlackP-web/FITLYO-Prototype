@@ -368,7 +368,7 @@ export const MatchDetailPage: React.FC = () => {
             {isUserJoined && !isFull && (
               <Button
                 onClick={() => joinMatchRoom(match.id)}
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md active:scale-[0.98]"
+                className="gap-2 font-bold shadow-md"
               >
                 <Sparkles className="w-4 h-4" />
                 Mô phỏng Thêm Người Chơi 4/4
@@ -378,7 +378,7 @@ export const MatchDetailPage: React.FC = () => {
             {isUserJoined && isFull && (
               <Button
                 onClick={() => showToast('Mã vé QR đã được lưu vào Lịch của bạn!', 'success')}
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md active:scale-[0.98]"
+                className="gap-2 font-bold shadow-md"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Vé Đã Kích Hoạt (Check-in Ngay)

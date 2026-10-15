@@ -1,8 +1,11 @@
 import { useEffect } from 'react'
 import { BarChart3, BookOpen, Building2, CalendarDays, LogOut, QrCode, Settings, ShieldCheck, Sparkles } from 'lucide-react'
-import { Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
+import { BrandLogo } from '@/components/brand/BrandLogo'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { useAuthStore } from '@/store/useAuthStore'
 
 const ownerNavigation = [
   {
@@ -39,31 +42,22 @@ const ownerNavigation = [
 
 export default function FieldManagerLayout() {
   const navigate = useNavigate()
-  const { activeRole, currentUser, setActiveRole, toastMessage, clearToast } = useFitlyoStore()
-
-  // Tự động kích hoạt vai trò Chủ sân khi truy cập vào cổng /fm
-  useEffect(() => {
-    if (activeRole !== 'fm' && activeRole !== 'field_manager') {
-      setActiveRole('fm')
-    }
-  }, [activeRole, setActiveRole])
+  const { toastMessage, clearToast } = useFitlyoStore()
+  const { session, logout } = useAuthStore()
 
   return (
     <div className="min-h-screen bg-muted/30 text-foreground">
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-md sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <Building2 className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-black tracking-tight text-primary">FITLYO OWNER</p>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Cổng quản lý cụm sân
-            </p>
+          <BrandLogo className="h-7 w-auto sm:h-8" />
+          <div className="hidden border-l border-border pl-3 sm:block">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Owner Portal</p>
+            <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">Cổng quản lý cụm sân</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <button
             type="button"
             onClick={() => navigate('/fm/checkin')}
@@ -72,27 +66,27 @@ export default function FieldManagerLayout() {
             <QrCode className="h-4 w-4" /> Kiosk QR
           </button>
           <div className="flex items-center gap-2 rounded-xl border bg-card px-2.5 py-1.5">
-          <img
-            src={currentUser.avatarUrl}
-            alt={currentUser.name}
-            className="h-7 w-7 rounded-full object-cover"
-          />
-          <div className="hidden text-right sm:block">
-            <p className="text-xs font-bold leading-none">{currentUser.name}</p>
-            <p className="mt-1 text-[10px] font-semibold text-primary">Chủ sân</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveRole('player')
-              navigate('/')
-            }}
-            className="ml-1 rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="Đăng xuất tài khoản Chủ sân"
-            title="Đăng xuất"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+            <img
+              src={session?.avatarUrl}
+              alt={session?.name}
+              className="h-7 w-7 rounded-full object-cover"
+            />
+            <div className="hidden text-right sm:block">
+              <p className="text-xs font-bold leading-none">{session?.name}</p>
+              <p className="mt-1 text-[10px] font-semibold text-primary">Chủ sân</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                logout()
+                navigate('/login', { replace: true })
+              }}
+              className="ml-1 rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Đăng xuất tài khoản Chủ sân"
+              title="Đăng xuất"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </header>

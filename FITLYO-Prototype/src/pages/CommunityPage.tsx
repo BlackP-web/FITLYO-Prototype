@@ -1,4 +1,4 @@
-import { Users, Trophy, Heart, MessageSquare, Share2 } from "lucide-react"
+import { Trophy, Heart, MessageSquare, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Card,

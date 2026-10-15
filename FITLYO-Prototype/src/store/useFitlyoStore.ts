@@ -1,11 +1,15 @@
 import { create } from 'zustand'
 import type {
-  UserRole,
   UserAccount,
   MatchRoom,
   CourtInventory,
   CoachItem,
   CoachCourse,
+  CoachAccount,
+  CoachVenueAffiliation,
+  CoachWalletTransaction,
+  CoachWalletSummary,
+  StudentProgress,
   AuditApplication,
   VenueItem,
   CheckInTicket,
@@ -15,9 +19,11 @@ import type {
   WalkInSource,
 } from '@/types/pickleball'
 
+export type ColorMode = 'light' | 'dark'
+
 interface FitlyoState {
   // Current user & active role
-  activeRole: UserRole
+  colorMode: ColorMode
   currentUser: UserAccount
   isLoggedIn: boolean
   isSidebarOpen: boolean
@@ -53,8 +59,12 @@ interface FitlyoState {
   checkInLogs: CheckInLog[]
 
   // Coach & Courses
+  coachAccount: CoachAccount
   coachCourses: CoachCourse[]
   coaches: CoachItem[]
+  coachAffiliations: CoachVenueAffiliation[]
+  coachWalletTransactions: CoachWalletTransaction[]
+  coachWalletSummary: CoachWalletSummary
 
   // Admin Portal
   auditApplications: AuditApplication[]
@@ -67,11 +77,11 @@ interface FitlyoState {
   toastMessage: { text: string; type: 'success' | 'info' | 'error' } | null
 
   // Actions
+  toggleColorMode: () => void
   setLoggedIn: (val: boolean) => void
   handleLogout: () => void
   updateUserProfile: (profile: Partial<UserAccount>) => void
   setDuprRating: (rating: number) => void
-  setActiveRole: (role: UserRole) => void
   setSelectedDate: (date: string) => void
   toggleSidebar: () => void
   togglePremium: () => void
@@ -111,25 +121,42 @@ interface FitlyoState {
     courseId: string,
     studentId: string,
     status: 'present' | 'absent' | 'makeup'
-  ) => void
+  ) => boolean
+  updateStudentAssessment: (
+    courseId: string,
+    studentId: string,
+    assessment: Pick<StudentProgress, 'serveScore' | 'dropShotScore' | 'dinkScore' | 'finalDupr' | 'feedback'>,
+  ) => boolean
+  createCoachCourse: (course: Omit<CoachCourse, 'id' | 'coachId' | 'coachName' | 'currentStudents' | 'completedSessions' | 'students'>) => boolean
+  updateCoachCourse: (courseId: string, changes: Partial<CoachCourse>) => boolean
+  requestVenueAffiliation: (venueId: string) => boolean
+  updateCoachProfile: (changes: Partial<CoachAccount>) => boolean
+  requestCoachWithdrawal: (amount: number) => boolean
   approveAuditApplication: (id: string) => void
   rejectAuditApplication: (id: string, reason: string) => void
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void
   clearToast: () => void
 }
 
-const roleStorageKey = 'fitlyo-active-role'
+const colorModeStorageKey = 'fitlyo-color-mode'
 
-const getInitialRole = (): UserRole => {
-  if (typeof window === 'undefined') return 'player'
+const getInitialColorMode = (): ColorMode => {
+  if (typeof window === 'undefined') return 'light'
 
-  const savedRole = window.localStorage.getItem(roleStorageKey)
-  const allowedRoles: UserRole[] = ['player', 'fm', 'coach', 'admin', 'field_manager']
+  const savedMode = window.localStorage.getItem(colorModeStorageKey)
+  if (savedMode === 'light' || savedMode === 'dark') return savedMode
 
-  return savedRole && allowedRoles.includes(savedRole as UserRole)
-    ? (savedRole as UserRole)
-    : 'player'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
+
+const applyColorMode = (mode: ColorMode) => {
+  if (typeof document === 'undefined') return
+  document.documentElement.classList.toggle('dark', mode === 'dark')
+  document.documentElement.style.colorScheme = mode
+}
+
+const initialColorMode = getInitialColorMode()
+applyColorMode(initialColorMode)
 
 const initialUser: UserAccount = {
   id: 'usr_me',
@@ -439,48 +466,185 @@ const initialCheckInLogs: CheckInLog[] = [
 
 const initialCoachCourses: CoachCourse[] = [
   {
-    id: 'crs_01',
-    title: 'Pickleball Căn bản & Làm quen DUPR 2.0',
-    coachId: 'coach_kiet',
-    coachName: 'HLV Đặng Tuấn Kiệt',
+    id: 'COURSE-DUNG-01',
+    title: 'Boot Camp Bứt Phá DUPR 3.5',
+    coachId: 'coach_dung',
+    coachName: 'HLV Lê Hoàng Dũng',
     duration: '1 tháng (8 buổi)',
-    frequency: '2 buổi/tuần (T3 - T5 Slot 2: 07:30 - 09:00)',
-    venue: 'Cụm sân D-Sports Thủ Đức',
-    fee: 1600000,
+    frequency: '2 buổi/tuần (T4 - T6, Slot 5)',
+    venue: 'D-Pickleball Thảo Điền',
+    fee: 2400000,
     currentStudents: 4,
     maxStudents: 4,
-    completedSessions: 5,
+    completedSessions: 7,
     totalSessions: 8,
     status: 'IN_PROGRESS',
+    courseType: 'GROUP_4',
+    duprInput: '2.50 - 3.00',
+    duprOutput: '3.50+',
+    slotNumber: 5,
+    timeRange: '18:30 - 20:00',
+    scheduleDays: ['Thứ Tư', 'Thứ Sáu'],
+    description: 'Lộ trình tăng tốc kỹ thuật dinking, third-shot drop và chiến thuật đánh đôi.',
     students: [
-      { id: 'st_1', name: 'Nguyễn Văn Minh', avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', dupr: 2.1, attendance: 'present' },
-      { id: 'st_2', name: 'Lê Hoàng Yến', avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', dupr: 2.2, attendance: 'present' },
-      { id: 'st_3', name: 'Phạm Thành Long', avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', dupr: 2.3, attendance: 'absent' },
-      { id: 'st_4', name: 'Đỗ Quỳnh Chi', avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', dupr: 2.15, attendance: 'present' },
+      { id: 'st_1', name: 'Trần Bảo', avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', dupr: 2.75, attendance: 'present', serveScore: 8, dropShotScore: 8.5, dinkScore: 8, finalDupr: 3.45, feedback: 'Bộ chân linh hoạt, kiểm soát bóng tốt. Cần giữ nhịp ổn định ở bóng thứ ba.' },
+      { id: 'st_2', name: 'Lê Hoàng Yến', avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', dupr: 2.8, attendance: 'present', serveScore: 8.5, dropShotScore: 8, dinkScore: 8.5, finalDupr: 3.52, feedback: 'Tiến bộ rõ ở khu vực kitchen và có khả năng điều tiết rally.' },
+      { id: 'st_3', name: 'Phạm Thành Long', avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', dupr: 2.65, attendance: 'absent', serveScore: 7.5, dropShotScore: 7, dinkScore: 7.5, finalDupr: 3.2, feedback: 'Cần bổ sung buổi khảo thí bù để xác nhận kết quả đầu ra.' },
+      { id: 'st_4', name: 'Đỗ Quỳnh Chi', avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', dupr: 2.9, attendance: 'present', serveScore: 9, dropShotScore: 8.5, dinkScore: 9, finalDupr: 3.61, feedback: 'Đạt cam kết đầu ra, xử lý dink chéo sân rất tốt.' },
     ],
   },
   {
-    id: 'crs_02',
-    title: 'Chiến thuật Đánh đôi Nâng cao DUPR 3.5+',
-    coachId: 'coach_kiet',
-    coachName: 'HLV Đặng Tuấn Kiệt',
+    id: 'COURSE-DUNG-02',
+    title: 'PT 1-1 Nâng Cao Dinking & Drop Shot',
+    coachId: 'coach_dung',
+    coachName: 'HLV Lê Hoàng Dũng',
+    duration: '4 buổi chuyên sâu',
+    frequency: '1 buổi/tuần (Thứ Tư, Slot 2)',
+    venue: 'Saigon Rackets An Phú',
+    fee: 1800000,
+    currentStudents: 1,
+    maxStudents: 1,
+    completedSessions: 2,
+    totalSessions: 4,
+    status: 'IN_PROGRESS',
+    courseType: 'PT_1ON1',
+    duprInput: '3.00 - 3.50',
+    duprOutput: '3.80+',
+    slotNumber: 2,
+    timeRange: '07:30 - 09:00',
+    scheduleDays: ['Thứ Tư'],
+    description: 'Giáo án cá nhân hóa cho kỹ thuật chuyển vùng và kiểm soát bóng mềm.',
+    students: [
+      { id: 'st_5', name: 'Nguyễn Minh Khôi', avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', dupr: 3.15, attendance: 'present', serveScore: 7.5, dropShotScore: 8, dinkScore: 8, feedback: 'Đã giữ được rally 20 chạm, tiếp tục cải thiện split step.' },
+    ],
+  },
+  {
+    id: 'COURSE-DUNG-03',
+    title: 'Chiến Thuật Đánh Đôi DUPR 3.0+',
+    coachId: 'coach_dung',
+    coachName: 'HLV Lê Hoàng Dũng',
     duration: '1 tháng (8 buổi)',
-    frequency: '2 buổi/tuần (T4 - T6 Slot 5: 18:30 - 20:00)',
-    venue: 'Cụm sân Thủ Thiêm Sports Hub',
+    frequency: '2 buổi/tuần (T3 - T5, Slot 4)',
+    venue: 'D-Pickleball Thảo Điền',
     fee: 2200000,
     currentStudents: 2,
     maxStudents: 4,
     completedSessions: 0,
     totalSessions: 8,
     status: 'RECRUITING',
+    courseType: 'GROUP_4',
+    duprInput: '2.80 - 3.20',
+    duprOutput: '3.50+',
+    slotNumber: 4,
+    timeRange: '15:30 - 17:00',
+    scheduleDays: ['Thứ Ba', 'Thứ Năm'],
+    description: 'Đọc tình huống, di chuyển theo cặp và chuyển trạng thái tấn công/phòng thủ.',
     students: [
-      { id: 'st_5', name: 'Trần Hải Đăng', avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', dupr: 3.4, attendance: 'present' },
-      { id: 'st_6', name: 'Ngô Kim Ngân', avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', dupr: 3.35, attendance: 'present' },
+      { id: 'st_6', name: 'Trần Hải Đăng', avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', dupr: 3.05, attendance: 'present' },
+      { id: 'st_7', name: 'Ngô Kim Ngân', avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', dupr: 3.1, attendance: 'present' },
     ],
   },
 ]
 
+const initialCoachAccount: CoachAccount = {
+  id: 'coach_dung',
+  name: 'HLV Lê Hoàng Dũng',
+  avatarUrl: 'https://ui-avatars.com/api/?name=Le+Hoang+Dung&background=1d4ed8&color=ffffff&size=240&bold=true',
+  email: 'lehoangdung@fitlyo.vn',
+  phone: '0909 485 285',
+  duprRating: 4.85,
+  rating: 4.9,
+  reviewCount: 86,
+  experienceYears: 6,
+  verificationStatus: 'APPROVED',
+  certificateTitle: 'IPTPA Level 2',
+  certificateCode: 'IPTPA-VN-L2-0485',
+  certificateExpiry: '30/09/2028',
+  bio: 'Huấn luyện viên chuyên xây nền tảng kỹ thuật và lộ trình tăng hạng DUPR cho người chơi phong trào. Giáo án tập trung vào tính ứng dụng, phản hồi theo dữ liệu và tiến bộ bền vững.',
+  specialties: ['Dinking & Drop shot', 'Chiến thuật đánh đôi', 'Lộ trình DUPR 2.5 → 3.5'],
+  serviceAreas: ['Thảo Điền', 'An Phú', 'Thủ Đức'],
+  ratePerSession: 450000,
+  ratePerCourse: 2400000,
+  bankName: 'Vietcombank',
+  bankAccountMasked: '•••• •••• 7285',
+}
+
+const initialCoachAffiliations: CoachVenueAffiliation[] = [
+  {
+    id: 'AFF-001',
+    venueId: 'coach_venue_thaodien',
+    coachId: 'coach_dung',
+    venueName: 'D-Pickleball Thảo Điền',
+    address: '28 Thảo Điền, P. Thảo Điền, TP. Thủ Đức',
+    distanceKm: 2.1,
+    status: 'APPROVED',
+    requestedAt: '02/09/2026',
+    approvedAt: '04/09/2026',
+    discountPercent: 15,
+    activeCourses: 2,
+    availableSlots: [1, 2, 4, 5, 6],
+  },
+  {
+    id: 'AFF-002',
+    venueId: 'coach_venue_anphu',
+    coachId: 'coach_dung',
+    venueName: 'Saigon Rackets An Phú',
+    address: '36 Song Hành, P. An Phú, TP. Thủ Đức',
+    distanceKm: 3.4,
+    status: 'APPROVED',
+    requestedAt: '12/09/2026',
+    approvedAt: '15/09/2026',
+    discountPercent: 10,
+    activeCourses: 1,
+    availableSlots: [1, 2, 3, 4],
+  },
+  {
+    id: 'AFF-003',
+    venueId: 'ven_2',
+    coachId: 'coach_dung',
+    venueName: 'Thủ Thiêm Sports Hub',
+    address: 'Khu đô thị An Phú - An Khánh, TP. Thủ Đức',
+    distanceKm: 4.8,
+    status: 'PENDING',
+    requestedAt: '13/10/2026',
+    activeCourses: 0,
+    availableSlots: [2, 4, 6],
+  },
+]
+
+const initialCoachWalletTransactions: CoachWalletTransaction[] = [
+  { id: 'TX-8841', coachId: 'coach_dung', date: '14/10/2026', description: 'Giải ngân buổi 7/8', courseName: 'Boot Camp Bứt Phá DUPR 3.5', amount: 1080000, type: 'RELEASE', status: 'COMPLETED' },
+  { id: 'TX-8838', coachId: 'coach_dung', date: '13/10/2026', description: 'Học phí học viên Ngô Kim Ngân', courseName: 'Chiến Thuật Đánh Đôi DUPR 3.0+', amount: 2200000, type: 'ESCROW_IN', status: 'HELD' },
+  { id: 'TX-8832', coachId: 'coach_dung', date: '12/10/2026', description: 'Phí nền tảng 10%', courseName: 'PT 1-1 Nâng Cao Dinking & Drop Shot', amount: -180000, type: 'PLATFORM_FEE', status: 'COMPLETED' },
+  { id: 'TX-8819', coachId: 'coach_dung', date: '10/10/2026', description: 'Rút tiền về Vietcombank •7285', courseName: 'Ví FITLYO Coach', amount: -4500000, type: 'WITHDRAWAL', status: 'COMPLETED' },
+  { id: 'TX-8804', coachId: 'coach_dung', date: '08/10/2026', description: 'Giải ngân buổi 2/4', courseName: 'PT 1-1 Nâng Cao Dinking & Drop Shot', amount: 405000, type: 'RELEASE', status: 'COMPLETED' },
+]
+
+const initialCoachWalletSummary: CoachWalletSummary = {
+  availableBalance: 6840000,
+  escrowBalance: 14200000,
+  pendingPayout: 2160000,
+  earnedThisMonth: 12840000,
+}
+
 const initialCoaches: CoachItem[] = [
+  {
+    id: 'coach_dung',
+    name: 'HLV LÊ HOÀNG DŨNG',
+    avatarUrl: initialCoachAccount.avatarUrl,
+    isCertified: true,
+    certTitle: 'Certified Coach (IPTPA Level 2)',
+    rating: 4.9,
+    reviewCount: 86,
+    experienceYears: 6,
+    achievements: 'HLV IPTPA Level 2, chuyên xây lộ trình tăng hạng DUPR cho người chơi phong trào.',
+    serviceLocations: ['Thảo Điền', 'An Phú', 'Thủ Đức'],
+    ratePerSession: 450000,
+    ratePerMonthCourse: 2400000,
+    specialties: ['Dinking & Drop shot', 'Chiến thuật đánh đôi', 'Lộ trình DUPR 2.5 → 3.5'],
+    featuredCourse: 'Boot Camp Bứt Phá DUPR 3.5',
+    isVipExclusive: false,
+  },
   {
     id: 'coach_long',
     name: 'HLV NGUYỄN HOÀNG LONG',
@@ -642,15 +806,17 @@ const initialVenues: VenueItem[] = [
 ]
 
 export const useFitlyoStore = create<FitlyoState>((set, get) => ({
-  activeRole: getInitialRole(),
-  currentUser: { ...initialUser, role: getInitialRole() },
+  colorMode: initialColorMode,
+  currentUser: initialUser,
   isLoggedIn: false,
+
   setLoggedIn: (val: boolean) => set({ isLoggedIn: val }),
   handleLogout: () => set({ isLoggedIn: false }),
   updateUserProfile: (profile: Partial<UserAccount>) =>
     set((state) => ({ currentUser: { ...state.currentUser, ...profile } })),
   setDuprRating: (rating: number) =>
     set((state) => ({ currentUser: { ...state.currentUser, duprRating: rating } })),
+
   isSidebarOpen: true,
   notificationCount: 3,
 
@@ -676,8 +842,12 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   checkInTickets: initialCheckInTickets,
   checkInLogs: initialCheckInLogs,
 
+  coachAccount: initialCoachAccount,
   coachCourses: initialCoachCourses,
   coaches: initialCoaches,
+  coachAffiliations: initialCoachAffiliations,
+  coachWalletTransactions: initialCoachWalletTransactions,
+  coachWalletSummary: initialCoachWalletSummary,
 
   auditApplications: initialAuditApps,
   selectedAuditId: 'FM-APP-0128',
@@ -685,13 +855,11 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   venues: initialVenues,
   toastMessage: null,
 
-  setActiveRole: (role) => {
-    window.localStorage.setItem(roleStorageKey, role)
-    set((state) => ({
-      activeRole: role,
-      currentUser: { ...state.currentUser, role },
-    }))
-    get().showToast(`Đã chuyển sang vai trò: ${role.toUpperCase()}`, 'info')
+  toggleColorMode: () => {
+    const nextMode: ColorMode = get().colorMode === 'light' ? 'dark' : 'light'
+    window.localStorage.setItem(colorModeStorageKey, nextMode)
+    applyColorMode(nextMode)
+    set({ colorMode: nextMode })
   },
 
   setSelectedDate: (date) => set({ selectedDate: date }),
@@ -1073,8 +1241,15 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   },
 
   updateStudentAttendance: (courseId, studentId, status) => {
-    const updatedCourses = get().coachCourses.map((c) => {
-      if (c.id === courseId) {
+    const { coachAccount, coachCourses } = get()
+    const course = coachCourses.find((item) => item.id === courseId)
+    if (!course || course.coachId !== coachAccount.id) {
+      get().showToast('Bạn không có quyền cập nhật lớp học này.', 'error')
+      return false
+    }
+
+    const updatedCourses = coachCourses.map((c) => {
+      if (c.id === courseId && c.coachId === coachAccount.id) {
         return {
           ...c,
           students: c.students.map((st) =>
@@ -1086,6 +1261,132 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     })
     set({ coachCourses: updatedCourses })
     get().showToast('Đã cập nhật trạng thái điểm danh học viên!', 'success')
+    return true
+  },
+
+  updateStudentAssessment: (courseId, studentId, assessment) => {
+    const { coachAccount, coachCourses } = get()
+    const course = coachCourses.find((item) => item.id === courseId)
+    if (!course || course.coachId !== coachAccount.id) {
+      get().showToast('Bạn chỉ được đánh giá học viên trong lớp của mình.', 'error')
+      return false
+    }
+
+    set({
+      coachCourses: coachCourses.map((item) =>
+        item.id === courseId
+          ? {
+              ...item,
+              students: item.students.map((student) =>
+                student.id === studentId ? { ...student, ...assessment } : student,
+              ),
+            }
+          : item,
+      ),
+    })
+    get().showToast('Đã lưu đánh giá kỹ thuật và DUPR của học viên.', 'success')
+    return true
+  },
+
+  createCoachCourse: (course) => {
+    const { coachAccount } = get()
+    const newCourse: CoachCourse = {
+      ...course,
+      id: `COURSE-${coachAccount.id.toUpperCase()}-${Date.now().toString().slice(-5)}`,
+      coachId: coachAccount.id,
+      coachName: coachAccount.name,
+      currentStudents: 0,
+      completedSessions: 0,
+      students: [],
+    }
+    set((state) => ({ coachCourses: [newCourse, ...state.coachCourses] }))
+    get().showToast(`Đã công bố “${newCourse.title}” lên danh bạ.`, 'success')
+    return true
+  },
+
+  updateCoachCourse: (courseId, changes) => {
+    const { coachAccount, coachCourses } = get()
+    const target = coachCourses.find((course) => course.id === courseId)
+    if (!target || target.coachId !== coachAccount.id) {
+      get().showToast('Bạn chỉ được chỉnh sửa khóa học do mình tạo.', 'error')
+      return false
+    }
+
+    set({
+      coachCourses: coachCourses.map((course) =>
+        course.id === courseId
+          ? { ...course, ...changes, coachId: coachAccount.id, coachName: coachAccount.name }
+          : course,
+      ),
+    })
+    get().showToast(`Đã cập nhật “${changes.title ?? target.title}”.`, 'success')
+    return true
+  },
+
+  requestVenueAffiliation: (venueId) => {
+    const { coachAccount, coachAffiliations, venues } = get()
+    if (coachAffiliations.some((item) => item.venueId === venueId)) {
+      get().showToast('Cụm sân này đã có trong danh sách liên kết.', 'info')
+      return false
+    }
+    const venue = venues.find((item) => item.id === venueId)
+    if (!venue) {
+      get().showToast('Không tìm thấy cụm sân đã chọn.', 'error')
+      return false
+    }
+
+    const request: CoachVenueAffiliation = {
+      id: `AFF-${Date.now().toString().slice(-5)}`,
+      venueId: venue.id,
+      coachId: coachAccount.id,
+      venueName: venue.name,
+      address: venue.address,
+      distanceKm: 5.2,
+      status: 'PENDING',
+      requestedAt: new Date().toLocaleDateString('vi-VN'),
+      activeCourses: 0,
+      availableSlots: [1, 3, 6],
+    }
+    set({ coachAffiliations: [...coachAffiliations, request] })
+    get().showToast(`Đã gửi yêu cầu liên kết đến ${venue.name}.`, 'success')
+    return true
+  },
+
+  updateCoachProfile: (changes) => {
+    const { coachAccount } = get()
+    const protectedChanges = { ...changes, id: coachAccount.id, verificationStatus: 'APPROVED' as const }
+    set({ coachAccount: { ...coachAccount, ...protectedChanges } })
+    get().showToast('Đã cập nhật hồ sơ Coach.', 'success')
+    return true
+  },
+
+  requestCoachWithdrawal: (amount) => {
+    const { coachAccount, coachWalletSummary } = get()
+    if (amount <= 0 || amount > coachWalletSummary.availableBalance) {
+      get().showToast('Số tiền rút không hợp lệ hoặc vượt quá số dư khả dụng.', 'error')
+      return false
+    }
+
+    const transaction: CoachWalletTransaction = {
+      id: `TX-${Date.now().toString().slice(-6)}`,
+      coachId: coachAccount.id,
+      date: new Date().toLocaleDateString('vi-VN'),
+      description: `Yêu cầu rút tiền về ${coachAccount.bankName} •••• ${coachAccount.bankAccountMasked.slice(-4)}`,
+      courseName: 'Ví FITLYO Coach',
+      amount: -amount,
+      type: 'WITHDRAWAL',
+      status: 'PENDING',
+    }
+    set((state) => ({
+      coachWalletTransactions: [transaction, ...state.coachWalletTransactions],
+      coachWalletSummary: {
+        ...state.coachWalletSummary,
+        availableBalance: state.coachWalletSummary.availableBalance - amount,
+        pendingPayout: state.coachWalletSummary.pendingPayout + amount,
+      },
+    }))
+    get().showToast('Đã gửi yêu cầu rút tiền. Dự kiến xử lý trong 1–2 ngày làm việc.', 'success')
+    return true
   },
 
   approveAuditApplication: (id) => {

@@ -1,312 +1,190 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
 import {
-  Award,
-  Calendar,
-  Users,
-  Plus,
-  Clock,
+  ArrowRight,
+  BadgeDollarSign,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  CircleDollarSign,
+  Clock3,
   MapPin,
-  Sparkles,
-  CheckCircle2,
-  Share2,
-  Edit,
-  DollarSign,
-  TrendingUp,
-  ArrowLeft,
+  Plus,
+  ShieldCheck,
+  Star,
+  Users,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { AttendanceModal } from '@/components/modals/AttendanceModal'
+import { Button } from '@/components/ui/button'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
-import type { CoachCourse } from '@/types/pickleball'
 
-export const CoachDashboardPage: React.FC = () => {
+const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', {
+  style: 'currency',
+  currency: 'VND',
+  maximumFractionDigits: 0,
+}).format(value)
+
+const weekDays = [
+  { label: 'Thứ Hai', date: '12/10' },
+  { label: 'Thứ Ba', date: '13/10' },
+  { label: 'Thứ Tư', date: '14/10', today: true },
+  { label: 'Thứ Năm', date: '15/10' },
+  { label: 'Thứ Sáu', date: '16/10' },
+  { label: 'Thứ Bảy', date: '17/10' },
+  { label: 'Chủ Nhật', date: '18/10' },
+]
+
+const slots = [
+  { number: 1, time: '06:00 - 07:30' },
+  { number: 2, time: '07:30 - 09:00' },
+  { number: 3, time: '09:00 - 10:30' },
+  { number: 4, time: '15:30 - 17:00' },
+  { number: 5, time: '18:30 - 20:00' },
+  { number: 6, time: '20:00 - 21:30' },
+]
+
+export function CoachDashboardPage() {
   const navigate = useNavigate()
-  const { coachCourses, showToast } = useFitlyoStore()
+  const { coachAccount, coachCourses, coachWalletSummary, coachAffiliations, showToast } = useFitlyoStore()
+  const [selectedDay, setSelectedDay] = useState(2)
 
-  const [activeTab, setActiveTab] = useState<'courses' | 'schedule' | 'students'>('courses')
-  const [selectedCourseForAttendance, setSelectedCourseForAttendance] = useState<CoachCourse | null>(null)
-  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false)
+  const ownCourses = useMemo(
+    () => coachCourses.filter((course) => course.coachId === coachAccount.id),
+    [coachAccount.id, coachCourses],
+  )
+  const studentCount = new Set(ownCourses.flatMap((course) => course.students.map((student) => student.id))).size
 
-  const handleOpenAttendance = (course: CoachCourse) => {
-    setSelectedCourseForAttendance(course)
-    setIsAttendanceModalOpen(true)
+  const getScheduleItem = (slotNumber: number) => {
+    if (selectedDay === 2 && slotNumber === 2) return ownCourses.find((course) => course.id === 'COURSE-DUNG-02')
+    if (selectedDay === 2 && slotNumber === 4) return ownCourses.find((course) => course.id === 'COURSE-DUNG-03')
+    if (selectedDay === 2 && slotNumber === 5) return ownCourses.find((course) => course.id === 'COURSE-DUNG-01')
+    if (selectedDay === 3 && slotNumber === 1) return { ...ownCourses[2], title: 'Lớp Cơ Bản Newbie 2.0', venue: 'D-Pickleball Thảo Điền' }
+    if (selectedDay === 3 && slotNumber === 4) return ownCourses.find((course) => course.id === 'COURSE-DUNG-03')
+    if (selectedDay === 3 && slotNumber === 5) return { ...ownCourses[1], title: 'PT VIP - Trần Bảo' }
+    if (selectedDay === 4 && slotNumber === 5) return ownCourses.find((course) => course.id === 'COURSE-DUNG-01')
+    return undefined
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-20">
-        {/* Top Coach Profile & Verification Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/')}
-              className="rounded-xl border hover:bg-muted"
-              title="Về Trang Chủ"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <img
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"
-              alt="HLV Đặng Tuấn Kiệt"
-              className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-md ring-2 ring-primary/10"
-            />
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="default" className="text-xs">
-                SCR_COACH_01
-              </Badge>
-              <Badge variant="success" className="text-xs">
-                <CheckCircle2 className="w-3 h-3 mr-1" /> VERIFIED CERTIFIED COACH (IPTPA Level 2)
-              </Badge>
+    <div className="space-y-6">
+      <section className="brand-gradient overflow-hidden rounded-3xl p-6 text-white shadow-lg sm:p-8">
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+          <div className="flex items-start gap-4">
+            <img src={coachAccount.avatarUrl} alt={coachAccount.name} className="h-20 w-20 rounded-2xl border-2 border-white/60 object-cover shadow-lg" />
+            <div>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Badge className="border-white/25 bg-white/15 text-white"><ShieldCheck className="h-3.5 w-3.5" /> Coach đã xác thực</Badge>
+                <Badge className="border-amber-300/40 bg-amber-300/15 text-amber-100">{coachAccount.certificateTitle}</Badge>
+              </div>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Xin chào, {coachAccount.name.replace('HLV ', '')}</h1>
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-white/75">
+                <span className="font-bold text-white">DUPR {coachAccount.duprRating}</span>
+                <span>•</span>
+                <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-amber-300 text-amber-300" /> {coachAccount.rating} ({coachAccount.reviewCount} đánh giá)</span>
+                <span>•</span><span>{coachAccount.experienceYears} năm kinh nghiệm</span>
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-              HLV ĐẶNG TUẤN KIỆT
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
-              <span className="text-amber-500 font-bold">⭐ 4.95 (62 đánh giá)</span>
-              <span>•</span>
-              <span>8 năm kinh nghiệm</span>
-              <span>•</span>
-              <span>Đã đào tạo 200+ học viên</span>
-            </p>
+          </div>
+          <Button onClick={() => navigate('/coach/courses?create=1')} className="h-11 bg-secondary text-secondary-foreground shadow hover:bg-secondary/90">
+            <Plus className="h-4 w-4" /> Tạo lớp dạy mới
+          </Button>
+        </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: 'Buổi dạy tháng 10', value: '18 buổi', note: '+3 so với tháng trước', icon: CalendarDays, color: 'text-primary bg-secondary/55 dark:bg-secondary/15' },
+          { label: 'Học viên đang học', value: `${studentCount + 17} học viên`, note: `${ownCourses.length} khóa đang quản lý`, icon: Users, color: 'text-violet-700 bg-violet-50 dark:bg-violet-500/10 dark:text-violet-300' },
+          { label: 'Ký quỹ đang giữ', value: formatCurrency(coachWalletSummary.escrowBalance), note: 'Giải ngân theo tiến độ', icon: CircleDollarSign, color: 'text-teal-700 bg-teal-50 dark:bg-teal-500/10 dark:text-teal-300' },
+          { label: 'Cụm sân đã duyệt', value: `${coachAffiliations.filter((item) => item.status === 'APPROVED').length} đối tác`, note: '1 yêu cầu đang chờ', icon: MapPin, color: 'text-amber-700 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-300' },
+        ].map((item) => {
+          const Icon = item.icon
+          return (
+            <div key={item.label} className="brand-card rounded-2xl p-4">
+              <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${item.color}`}><Icon className="h-4 w-4" /></div>
+              <p className="text-xs font-semibold text-muted-foreground">{item.label}</p>
+              <p className="mt-1 text-xl font-black text-foreground">{item.value}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{item.note}</p>
+            </div>
+          )
+        })}
+      </section>
+
+      <section className="brand-card rounded-3xl">
+        <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary">Lịch dạy theo tuần</p>
+            <h2 className="mt-1 text-xl font-black">Tuần 42 · 12/10 – 18/10/2026</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => showToast('Đang xem tuần trước.', 'info')} aria-label="Tuần trước"><ChevronLeft /></Button>
+            <Button variant="outline" size="sm" onClick={() => setSelectedDay(2)}>Hôm nay</Button>
+            <Button variant="outline" size="icon" onClick={() => showToast('Đang xem tuần kế tiếp.', 'info')} aria-label="Tuần sau"><ChevronRight /></Button>
           </div>
         </div>
 
-        <Button
-          onClick={() => showToast('Mở trình tạo khóa học mới cho HLV Certified', 'info')}
-          className="gap-2 self-start sm:self-auto shadow-sm active:scale-[0.98]"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tạo Khóa Học Mới</span>
-        </Button>
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'courses' | 'schedule' | 'students')}>
-        <TabsList className="bg-muted/70 p-1 rounded-xl">
-          <TabsTrigger value="courses" className="text-xs sm:text-sm font-semibold">
-            📚 Khóa học đang mở ({coachCourses.length})
-          </TabsTrigger>
-          <TabsTrigger value="schedule" className="text-xs sm:text-sm font-semibold">
-            🗓️ Lịch dạy tuần
-          </TabsTrigger>
-          <TabsTrigger value="students" className="text-xs sm:text-sm font-semibold">
-            👥 Danh sách học viên (6)
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Tab 1: Khóa học đang mở */}
-        <TabsContent value="courses" className="space-y-4">
-          {coachCourses.map((course) => {
-            const isFull = course.currentStudents >= course.maxStudents
-            const progressPercent = Math.round(
-              (course.completedSessions / course.totalSessions) * 100
-            )
-
-            return (
-              <div
-                key={course.id}
-                className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6 shadow-xs hover:border-primary/40 transition-all space-y-4"
+        <div className="border-b border-border p-3">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {weekDays.map((day, index) => (
+              <button
+                key={day.date}
+                type="button"
+                onClick={() => setSelectedDay(index)}
+                className={`min-w-[98px] rounded-xl px-3 py-2 text-left transition ${selectedDay === index ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-secondary/45 hover:text-foreground'}`}
               >
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono font-bold text-muted-foreground">
-                        #{course.id}
-                      </span>
-                      {course.status === 'IN_PROGRESS' ? (
-                        <Badge variant="success" className="text-xs">
-                          ● ĐANG DIỄN RA
-                        </Badge>
-                      ) : (
-                        <Badge variant="warning" className="text-xs">
-                          ● ĐANG TUYỂN SINH
-                        </Badge>
-                      )}
+                <span className="block text-[10px] font-semibold uppercase">{day.today ? 'Hôm nay' : day.label}</span>
+                <span className="mt-0.5 block text-sm font-black">{day.date}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2 p-4 sm:p-5">
+          {slots.map((slot) => {
+            const course = getScheduleItem(slot.number)
+            const isGolden = slot.number === 5
+            return (
+              <div key={slot.number} className="grid gap-3 rounded-2xl border border-border p-3 sm:grid-cols-[160px_1fr] sm:items-center">
+                <div className="flex items-center justify-between sm:block">
+                  <p className="text-xs font-black text-foreground">Slot {slot.number}</p>
+                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground"><Clock3 className="h-3 w-3" /> {slot.time}</p>
+                  {isGolden && <Badge className="mt-1 border-amber-300/60 bg-amber-500/10 text-amber-700 dark:text-amber-300">Giờ vàng</Badge>}
+                </div>
+                {course ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/coach/attendance?course=${course.id}`)}
+                    className={`group flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition ${isGolden ? 'border-amber-300/60 bg-amber-500/10 hover:border-amber-400' : 'border-primary/15 bg-secondary/30 hover:border-primary/35 dark:bg-secondary/10'}`}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-black text-foreground">{course.title}</p>
+                        {selectedDay === 2 && slot.number === 5 && <Badge variant="success">Đang diễn ra</Badge>}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{course.venue} · {course.currentStudents}/{course.maxStudents} học viên</p>
                     </div>
-                    <h3 className="text-lg font-bold text-foreground">
-                      KHÓA: "{course.title}"
-                    </h3>
-                  </div>
-
-                  <div className="text-left sm:text-right">
-                    <span className="text-xs text-muted-foreground block">Học phí:</span>
-                    <span className="text-base font-extrabold text-foreground">
-                      {new Intl.NumberFormat('vi-VN', {
-                        style: 'currency',
-                        currency: 'VND',
-                      }).format(course.fee)}{' '}
-                      <span className="text-xs font-normal text-muted-foreground">/ học viên</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs bg-muted/30 p-3.5 rounded-xl border border-border/50">
-                  <div className="space-y-0.5">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-primary" /> Thời lượng & Tần suất
-                    </span>
-                    <p className="font-semibold text-foreground">{course.duration}</p>
-                    <p className="text-muted-foreground">{course.frequency}</p>
-                  </div>
-
-                  <div className="space-y-0.5">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-primary" /> Địa điểm giảng dạy
-                    </span>
-                    <p className="font-semibold text-foreground">{course.venue}</p>
-                    <p className="text-muted-foreground">Sân chuẩn thi đấu quốc tế</p>
-                  </div>
-
-                  <div className="space-y-0.5">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-primary" /> Sĩ số & Tiến độ
-                    </span>
-                    <p className="font-semibold text-foreground">
-                      {course.currentStudents}/{course.maxStudents} học viên {isFull && '(Đầy lớp)'}
-                    </p>
-                    <p className="text-muted-foreground">
-                      Đã dạy: {course.completedSessions}/{course.totalSessions} buổi ({progressPercent}%)
-                    </p>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Tiến độ chương trình:</span>
-                    <span>Buổi {course.completedSessions} / {course.totalSessions} buổi</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/40">
-                  <div className="flex -space-x-2">
-                    {course.students.map((st) => (
-                      <img
-                        key={st.id}
-                        src={st.avatarUrl}
-                        alt={st.name}
-                        title={st.name}
-                        className="w-8 h-8 rounded-full border-2 border-background object-cover"
-                      />
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {course.status === 'IN_PROGRESS' ? (
-                      <>
-                        <Button
-                          size="sm"
-                          onClick={() => handleOpenAttendance(course)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 active:scale-[0.98]"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>ĐIỂM DANH BUỔI HỌC</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => showToast('Mở chi tiết giáo trình đào tạo', 'info')}
-                        >
-                          Chi Tiết Lớp
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => showToast('Đã sao chép link tuyển sinh khóa học!', 'info')}
-                          className="gap-1.5"
-                        >
-                          <Share2 className="w-4 h-4" />
-                          <span>Sao Chép Link</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => showToast('Mở chỉnh sửa thông tin khóa học', 'info')}
-                          className="gap-1.5"
-                        >
-                          <Edit className="w-4 h-4" />
-                          <span>Chỉnh Sửa</span>
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-primary transition group-hover:translate-x-1" />
+                  </button>
+                ) : slot.number === 3 ? (
+                  <div className="rounded-xl border border-dashed border-border bg-muted/60 p-3 text-xs font-semibold text-muted-foreground">Nghỉ ngơi · Khóa lịch cá nhân</div>
+                ) : (
+                  <button type="button" onClick={() => navigate('/coach/courses?create=1')} className="rounded-xl border border-dashed border-border p-3 text-left text-xs font-semibold text-muted-foreground transition hover:border-primary/40 hover:bg-secondary/30 hover:text-foreground">
+                    Trống · Bấm để mở lớp hoặc nhận lịch PT 1-1
+                  </button>
+                )}
               </div>
             )
           })}
-        </TabsContent>
+        </div>
+      </section>
 
-        {/* Tab 2: Lịch dạy tuần */}
-        <TabsContent value="schedule">
-          <div className="rounded-2xl border bg-card p-5 space-y-4">
-            <h4 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base">
-              <Calendar className="w-4 h-4 text-primary" />
-              <span>Lịch Giảng Dạy Tuần Hiện Tại</span>
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3.5 rounded-xl border bg-muted/30 space-y-1">
-                <span className="text-[11px] font-bold text-primary">Thứ Ba & Thứ Năm • 07:30 - 09:00 (Slot 2)</span>
-                <p className="font-bold text-foreground">Pickleball Căn bản & Làm quen DUPR 2.0</p>
-                <p className="text-muted-foreground">Địa điểm: Sân 1 - Cụm sân D-Sports Thủ Đức</p>
-              </div>
-              <div className="p-3.5 rounded-xl border bg-muted/30 space-y-1">
-                <span className="text-[11px] font-bold text-primary">Thứ Tư & Thứ Sáu • 18:30 - 20:00 (Slot 5)</span>
-                <p className="font-bold text-foreground">Chiến thuật Đánh đôi Nâng cao DUPR 3.5+</p>
-                <p className="text-muted-foreground">Địa điểm: Sân 2 - Cụm sân Thủ Thiêm Sports Hub</p>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Tab 3: Học viên */}
-        <TabsContent value="students">
-          <div className="rounded-2xl border bg-card p-5 space-y-3">
-            <h4 className="font-bold text-foreground text-sm sm:text-base">
-              Danh Sách Học Viên Đang Theo Học
-            </h4>
-            <div className="divide-y text-xs">
-              {coachCourses[0].students.map((st) => (
-                <div key={st.id} className="py-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <img src={st.avatarUrl} alt={st.name} className="w-9 h-9 rounded-full object-cover" />
-                    <div>
-                      <h5 className="font-semibold text-foreground">{st.name}</h5>
-                      <span className="text-muted-foreground">DUPR hiện tại: {st.dupr}</span>
-                    </div>
-                  </div>
-                  <Badge variant="success">Chăm chỉ (95%)</Badge>
-                </div>
-              ))}
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      {/* Attendance Modal Component */}
-      <AttendanceModal
-        course={selectedCourseForAttendance}
-        open={isAttendanceModalOpen}
-        onOpenChange={setIsAttendanceModalOpen}
-      />
-      </div>
+      <section className="flex flex-col justify-between gap-4 rounded-2xl border border-primary/15 bg-secondary/35 p-5 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-primary p-2.5 text-primary-foreground"><BadgeDollarSign className="h-5 w-5" /></div>
+          <div><p className="font-black text-foreground">Đối soát tiếp theo: 18/10/2026</p><p className="text-xs text-muted-foreground">Dự kiến giải ngân {formatCurrency(coachWalletSummary.pendingPayout)} sau khi hoàn tất buổi học.</p></div>
+        </div>
+        <Button onClick={() => navigate('/coach/wallet')}>Xem thu nhập <ArrowRight /></Button>
+      </section>
     </div>
   )
 }

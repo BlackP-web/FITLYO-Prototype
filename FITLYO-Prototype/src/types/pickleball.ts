@@ -143,6 +143,11 @@ export interface StudentProgress {
   avatarUrl: string
   dupr: number
   attendance: 'present' | 'absent' | 'makeup'
+  serveScore?: number
+  dropShotScore?: number
+  dinkScore?: number
+  finalDupr?: number
+  feedback?: string
 }
 
 export interface CoachCourse {
@@ -160,6 +165,69 @@ export interface CoachCourse {
   totalSessions: number
   status: 'IN_PROGRESS' | 'RECRUITING' | 'COMPLETED'
   students: StudentProgress[]
+  courseType?: 'GROUP_4' | 'PT_1ON1'
+  duprInput?: string
+  duprOutput?: string
+  slotNumber?: number
+  timeRange?: string
+  scheduleDays?: string[]
+  description?: string
+}
+
+export interface CoachAccount {
+  id: string
+  name: string
+  avatarUrl: string
+  email: string
+  phone: string
+  duprRating: number
+  rating: number
+  reviewCount: number
+  experienceYears: number
+  verificationStatus: 'APPROVED'
+  certificateTitle: string
+  certificateCode: string
+  certificateExpiry: string
+  bio: string
+  specialties: string[]
+  serviceAreas: string[]
+  ratePerSession: number
+  ratePerCourse: number
+  bankName: string
+  bankAccountMasked: string
+}
+
+export interface CoachVenueAffiliation {
+  id: string
+  venueId: string
+  coachId: string
+  venueName: string
+  address: string
+  distanceKm: number
+  status: 'APPROVED' | 'PENDING' | 'REJECTED'
+  requestedAt: string
+  approvedAt?: string
+  discountPercent?: number
+  activeCourses: number
+  availableSlots: number[]
+}
+
+export interface CoachWalletTransaction {
+  id: string
+  coachId: string
+  date: string
+  description: string
+  courseName: string
+  amount: number
+  type: 'ESCROW_IN' | 'RELEASE' | 'WITHDRAWAL' | 'PLATFORM_FEE'
+  status: 'COMPLETED' | 'PENDING' | 'HELD'
+}
+
+export interface CoachWalletSummary {
+  availableBalance: number
+  escrowBalance: number
+  pendingPayout: number
+  earnedThisMonth: number
 }
 
 export interface AuditDocument {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   ShieldCheck,
   ArrowRight,
@@ -11,6 +11,7 @@ import {
   Smartphone,
 } from 'lucide-react'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
+import { PublicAuthHeader } from '@/components/auth/PublicAuthHeader'
 
 export function SCR_AUTH_03() {
   const navigate = useNavigate()
@@ -122,44 +123,32 @@ export function SCR_AUTH_03() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex flex-col justify-between selection:bg-[#84CC16] selection:text-slate-950 font-sans">
-      {/* Top Header */}
-      <header className="h-16 px-4 sm:px-8 border-b border-slate-200/80 bg-white/80 backdrop-blur-md flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex items-center gap-1">
-            <span className="text-xl font-black text-[#0b1c30] tracking-tight">FITLYO</span>
-            <div className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
-          </div>
-          <span className="text-[10px] tracking-widest text-[#16A34A] font-bold px-1.5 py-0.5 bg-green-100 rounded">
-            PICKLEBALL
-          </span>
-        </Link>
-        <button
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-secondary selection:text-secondary-foreground font-sans">
+      <PublicAuthHeader action={<button
           type="button"
           onClick={() => navigate('/auth/register')}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-muted-foreground transition hover:bg-muted hover:text-foreground"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Đổi số điện thoại</span>
-        </button>
-      </header>
+        </button>} />
 
       {/* Main Container */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 my-6">
-        <div className="w-full max-w-[460px] bg-white rounded-3xl shadow-xl border border-slate-200/80 p-6 sm:p-8 space-y-6">
+        <div className="w-full max-w-[460px] bg-card rounded-3xl shadow-xl border border-border/80 p-6 sm:p-8 space-y-6">
           {/* Header */}
           <div className="space-y-1.5 text-center">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-[#16A34A] text-xs font-bold mb-1">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/35 text-primary text-xs font-bold mb-1">
               <Sparkles className="w-3.5 h-3.5" />
               <span>SCR_AUTH_03 • XÁC THỰC MÃ OTP</span>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Xác Thực Số Điện Thoại</h1>
-            <p className="text-xs text-slate-500">
+            <h1 className="text-2xl font-black text-foreground tracking-tight">Xác Thực Số Điện Thoại</h1>
+            <p className="text-xs text-muted-foreground">
               Mã xác thực 6 chữ số đã được gửi qua tin nhắn SMS tới số điện thoại:
             </p>
             <div className="pt-1">
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-900 font-extrabold text-sm tracking-wide">
-                <Smartphone className="w-4 h-4 text-[#16A34A]" />
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-muted text-foreground font-extrabold text-sm tracking-wide">
+                <Smartphone className="w-4 h-4 text-primary" />
                 {formattedPhone}
               </span>
             </div>
@@ -175,7 +164,7 @@ export function SCR_AUTH_03() {
           {/* OTP Input Form */}
           <form onSubmit={handleVerify} className="space-y-6">
             <div className="space-y-2">
-              <span className="text-xs font-bold text-slate-700 block text-center">
+              <span className="text-xs font-bold text-foreground/85 block text-center">
                 Vui lòng nhập mã OTP để kích hoạt tài khoản:
               </span>
 
@@ -193,7 +182,7 @@ export function SCR_AUTH_03() {
                     value={digit}
                     onChange={(e) => handleChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="w-11 h-13 sm:w-12 sm:h-14 rounded-2xl bg-slate-50 border-2 border-slate-200 text-center text-xl sm:text-2xl font-black text-slate-900 focus:bg-white focus:outline-none focus:border-[#16A34A] focus:ring-4 focus:ring-[#84CC16]/20 transition-all shadow-xs"
+                    className="w-11 h-13 sm:w-12 sm:h-14 rounded-2xl bg-muted/45 border-2 border-border text-center text-xl sm:text-2xl font-black text-foreground focus:bg-card focus:outline-none focus:border-primary focus:ring-4 focus:ring-secondary/20 transition-all shadow-xs"
                   />
                 ))}
               </div>
@@ -202,9 +191,9 @@ export function SCR_AUTH_03() {
             {/* Countdown / Resend */}
             <div className="text-center text-xs">
               {!canResend ? (
-                <p className="text-slate-500 font-medium">
+                <p className="text-muted-foreground font-medium">
                   Chưa nhận được mã? Gửi lại sau:{' '}
-                  <span className="font-extrabold text-[#16A34A] bg-green-50 px-2 py-0.5 rounded-md">
+                  <span className="font-extrabold text-primary bg-secondary/35 px-2 py-0.5 rounded-md">
                     {countdown}s
                   </span>
                 </p>
@@ -212,7 +201,7 @@ export function SCR_AUTH_03() {
                 <button
                   type="button"
                   onClick={handleResend}
-                  className="font-extrabold text-[#16A34A] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  className="font-extrabold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Gửi lại mã OTP ngay</span>
@@ -224,7 +213,7 @@ export function SCR_AUTH_03() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-11 rounded-xl bg-[#16A34A] hover:bg-green-700 text-white font-extrabold text-sm shadow-md shadow-green-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-75 cursor-pointer"
+              className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold text-sm shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-75 cursor-pointer"
             >
               {isLoading ? (
                 <>
@@ -241,19 +230,19 @@ export function SCR_AUTH_03() {
           </form>
 
           {/* Quick Demo Helper */}
-          <div className="pt-2 border-t border-slate-100 text-center">
+          <div className="pt-2 border-t border-border text-center">
             <button
               type="button"
               onClick={handleFillDemoCode}
-              className="text-[11px] text-slate-400 hover:text-[#16A34A] underline font-medium cursor-pointer"
+              className="text-[11px] text-muted-foreground/70 hover:text-primary underline font-medium cursor-pointer"
             >
               (Demo nhanh: Nhập mã mẫu 842190)
             </button>
           </div>
 
           {/* Security Notice */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-2.5 text-slate-500">
-            <ShieldCheck className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+          <div className="p-3.5 rounded-2xl bg-muted/45 border border-border flex items-start gap-2.5 text-muted-foreground">
+            <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             <p className="text-[11px] leading-relaxed">
               Mã xác thực OTP có hiệu lực trong 5 phút. Tuyệt đối không chia sẻ mã này với bất kỳ ai để bảo vệ quyền sở hữu tài khoản.
             </p>
@@ -262,7 +251,7 @@ export function SCR_AUTH_03() {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-xs text-slate-400">
+      <footer className="py-4 text-center text-xs text-muted-foreground/70">
         © 2026 FITLYO Pickleball • Nền tảng thể thao thông minh TP. Thủ Đức
       </footer>
     </div>

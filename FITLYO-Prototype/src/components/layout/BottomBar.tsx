@@ -1,47 +1,24 @@
-import React from 'react'
+import { CalendarDays, Compass, MapPinned, Trophy, UserRound } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-import { Home, QrCode, Award, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export const BottomBar: React.FC = () => {
-  const items = [
-    { label: 'Trang chủ', href: '/player', icon: Home },
-    { label: 'Vé & Kèo', href: '/matches/detail', icon: QrCode },
-    { label: 'Cụm sân', href: '/venues', icon: MapPin },
-    { label: 'HLV & Khóa', href: '/coaches', icon: Award },
-  ]
+const items = [
+  { label: 'Khám phá', href: '/player', icon: Compass, end: true },
+  { label: 'Kèo đấu', href: '/player/matches', icon: Trophy },
+  { label: 'Đặt sân', href: '/player/venues', icon: MapPinned },
+  { label: 'Lịch chơi', href: '/player/schedule', icon: CalendarDays },
+  { label: 'Hồ sơ', href: '/player/profile', icon: UserRound },
+]
 
+export function BottomBar() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 block md:hidden border-t border-border/80 bg-background/95 backdrop-blur-md px-2 py-1 shadow-lg">
-      <div className="flex items-center justify-around">
+    <nav className="fixed bottom-3 left-3 right-3 z-50 rounded-[1.45rem] border border-border/80 bg-card/94 p-1.5 shadow-[0_16px_45px_rgba(20,63,66,0.2)] backdrop-blur-xl md:hidden" aria-label="Điều hướng Player trên điện thoại">
+      <div className="grid grid-cols-5">
         {items.map((item) => {
           const Icon = item.icon
           return (
-            <NavLink
-              key={item.href}
-              to={item.href}
-              className={({ isActive }) =>
-                cn(
-                  "flex flex-col items-center justify-center min-w-[56px] min-h-[48px] py-1 px-2 rounded-xl text-[10px] font-semibold transition-all duration-200 active:scale-95",
-                  isActive
-                    ? "text-primary font-bold"
-                    : "text-muted-foreground hover:text-foreground"
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <div
-                    className={cn(
-                      "p-1 rounded-lg transition-colors",
-                      isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
-                    )}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span className="mt-0.5 leading-none">{item.label}</span>
-                </>
-              )}
+            <NavLink key={item.href} to={item.href} end={item.end} className={({ isActive }) => cn('flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[10px] font-semibold transition-all', isActive ? 'bg-secondary/65 text-primary' : 'text-muted-foreground')}>
+              {({ isActive }) => <><Icon className={cn('h-5 w-5', isActive && 'stroke-[2.4]')} /><span>{item.label}</span></>}
             </NavLink>
           )
         })}

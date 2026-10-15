@@ -6,8 +6,6 @@ import CoachLayout from "@/components/layout/CoachLayout"
 import AdminLayout from "@/components/layout/AdminLayout"
 import { LoginPage } from "@/pages/LoginPage"
 import { LandingPage } from "@/pages/LandingPage"
-import { SignInPage } from "@/pages/SignInPage"
-import { ProfilePage } from "@/pages/ProfilePage"
 import { SCR_AUTH_02 } from "@/pages/SCR_AUTH_02"
 import { SCR_AUTH_03 } from "@/pages/SCR_AUTH_03"
 import { SCR_AUTH_04 } from "@/pages/SCR_AUTH_04"
@@ -31,14 +29,24 @@ import { AdminKycPage } from "@/pages/admin/AdminKycPage"
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage"
 import { AdminDisputesPage } from "@/pages/admin/AdminDisputesPage"
 import { AdminSettingsPage } from "@/pages/admin/AdminSettingsPage"
+import { PlayerHomePage } from "@/pages/player/PlayerHomePage"
+import { MatchFeedPage } from "@/pages/player/MatchFeedPage"
+import { PlayerMatchDetailPage } from "@/pages/player/MatchDetailPage"
+import { MatchTicketPage } from "@/pages/player/MatchTicketPage"
+import { MatchReviewPage } from "@/pages/player/MatchReviewPage"
+import { VenueDiscoveryPage } from "@/pages/player/VenueDiscoveryPage"
+import { VenueDetailPage } from "@/pages/player/VenueDetailPage"
+import { PlayerProfilePage } from "@/pages/player/PlayerProfilePage"
+import { VipMembershipPage } from "@/pages/player/VipMembershipPage"
+import { PlayerSchedulePage } from "@/pages/player/PlayerSchedulePage"
 
 export const router = createBrowserRouter([
   // SCR_PUB_01: Public Landing Page
   { path: "/", element: <LandingPage /> },
 
   // SCR_AUTH_01: Sign In
-  { path: "/login", element: <SignInPage /> },
-  { path: "/auth/login", element: <SignInPage /> },
+  { path: "/login", element: <LoginPage /> },
+  { path: "/auth/login", element: <LoginPage /> },
 
   // SCR_AUTH_02: Sign Up (Đăng ký thành viên)
   { path: "/auth/register", element: <SCR_AUTH_02 /> },
@@ -56,21 +64,27 @@ export const router = createBrowserRouter([
   { path: "/matches/detail", element: <MatchDetailPage /> },
   { path: "/venues", element: <VenuesPage /> },
   { path: "/coaches", element: <CoachDirectoryPage /> },
-  { path: "/coach/dashboard", element: <CoachDashboardPage /> },
-  { path: "/profile", element: <ProfilePage /> },
+  { path: "/profile", element: <Navigate to="/player/profile" replace /> },
 
   // Role-based Layout Routes
   {
     element: <RoleGuard allow={["player"]} />,
     children: [
       {
+        path: "/player",
         element: <AppLayout />,
         children: [
-          { path: "player", element: <LandingPage /> },
-          { path: "matches", element: <Navigate to="/matches/detail" replace /> },
-          { path: "matches/detail", element: <MatchDetailPage /> },
+          { index: true, element: <PlayerHomePage /> },
+          { path: "matches", element: <MatchFeedPage /> },
+          { path: "matches/:matchId", element: <PlayerMatchDetailPage /> },
+          { path: "matches/:matchId/ticket", element: <MatchTicketPage /> },
+          { path: "matches/:matchId/review", element: <MatchReviewPage /> },
+          { path: "venues", element: <VenueDiscoveryPage /> },
+          { path: "venues/:venueId", element: <VenueDetailPage /> },
           { path: "coaches", element: <CoachDirectoryPage /> },
-          { path: "venues", element: <VenuesPage /> },
+          { path: "profile", element: <PlayerProfilePage /> },
+          { path: "vip", element: <VipMembershipPage /> },
+          { path: "schedule", element: <PlayerSchedulePage /> },
         ],
       },
     ],

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Award,
   ArrowRight,
@@ -14,6 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
+import { PublicAuthHeader } from '@/components/auth/PublicAuthHeader'
 
 interface Question {
   id: number
@@ -292,54 +293,41 @@ export function SCR_AUTH_04() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex flex-col justify-between selection:bg-[#84CC16] selection:text-slate-950 font-sans">
-      {/* Top Header */}
-      <header className="h-16 px-4 sm:px-8 border-b border-slate-200/80 bg-white/80 backdrop-blur-md flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex items-center gap-1">
-            <span className="text-xl font-black text-[#0b1c30] tracking-tight">FITLYO</span>
-            <div className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
-          </div>
-          <span className="text-[10px] tracking-widest text-[#16A34A] font-bold px-1.5 py-0.5 bg-green-100 rounded">
-            PICKLEBALL
-          </span>
-        </Link>
-
-        {!isCompleted && (
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-secondary selection:text-secondary-foreground font-sans">
+      <PublicAuthHeader action={!isCompleted ? (
           <button
             type="button"
             onClick={() => handleApplyQuickSeed(2.5)}
-            className="text-xs font-bold text-slate-500 hover:text-slate-900 transition underline cursor-pointer"
+            className="rounded-xl px-3 py-2 text-xs font-bold text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
-            Bỏ qua khảo sát (Nhận mặc định 2.50)
+            Bỏ qua · DUPR 2.50
           </button>
-        )}
-      </header>
+        ) : undefined} />
 
       {/* Main Container */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 my-6">
-        <div className="w-full max-w-[620px] bg-white rounded-3xl shadow-xl border border-slate-200/80 p-6 sm:p-8 space-y-6">
+        <div className="w-full max-w-[620px] bg-card rounded-3xl shadow-xl border border-border/80 p-6 sm:p-8 space-y-6">
           {!isCompleted ? (
             <>
               {/* Header Wizard */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-[#16A34A] text-xs font-bold">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/35 text-primary text-xs font-bold">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>SCR_AUTH_04 • THUẬT TOÁN DUPR BAN ĐẦU</span>
                   </div>
-                  <span className="text-xs font-black text-slate-500">
+                  <span className="text-xs font-black text-muted-foreground">
                     Câu {currentQuestionIndex + 1} / {quizQuestions.length}
                   </span>
                 </div>
 
                 {/* Tab Cho Phép Chọn Nhanh Hoặc Điền Form */}
-                <div className="flex rounded-xl bg-slate-100 p-1 gap-1 text-xs font-bold">
+                <div className="flex rounded-xl bg-muted p-1 gap-1 text-xs font-bold">
                   <button
                     type="button"
                     onClick={() => setActiveTab('survey')}
                     className={`flex-1 py-1.5 rounded-lg transition ${
-                      activeTab === 'survey' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                      activeTab === 'survey' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     📝 5 Câu Trắc Nghiệm Kỹ Thuật
@@ -348,7 +336,7 @@ export function SCR_AUTH_04() {
                     type="button"
                     onClick={() => setActiveTab('quick_seed')}
                     className={`flex-1 py-1.5 rounded-lg transition ${
-                      activeTab === 'quick_seed' ? 'bg-white text-[#16A34A] shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                      activeTab === 'quick_seed' ? 'bg-card text-primary shadow-xs' : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     ⚡ Chọn Nhanh DUPR
@@ -357,7 +345,7 @@ export function SCR_AUTH_04() {
                     type="button"
                     onClick={() => setActiveTab('has_dupr_id')}
                     className={`flex-1 py-1.5 rounded-lg transition ${
-                      activeTab === 'has_dupr_id' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                      activeTab === 'has_dupr_id' ? 'bg-card text-blue-600 shadow-xs' : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     🌐 Đã Có Mã DUPR
@@ -367,13 +355,13 @@ export function SCR_AUTH_04() {
                 {/* Progress Bar */}
                 {activeTab === 'survey' && (
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                    <div className="flex justify-between text-[11px] font-bold text-muted-foreground">
                       <span>Tiến độ khảo sát</span>
-                      <span className="text-[#16A34A]">{progressPercent}% Hoàn thành</span>
+                      <span className="text-primary">{progressPercent}% Hoàn thành</span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
                       <div
-                        className="h-full bg-[#16A34A] transition-all duration-300 rounded-full"
+                        className="h-full bg-primary transition-all duration-300 rounded-full"
                         style={{ width: `${progressPercent}%` }}
                       />
                     </div>
@@ -385,10 +373,10 @@ export function SCR_AUTH_04() {
               {activeTab === 'survey' && (
                 <div className="space-y-5">
                   <div className="space-y-1">
-                    <h2 className="text-sm sm:text-base font-black text-slate-900 leading-snug">
+                    <h2 className="text-sm sm:text-base font-black text-foreground leading-snug">
                       CÂU {currentQuestionIndex + 1}: {currentQ.title}
                     </h2>
-                    <p className="text-xs text-slate-500">{currentQ.subtitle}</p>
+                    <p className="text-xs text-muted-foreground">{currentQ.subtitle}</p>
                   </div>
 
                   {/* Options */}
@@ -401,22 +389,22 @@ export function SCR_AUTH_04() {
                           onClick={() => handleSelectOption(idx)}
                           className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3 ${
                             isSelected
-                              ? 'border-[#16A34A] bg-green-50/60 shadow-xs ring-2 ring-[#84CC16]/20'
-                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                              ? 'border-primary bg-secondary/40 shadow-xs ring-2 ring-secondary/20'
+                              : 'border-border bg-card hover:border-border hover:bg-muted/45'
                           }`}
                         >
                           <div
                             className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5 ${
-                              isSelected ? 'bg-[#16A34A] text-white' : 'bg-slate-100 text-slate-600'
+                              isSelected ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
                             }`}
                           >
                             {opt.label}
                           </div>
                           <div className="space-y-0.5 flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                            <p className="text-xs sm:text-sm font-bold text-foreground leading-tight">
                               {opt.text}
                             </p>
-                            <p className="text-[11px] text-slate-500 leading-snug">{opt.desc}</p>
+                            <p className="text-[11px] text-muted-foreground leading-snug">{opt.desc}</p>
                           </div>
                         </div>
                       )
@@ -424,12 +412,12 @@ export function SCR_AUTH_04() {
                   </div>
 
                   {/* Navigation Buttons */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between pt-2 border-t border-border">
                     <button
                       type="button"
                       disabled={currentQuestionIndex === 0}
                       onClick={handlePrev}
-                      className="h-10 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-40 disabled:pointer-events-none inline-flex items-center gap-1.5 cursor-pointer"
+                      className="h-10 px-4 rounded-xl border border-border text-xs font-bold text-foreground/85 hover:bg-muted/45 transition disabled:opacity-40 disabled:pointer-events-none inline-flex items-center gap-1.5 cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       <span>Câu trước</span>
@@ -438,7 +426,7 @@ export function SCR_AUTH_04() {
                     <button
                       type="button"
                       onClick={handleNext}
-                      className="h-10 px-6 rounded-xl bg-[#16A34A] hover:bg-green-700 text-white text-xs font-extrabold shadow-md shadow-green-600/30 transition inline-flex items-center gap-1.5 cursor-pointer"
+                      className="h-10 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-extrabold shadow-md shadow-primary/20 transition inline-flex items-center gap-1.5 cursor-pointer"
                     >
                       <span>
                         {currentQuestionIndex < quizQuestions.length - 1 ? 'TIẾP THEO' : 'HOÀN TẤT & TÍNH ĐIỂM DUPR'}
@@ -453,10 +441,10 @@ export function SCR_AUTH_04() {
               {activeTab === 'quick_seed' && (
                 <div className="space-y-5 py-2">
                   <div className="text-center space-y-1">
-                    <h3 className="text-base font-bold text-slate-900">
+                    <h3 className="text-base font-bold text-foreground">
                       Chọn nhanh mức DUPR phù hợp với bạn
                     </h3>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       Bạn có thể bắt đầu với điểm ước lượng và hệ thống sẽ tự động hiệu chỉnh sau từng trận đấu.
                     </p>
                   </div>
@@ -473,18 +461,18 @@ export function SCR_AUTH_04() {
                         onClick={() => setQuickSeedValue(item.value)}
                         className={`p-3.5 rounded-2xl border-2 transition cursor-pointer relative ${
                           quickSeedValue === item.value
-                            ? 'border-[#16A34A] bg-green-50 shadow-xs'
-                            : 'border-slate-200 bg-white hover:border-slate-300'
+                            ? 'border-primary bg-secondary/35 shadow-xs'
+                            : 'border-border bg-card hover:border-border'
                         }`}
                       >
                         {item.recommended && (
-                          <span className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-black uppercase">
+                          <span className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-primary text-white text-[9px] font-black uppercase">
                             Phổ biến
                           </span>
                         )}
-                        <span className="text-xs font-black text-slate-900 block">{item.level}</span>
-                        <span className="text-base font-black text-[#16A34A] block my-0.5">DUPR {item.range}</span>
-                        <p className="text-[11px] text-slate-500">{item.desc}</p>
+                        <span className="text-xs font-black text-foreground block">{item.level}</span>
+                        <span className="text-base font-black text-primary block my-0.5">DUPR {item.range}</span>
+                        <p className="text-[11px] text-muted-foreground">{item.desc}</p>
                       </div>
                     ))}
                   </div>
@@ -492,7 +480,7 @@ export function SCR_AUTH_04() {
                   <button
                     type="button"
                     onClick={() => handleApplyQuickSeed(quickSeedValue)}
-                    className="w-full h-11 rounded-xl bg-[#16A34A] hover:bg-green-700 text-white font-extrabold text-sm shadow-md shadow-green-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold text-sm shadow-md shadow-primary/20 transition flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>ÁP DỤNG DUPR {quickSeedValue.toFixed(2)} & VÀO HỆ THỐNG</span>
                     <ArrowRight className="w-4 h-4" />
@@ -504,22 +492,22 @@ export function SCR_AUTH_04() {
               {activeTab === 'has_dupr_id' && (
                 <form onSubmit={handleLinkDuprId} className="space-y-4 py-2">
                   <div className="text-center space-y-1">
-                    <h3 className="text-base font-bold text-slate-900">
+                    <h3 className="text-base font-bold text-foreground">
                       Đồng bộ điểm DUPR Quốc Tế
                     </h3>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       Nhập mã ID DUPR đã được cấp trên hệ thống quốc tế (mydupr.com)
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Mã DUPR ID hoặc Đường dẫn hồ sơ</label>
+                    <label className="text-xs font-bold text-foreground/85">Mã DUPR ID hoặc Đường dẫn hồ sơ</label>
                     <input
                       type="text"
                       value={duprIdInput}
                       onChange={(e) => setDuprIdInput(e.target.value)}
                       placeholder="Ví dụ: #DUPR-98421 hoặc link hồ sơ"
-                      className="w-full h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold"
+                      className="w-full h-11 px-3.5 rounded-xl bg-muted/45 border border-border text-xs font-semibold"
                     />
                   </div>
 
@@ -537,10 +525,10 @@ export function SCR_AUTH_04() {
             /* COMPLETION SCREEN: HUY HIỆU DUPR KHỞI ĐIỂM */
             <div className="text-center space-y-6 py-4 animate-in fade-in zoom-in-95 duration-500">
               <div className="relative inline-flex items-center justify-center">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#16A34A] to-[#84CC16] p-1 shadow-xl shadow-green-600/30">
-                  <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center">
-                    <Trophy className="w-8 h-8 text-[#16A34A]" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-0.5">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-secondary p-1 shadow-xl shadow-primary/20">
+                  <div className="w-full h-full rounded-full bg-card flex flex-col items-center justify-center">
+                    <Trophy className="w-8 h-8 text-primary" />
+                    <span className="text-[10px] font-black text-muted-foreground/70 uppercase tracking-wider mt-0.5">
                       DUPR SEED
                     </span>
                   </div>
@@ -551,20 +539,20 @@ export function SCR_AUTH_04() {
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-2xl font-black text-foreground tracking-tight">
                   Chúc Mừng! Điểm DUPR Khởi Điểm Của Bạn
                 </h2>
-                <div className="inline-flex items-center gap-2 px-5 py-2 rounded-2xl bg-green-50 border border-green-200 shadow-2xs">
-                  <span className="text-3xl font-black text-[#16A34A] tracking-tight">
+                <div className="inline-flex items-center gap-2 px-5 py-2 rounded-2xl bg-secondary/35 border border-secondary shadow-2xs">
+                  <span className="text-3xl font-black text-primary tracking-tight">
                     {finalDuprScore.toFixed(2)}
                   </span>
-                  <span className="text-xs font-bold text-slate-600">
+                  <span className="text-xs font-bold text-muted-foreground">
                     / 8.00 (Chỉ số cân bằng ban đầu)
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 max-w-md mx-auto pt-1 leading-relaxed">
+                <p className="text-xs text-muted-foreground max-w-md mx-auto pt-1 leading-relaxed">
                   Thuật toán FITLYO đã tự động cấu hình bộ lọc kèo đấu phù hợp trong phạm vi{' '}
-                  <strong className="text-slate-900 font-extrabold">
+                  <strong className="text-foreground font-extrabold">
                     {(finalDuprScore - 0.25).toFixed(2)} - {(finalDuprScore + 0.25).toFixed(2)}
                   </strong>{' '}
                   để đảm bảo không bị lệch trình!
@@ -573,22 +561,22 @@ export function SCR_AUTH_04() {
 
               {/* Feature Unlocked Cards */}
               <div className="grid grid-cols-2 gap-3 text-left">
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                    <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
+                <div className="p-3.5 rounded-2xl bg-muted/45 border border-border space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
                     <span>Mở Khóa Kèo {finalDuprScore.toFixed(2)}</span>
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-muted-foreground">
                     Tự động tham gia các kèo đấu DUPR tại TP. Thủ Đức không cần thẩm định lại.
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                    <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
+                <div className="p-3.5 rounded-2xl bg-muted/45 border border-border space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
                     <span>Tích Lũy Điểm Uy Tín</span>
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-muted-foreground">
                     Bắt đầu với 100% Uy tín Escrow, giữ vững uy tín khi tham gia đúng giờ.
                   </p>
                 </div>
@@ -598,7 +586,7 @@ export function SCR_AUTH_04() {
               <button
                 type="button"
                 onClick={handleEnterPlatform}
-                className="w-full h-12 rounded-xl bg-[#16A34A] hover:bg-green-700 text-white font-extrabold text-sm shadow-lg shadow-green-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold text-sm shadow-lg shadow-primary/20 transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>HOÀN TẤT & KHÁM PHÁ KÈO ĐẤU NGAY</span>
                 <ArrowRight className="w-4 h-4" />
@@ -609,7 +597,7 @@ export function SCR_AUTH_04() {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-xs text-slate-400">
+      <footer className="py-4 text-center text-xs text-muted-foreground/70">
         © 2026 FITLYO Pickleball • Nền tảng thể thao thông minh TP. Thủ Đức
       </footer>
     </div>

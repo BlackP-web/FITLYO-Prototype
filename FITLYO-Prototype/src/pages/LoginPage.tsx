@@ -46,16 +46,16 @@ export function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background px-4 py-6 text-foreground sm:px-6 lg:px-10">
+    <main className="relative min-h-screen overflow-hidden bg-background px-4 py-6 text-foreground sm:px-6 lg:px-12">
       <div className="pointer-events-none absolute -left-32 -top-40 h-96 w-96 rounded-full bg-secondary/55 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 right-0 h-[28rem] w-[28rem] rounded-full bg-accent/25 blur-3xl" />
 
-      <div className="relative mx-auto flex max-w-[1440px] items-center justify-between">
+      <div className="relative mx-auto flex max-w-[1320px] items-center justify-between">
         <BrandLogo className="h-8 w-auto sm:h-10" />
         <ThemeToggle showLabel className="bg-card/80 backdrop-blur" />
       </div>
 
-      <div className="relative mx-auto grid min-h-[calc(100vh-7rem)] max-w-[1440px] items-center gap-10 py-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.72fr)]">
+      <div className="relative mx-auto grid min-h-[calc(100vh-7rem)] max-w-[1320px] items-center gap-10 py-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.72fr)]">
         <section className="max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-card/70 px-3 py-1.5 text-xs font-bold text-primary shadow-sm backdrop-blur">
             <ShieldCheck className="h-4 w-4" /> Đăng nhập bảo mật theo vai trò

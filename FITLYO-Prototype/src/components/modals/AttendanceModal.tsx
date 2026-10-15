@@ -1,6 +1,6 @@
 import React from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X, CheckCircle, Clock, Award, Check } from 'lucide-react'
+import { X, Clock, Award, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useFitlyoStore } from '@/store/useFitlyoStore'

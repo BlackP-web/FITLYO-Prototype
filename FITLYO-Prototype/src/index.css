@@ -1,63 +1,85 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@font-face {
+  font-family: "Be Vietnam Pro";
+  src: url("./assets/fonts/Be_Vietnam_Pro_Thuong.woff") format("woff");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Be Vietnam Pro";
+  src: url("./assets/fonts/Be_Vietnam_Pro_Vua.woff") format("woff");
+  font-style: normal;
+  font-weight: 500 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Be Vietnam Pro";
+  src: url("./assets/fonts/Be_Vietnam_Pro_Dam.woff") format("woff");
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+}
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 115 50% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 115 50% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 115 50% 10%;
-    /* 1. Xanh lục rừng già (#0E6106) làm màu thương hiệu chính */
-    --primary: 114.7 88.3% 20.2%;
-    --primary-foreground: 0 0% 100%;
-    /* 2. Kem bơ nhẹ nhàng (#FFF4A6) làm nền phụ & pill badges */
-    --secondary: 52.6 80% 93%;
-    --secondary-foreground: 114.7 88.3% 20.2%;
-    --muted: 50 20% 95%;
-    --muted-foreground: 115 15% 40%;
-    /* 3. Cam năng lượng rực cháy (#F97B00) làm điểm nhấn & calo */
-    --accent: 29.6 100% 48.8%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 12 85% 55%;
+    color-scheme: light;
+    --background: 45 36% 96%;
+    --foreground: 183 53% 17%;
+    --card: 40 43% 99%;
+    --card-foreground: 183 53% 17%;
+    --popover: 40 43% 99%;
+    --popover-foreground: 183 53% 17%;
+    --primary: 183 53% 17%;
+    --primary-foreground: 45 36% 96%;
+    --secondary: 153 68% 81%;
+    --secondary-foreground: 183 53% 17%;
+    --muted: 44 22% 91%;
+    --muted-foreground: 184 11% 40%;
+    --accent: 18 100% 80%;
+    --accent-foreground: 183 53% 17%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    /* 4. Vàng mơ ấm (#FED26A) cho warning/sao/thành tích */
-    --warning: 42.2 98.7% 70.6%;
-    --warning-foreground: 30 90% 20%;
-    --energy: 29.6 100% 48.8%;
-    --energy-foreground: 0 0% 100%;
-    --border: 115 18% 88%;
-    --input: 115 18% 88%;
-    --ring: 114.7 88.3% 20.2%;
-    --radius: 0.625rem;
+    --warning: 38 92% 50%;
+    --warning-foreground: 31 84% 16%;
+    --energy: 18 100% 80%;
+    --energy-foreground: 183 53% 17%;
+    --border: 150 9% 85%;
+    --input: 150 9% 85%;
+    --ring: 153 68% 48%;
+    --radius: 0.875rem;
   }
 
   .dark {
-    /* Nền xanh đen rừng đêm huyền bí & sang trọng */
-    --background: 115 35% 6%;
-    --foreground: 52.6 60% 96%;
-    --card: 115 25% 10%;
-    --card-foreground: 52.6 60% 96%;
-    --popover: 115 25% 10%;
-    --popover-foreground: 52.6 60% 96%;
-    /* Xanh lục sáng tươi cho dark mode */
-    --primary: 115 65% 42%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 115 20% 15%;
-    --secondary-foreground: 52.6 60% 96%;
-    --muted: 115 20% 15%;
-    --muted-foreground: 52.6 25% 72%;
-    --accent: 29.6 100% 48.8%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 12 80% 55%;
+    color-scheme: dark;
+    --background: 185 57% 8%;
+    --foreground: 45 36% 96%;
+    --card: 184 50% 13%;
+    --card-foreground: 45 36% 96%;
+    --popover: 184 50% 13%;
+    --popover-foreground: 45 36% 96%;
+    --primary: 153 68% 81%;
+    --primary-foreground: 183 53% 17%;
+    --secondary: 183 34% 22%;
+    --secondary-foreground: 45 36% 96%;
+    --muted: 183 39% 17%;
+    --muted-foreground: 159 15% 75%;
+    --accent: 18 100% 80%;
+    --accent-foreground: 183 53% 17%;
+    --destructive: 0 72% 58%;
     --destructive-foreground: 0 0% 100%;
-    --warning: 42.2 98.7% 70.6%;
-    --warning-foreground: 30 90% 15%;
-    --energy: 29.6 100% 48.8%;
-    --energy-foreground: 0 0% 100%;
-    --border: 115 20% 17%;
-    --input: 115 20% 17%;
-    --ring: 115 65% 42%;
+    --warning: 42 96% 62%;
+    --warning-foreground: 31 84% 16%;
+    --energy: 18 100% 80%;
+    --energy-foreground: 183 53% 17%;
+    --border: 183 32% 25%;
+    --input: 183 32% 25%;
+    --ring: 153 68% 67%;
   }
 }
 
@@ -86,13 +108,17 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
-  /* Tiện ích class màu thương hiệu trực tiếp */
-  --color-brand-forest: #0E6106;
-  --color-brand-lime: #84CC16;
-  --color-brand-blue: #0284C7;
-  --color-brand-orange: #F97B00;
-  --color-brand-amber: #FED26A;
-  --color-brand-cream: #FFF4A6;
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-deep: #143F42;
+  --color-brand-mint: #AFF0D3;
+  --color-brand-coral: #FFB697;
+  --color-brand-cream: #F8F6F0;
+  --color-brand-forest: #143F42;
+  --color-brand-lime: #AFF0D3;
+  --color-brand-blue: #143F42;
+  --color-brand-orange: #FFB697;
+  --color-brand-amber: #FFB697;
 
   /* Trạng thái Slot sân Pickleball */
   --color-slot-available: #22C55E;
@@ -116,8 +142,51 @@ body {
   min-height: 100vh;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+::selection {
+  background-color: #AFF0D3;
+  color: #143F42;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.brand-gradient {
+  background:
+    radial-gradient(circle at 12% 10%, rgb(175 240 211 / 0.34), transparent 36%),
+    radial-gradient(circle at 88% 82%, rgb(255 182 151 / 0.28), transparent 34%),
+    linear-gradient(135deg, #143F42 0%, #1D575B 100%);
+}
+
+.dark .brand-gradient {
+  background:
+    radial-gradient(circle at 12% 10%, rgb(175 240 211 / 0.14), transparent 36%),
+    radial-gradient(circle at 88% 82%, rgb(255 182 151 / 0.12), transparent 34%),
+    linear-gradient(135deg, #102E31 0%, #143F42 100%);
+}
+
+.brand-card {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  box-shadow: 0 1px 2px rgb(20 63 66 / 0.05), 0 14px 32px rgb(20 63 66 / 0.05);
+}
+
+.dark .brand-card {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.18), 0 16px 38px rgb(0 0 0 / 0.12);
 }
 
 @keyframes kiosk-scan {

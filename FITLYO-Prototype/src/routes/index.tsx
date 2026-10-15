@@ -1,6 +1,10 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import FieldManagerLayout from "@/components/layout/FieldManagerLayout"
 import { LandingPage } from "@/pages/LandingPage"
+import { SignInPage } from "@/pages/SignInPage"
+import { SCR_AUTH_02 } from "@/pages/SCR_AUTH_02"
+import { SCR_AUTH_03 } from "@/pages/SCR_AUTH_03"
+import { SCR_AUTH_04 } from "@/pages/SCR_AUTH_04"
 import { MatchDetailPage } from "@/pages/MatchDetailPage"
 import { CourtCalendarPage } from "@/pages/CourtCalendarPage"
 import { OwnerCourtsPage } from "@/pages/OwnerCourtsPage"
@@ -14,8 +18,25 @@ import { CheckInKioskPage } from "@/pages/CheckInKioskPage"
 import { ProfilePage } from "@/pages/ProfilePage"
 
 export const router = createBrowserRouter([
-  // Từng màn hình độc lập, tự quản lý UI không qua AppLayout chung
+  // SCR_PUB_01: Public Landing Page
   { path: "/", element: <LandingPage /> },
+
+  // SCR_AUTH_01: Sign In
+  { path: "/login", element: <SignInPage /> },
+  { path: "/auth/login", element: <SignInPage /> },
+
+  // SCR_AUTH_02: Sign Up (Đăng ký thành viên)
+  { path: "/auth/register", element: <SCR_AUTH_02 /> },
+  { path: "/signup", element: <SCR_AUTH_02 /> },
+
+  // SCR_AUTH_03: Phone OTP Verification (Xác thực mã OTP 6 số)
+  { path: "/auth/verify-otp", element: <SCR_AUTH_03 /> },
+
+  // SCR_AUTH_04: Initial Skill Survey & DUPR Seed (Khảo sát trình độ & Cấp DUPR ban đầu)
+  { path: "/auth/dupr-survey", element: <SCR_AUTH_04 /> },
+  { path: "/auth/verify-account", element: <SCR_AUTH_04 /> },
+
+  // Player / User Matches & Venues
   { path: "/matches", element: <Navigate to="/matches/detail" replace /> },
   { path: "/matches/detail", element: <MatchDetailPage /> },
   { path: "/venues", element: <VenuesPage /> },

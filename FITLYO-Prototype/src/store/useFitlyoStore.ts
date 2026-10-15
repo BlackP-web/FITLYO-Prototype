@@ -19,6 +19,7 @@ interface FitlyoState {
   // Current user & active role
   activeRole: UserRole
   currentUser: UserAccount
+  isLoggedIn: boolean
   isSidebarOpen: boolean
   notificationCount: number
 
@@ -66,6 +67,10 @@ interface FitlyoState {
   toastMessage: { text: string; type: 'success' | 'info' | 'error' } | null
 
   // Actions
+  setLoggedIn: (val: boolean) => void
+  handleLogout: () => void
+  updateUserProfile: (profile: Partial<UserAccount>) => void
+  setDuprRating: (rating: number) => void
   setActiveRole: (role: UserRole) => void
   setSelectedDate: (date: string) => void
   toggleSidebar: () => void
@@ -639,6 +644,13 @@ const initialVenues: VenueItem[] = [
 export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   activeRole: getInitialRole(),
   currentUser: { ...initialUser, role: getInitialRole() },
+  isLoggedIn: false,
+  setLoggedIn: (val: boolean) => set({ isLoggedIn: val }),
+  handleLogout: () => set({ isLoggedIn: false }),
+  updateUserProfile: (profile: Partial<UserAccount>) =>
+    set((state) => ({ currentUser: { ...state.currentUser, ...profile } })),
+  setDuprRating: (rating: number) =>
+    set((state) => ({ currentUser: { ...state.currentUser, duprRating: rating } })),
   isSidebarOpen: true,
   notificationCount: 3,
 

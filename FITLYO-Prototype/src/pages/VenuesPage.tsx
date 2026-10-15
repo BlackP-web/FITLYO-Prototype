@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   MapPin,
   Star,
@@ -11,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 
 export const VenuesPage: React.FC = () => {
+  const navigate = useNavigate()
   const { venues, showToast } = useFitlyoStore()
   const [search, setSearch] = useState('')
 
@@ -43,8 +45,18 @@ export const VenuesPage: React.FC = () => {
             Danh sách cụm sân liên kết chính thức với sàn FITLYO tại TP. Thủ Đức.
           </p>
         </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate('/matches/detail')}
+          className="text-xs font-semibold"
+        >
+          Xem Kèo Ghép
+        </Button>
       </div>
 
+      {/* Search */}
       <div className="relative max-w-md">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
@@ -56,6 +68,7 @@ export const VenuesPage: React.FC = () => {
         />
       </div>
 
+      {/* Venues Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredVenues.map((venue) => (
           <div
@@ -72,7 +85,7 @@ export const VenuesPage: React.FC = () => {
                 <span className="absolute top-3 left-3 bg-background/90 backdrop-blur-xs px-2.5 py-1 rounded-full text-xs font-bold text-foreground">
                   {venue.totalCourts} sân tiêu chuẩn
                 </span>
-                <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground shadow-sm">
+                <span className="absolute top-3 right-3 bg-emerald-600 text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm">
                   <Clock className="w-3 h-3" /> Còn {venue.availableSlotsToday} slot hôm nay
                 </span>
               </div>

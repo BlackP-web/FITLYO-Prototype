@@ -5,6 +5,11 @@ import FieldManagerLayout from "@/components/layout/FieldManagerLayout"
 import CoachLayout from "@/components/layout/CoachLayout"
 import AdminLayout from "@/components/layout/AdminLayout"
 import { LoginPage } from "@/pages/LoginPage"
+import { LandingPage } from "@/pages/LandingPage"
+import { SCR_AUTH_02 } from "@/pages/SCR_AUTH_02"
+import { SCR_AUTH_03 } from "@/pages/SCR_AUTH_03"
+import { SCR_AUTH_04 } from "@/pages/SCR_AUTH_04"
+import { MatchDetailPage } from "@/pages/MatchDetailPage"
 import { CourtCalendarPage } from "@/pages/CourtCalendarPage"
 import { OwnerCourtsPage } from "@/pages/OwnerCourtsPage"
 import { OwnerSettingsPage } from "@/pages/OwnerSettingsPage"
@@ -17,6 +22,7 @@ import { CoachVenuesPage } from "@/pages/CoachVenuesPage"
 import { CoachProfilePage } from "@/pages/CoachProfilePage"
 import { CoachWalletPage } from "@/pages/CoachWalletPage"
 import { CoachDirectoryPage } from "@/pages/CoachDirectoryPage"
+import { VenuesPage } from "@/pages/VenuesPage"
 import { CheckInKioskPage } from "@/pages/CheckInKioskPage"
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage"
 import { AdminKycPage } from "@/pages/admin/AdminKycPage"
@@ -35,8 +41,32 @@ import { VipMembershipPage } from "@/pages/player/VipMembershipPage"
 import { PlayerSchedulePage } from "@/pages/player/PlayerSchedulePage"
 
 export const router = createBrowserRouter([
-  { path: "/", element: <RootRedirect /> },
+  // SCR_PUB_01: Public Landing Page
+  { path: "/", element: <LandingPage /> },
+
+  // SCR_AUTH_01: Sign In
   { path: "/login", element: <LoginPage /> },
+  { path: "/auth/login", element: <LoginPage /> },
+
+  // SCR_AUTH_02: Sign Up (Đăng ký thành viên)
+  { path: "/auth/register", element: <SCR_AUTH_02 /> },
+  { path: "/signup", element: <SCR_AUTH_02 /> },
+
+  // SCR_AUTH_03: Phone OTP Verification (Xác thực mã OTP 6 số)
+  { path: "/auth/verify-otp", element: <SCR_AUTH_03 /> },
+
+  // SCR_AUTH_04: Initial Skill Survey & DUPR Seed (Khảo sát trình độ & Cấp DUPR ban đầu)
+  { path: "/auth/dupr-survey", element: <SCR_AUTH_04 /> },
+  { path: "/auth/verify-account", element: <SCR_AUTH_04 /> },
+
+  // Player / User Matches & Venues
+  { path: "/matches", element: <Navigate to="/matches/detail" replace /> },
+  { path: "/matches/detail", element: <MatchDetailPage /> },
+  { path: "/venues", element: <VenuesPage /> },
+  { path: "/coaches", element: <CoachDirectoryPage /> },
+  { path: "/profile", element: <Navigate to="/player/profile" replace /> },
+
+  // Role-based Layout Routes
   {
     element: <RoleGuard allow={["player"]} />,
     children: [
@@ -57,10 +87,6 @@ export const router = createBrowserRouter([
           { path: "schedule", element: <PlayerSchedulePage /> },
         ],
       },
-      { path: "/matches", element: <Navigate to="/player/matches" replace /> },
-      { path: "/matches/*", element: <Navigate to="/player/matches" replace /> },
-      { path: "/venues", element: <Navigate to="/player/venues" replace /> },
-      { path: "/coaches", element: <Navigate to="/player/coaches" replace /> },
     ],
   },
   {

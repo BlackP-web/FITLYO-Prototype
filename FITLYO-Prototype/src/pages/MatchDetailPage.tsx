@@ -52,19 +52,20 @@ export const MatchDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-24">
-      {/* Top Bar Navigation */}
-      <div className="flex items-center justify-between border-b border-border/60 pb-4">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/matches')}
-            className="rounded-xl border hover:bg-muted active:scale-[0.98]"
-            title="Quay lại bảng tin"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-24">
+        {/* Top Bar Navigation */}
+        <div className="flex items-center justify-between border-b border-border/60 pb-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+              className="rounded-xl border hover:bg-muted active:scale-[0.98]"
+              title="Về Trang Chủ"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
           <div>
             <div className="flex items-center gap-2">
               <Badge variant="default" className="text-[11px]">
@@ -423,6 +424,7 @@ export const MatchDetailPage: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

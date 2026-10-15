@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Search,
   CheckCircle2,
@@ -6,6 +7,7 @@ import {
   MapPin,
   Crown,
   ArrowRight,
+  ArrowLeft,
   BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +16,7 @@ import { useFitlyoStore } from '@/store/useFitlyoStore'
 import type { CoachItem } from '@/types/pickleball'
 
 export const CoachDirectoryPage: React.FC = () => {
+  const navigate = useNavigate()
   const { coaches, showToast } = useFitlyoStore()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -52,26 +55,47 @@ export const CoachDirectoryPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="default" className="text-xs">
-              SCR_BOOK_COACH_01
-            </Badge>
-            <span className="text-xs font-semibold text-muted-foreground">
-              PT Booking & Courses • TP. Thủ Đức
-            </span>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-20">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+              className="rounded-xl border hover:bg-muted"
+              title="Về Trang Chủ"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="default" className="text-xs">
+                  SCR_BOOK_COACH_01
+                </Badge>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  PT Booking & Courses • TP. Thủ Đức
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                Danh Bạ Huấn Luyện Viên & Khóa Học
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Kết nối các HLV có chứng chỉ quốc tế (PPR / IPTPA) được thẩm định nghiêm ngặt.
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Danh Bạ Huấn Luyện Viên & Khóa Học
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Kết nối các HLV có chứng chỉ quốc tế (PPR / IPTPA) được thẩm định nghiêm ngặt.
-          </p>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/coach/dashboard')}
+            className="text-xs font-semibold self-start sm:self-auto"
+          >
+            Vào Portal Quản Lý Khóa Học
+          </Button>
         </div>
-      </div>
 
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -295,6 +319,7 @@ export const CoachDirectoryPage: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

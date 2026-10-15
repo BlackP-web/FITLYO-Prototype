@@ -25,6 +25,7 @@ interface FitlyoState {
   // Current user & active role
   colorMode: ColorMode
   currentUser: UserAccount
+  isLoggedIn: boolean
   isSidebarOpen: boolean
   notificationCount: number
 
@@ -77,6 +78,10 @@ interface FitlyoState {
 
   // Actions
   toggleColorMode: () => void
+  setLoggedIn: (val: boolean) => void
+  handleLogout: () => void
+  updateUserProfile: (profile: Partial<UserAccount>) => void
+  setDuprRating: (rating: number) => void
   setSelectedDate: (date: string) => void
   toggleSidebar: () => void
   togglePremium: () => void
@@ -803,6 +808,15 @@ const initialVenues: VenueItem[] = [
 export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   colorMode: initialColorMode,
   currentUser: initialUser,
+  isLoggedIn: false,
+
+  setLoggedIn: (val: boolean) => set({ isLoggedIn: val }),
+  handleLogout: () => set({ isLoggedIn: false }),
+  updateUserProfile: (profile: Partial<UserAccount>) =>
+    set((state) => ({ currentUser: { ...state.currentUser, ...profile } })),
+  setDuprRating: (rating: number) =>
+    set((state) => ({ currentUser: { ...state.currentUser, duprRating: rating } })),
+
   isSidebarOpen: true,
   notificationCount: 3,
 

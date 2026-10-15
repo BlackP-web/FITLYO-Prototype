@@ -34,8 +34,8 @@ export const demoAccounts: DemoAccount[] = [
     email: 'player@fitlyo.vn',
     password: 'Player@123',
     role: 'player',
-    name: 'Nguyễn An',
-    title: 'Người chơi · DUPR 2.85',
+    name: 'Nguyễn Văn An',
+    title: 'Người chơi · DUPR 3.42',
     avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
   },
   {

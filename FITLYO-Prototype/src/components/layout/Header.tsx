@@ -1,17 +1,8 @@
-import React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import {
-  Bell,
-  Menu,
-  Sparkles,
-  MapPin,
-  Crown,
-  LogOut,
-  UserRound,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Bell, CalendarDays, Crown, LogOut, MapPin, UserRound, WalletCards } from 'lucide-react'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,20 +11,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useFitlyoStore } from '@/store/useFitlyoStore'
+import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/useAuthStore'
+import { useFitlyoStore } from '@/store/useFitlyoStore'
+import { usePlayerStore } from '@/store/usePlayerStore'
+
+const desktopNav = [
+  { label: 'Khám phá', href: '/player' },
+  { label: 'Kèo đấu', href: '/player/matches' },
+  { label: 'Sân', href: '/player/venues' },
+  { label: 'Huấn luyện viên', href: '/player/coaches' },
+  { label: 'Lịch của tôi', href: '/player/schedule' },
+]
 
 export function Header() {
   const navigate = useNavigate()
-  const {
-    toggleSidebar,
-    currentUser,
-    notificationCount,
-    toastMessage,
-    clearToast,
-    togglePremium,
-  } = useFitlyoStore()
-  const { session, logout } = useAuthStore()
+  const { logout } = useAuthStore()
+  const profile = usePlayerStore((state) => state.profile)
+  const toastMessage = useFitlyoStore((state) => state.toastMessage)
+  const clearToast = useFitlyoStore((state) => state.clearToast)
+  const showToast = useFitlyoStore((state) => state.showToast)
 
   const handleLogout = () => {
     logout()
@@ -42,132 +39,86 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b bg-background/95 px-3 sm:px-6 backdrop-blur-md shadow-xs">
-        {/* Left: Menu toggle + Logo + Location */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            aria-label="Toggle Menu"
-            className="rounded-xl border hover:bg-muted active:scale-[0.98]"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-
-          <Link to="/player" className="group flex items-center" aria-label="FITLYO - Trang chủ">
-            <BrandLogo className="h-7 w-auto transition-transform duration-200 group-hover:scale-[1.02] sm:h-8" />
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/88 backdrop-blur-xl">
+        <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
+          <Link to="/player" aria-label="FITLYO - Trang chủ Player" className="shrink-0">
+            <BrandLogo className="h-8 w-auto sm:h-9" />
           </Link>
 
-          {/* Location Picker */}
-          <div className="hidden lg:flex items-center gap-1.5 ml-3 px-2.5 py-1 rounded-xl bg-muted/60 text-xs text-muted-foreground border border-border/40">
-            <MapPin className="w-3.5 h-3.5 text-primary" />
-            <span className="font-semibold text-foreground">TP. Thủ Đức</span>
-            <span className="text-[10px]">(Linh Chiểu, An Phú, Thảo Điền)</span>
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Điều hướng Player">
+            {desktopNav.map((item) => (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                end={item.href === '/player'}
+                className={({ isActive }) => cn(
+                  'relative rounded-xl px-3.5 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground',
+                  isActive && 'bg-secondary/55 text-primary after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-5 after:-translate-x-1/2 after:rounded-full after:bg-primary',
+                )}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="hidden items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-2 text-xs font-bold text-foreground xl:flex">
+              <MapPin className="h-3.5 w-3.5 text-primary" /> TP. Thủ Đức
+            </div>
+            <Button variant="ghost" size="sm" className="hidden gap-1.5 rounded-xl border border-border/70 bg-card md:inline-flex" onClick={() => navigate('/player/profile')}>
+              <WalletCards className="h-4 w-4 text-primary" />
+              <span className="font-bold">{profile.walletBalance.toLocaleString('vi-VN')}đ</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative rounded-xl border border-border/70 bg-card"
+              aria-label="Thông báo"
+              onClick={() => showToast('Bạn có 2 lịch sắp tới và 1 ưu đãi VIP mới.', 'info')}
+            >
+              <Bell className="h-4 w-4" />
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-brand-coral ring-2 ring-card" />
+            </Button>
+            <ThemeToggle />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="rounded-full border border-primary/15 bg-card p-0.5 shadow-sm" aria-label="Mở menu tài khoản">
+                  <img src={profile.avatarUrl} alt={profile.name} className="h-9 w-9 rounded-full object-cover" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72 rounded-2xl p-2">
+                <DropdownMenuLabel className="p-3">
+                  <div className="flex items-center gap-3">
+                    <img src={profile.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
+                    <div>
+                      <p className="font-bold text-foreground">{profile.name}</p>
+                      <p className="text-xs font-normal text-muted-foreground">{profile.username} · DUPR {profile.dupr.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild><Link to="/player/profile"><UserRound className="mr-2 h-4 w-4" />Hồ sơ người chơi</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/player/schedule"><CalendarDays className="mr-2 h-4 w-4" />Lịch của tôi</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/player/vip"><Crown className="mr-2 h-4 w-4 text-amber-500" />{profile.isVip ? 'Quản lý FITLYO VIP' : 'Nâng cấp FITLYO VIP'}</Link></DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive"><LogOut className="mr-2 h-4 w-4" />Đăng xuất</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
-
-        {/* Right: Role Switcher & Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeToggle />
-          <div className="hidden items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs font-bold text-primary sm:flex">
-            <UserRound className="h-4 w-4" /> Player
-          </div>
-
-          {/* VIP Premium Toggle Pill */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={togglePremium}
-            className={`hidden md:inline-flex h-9 px-2.5 text-xs font-bold gap-1 rounded-xl transition-all ${
-              currentUser.isPremium
-                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
-                : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            <Crown className="w-3.5 h-3.5 text-amber-500" />
-            <span>{currentUser.isPremium ? 'VIP Active' : 'Lên VIP'}</span>
-          </Button>
-
-          {/* Notifications */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative rounded-xl border hover:bg-muted"
-            aria-label="Thông báo"
-            onClick={() => useFitlyoStore.getState().showToast('Bạn có 3 thông báo về lịch ghép trận sắp tới!', 'info')}
-          >
-            <Bell className="h-4 w-4" />
-            {notificationCount > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-                {notificationCount}
-              </span>
-            )}
-          </Button>
-
-          {/* Profile Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full border hover:bg-muted p-0.5">
-                <img
-                  src={session?.avatarUrl ?? currentUser.avatarUrl}
-                  alt={session?.name ?? currentUser.name}
-                  className="h-8 w-8 rounded-full object-cover"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60">
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-bold text-foreground">{session?.name ?? currentUser.name}</p>
-                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <span>DUPR: {currentUser.duprRating}</span>
-                    <span>•</span>
-                    <span className="text-emerald-600 font-semibold">{currentUser.reputationScore}% uy tín</span>
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/player">Trang chủ người chơi</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/matches/detail">Kèo ghép trận của tôi</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={togglePremium} className="cursor-pointer">
-                {currentUser.isPremium ? 'Tắt VIP Premium (Test)' : 'Kích hoạt VIP Premium'}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </header>
 
-      {/* Global Interactive Notification Toast */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-3 fade-in duration-200">
-          <div
-            className={`flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border text-xs sm:text-sm font-medium ${
-              toastMessage.type === 'success'
-                ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-500/20'
-                : toastMessage.type === 'error'
-                ? 'bg-destructive text-destructive-foreground border-destructive/80 shadow-destructive/20'
-                : 'bg-card text-foreground border-border shadow-md'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 shrink-0" />
-            <span>{toastMessage.text}</span>
-            <button
-              type="button"
-              onClick={clearToast}
-              className="ml-2 opacity-80 hover:opacity-100"
-            >
-              ✕
-            </button>
+        <div className="fixed right-4 top-20 z-[70] max-w-sm animate-in slide-in-from-top-3 fade-in">
+          <div className={cn(
+            'flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold shadow-xl backdrop-blur-xl',
+            toastMessage.type === 'success' && 'border-emerald-500/30 bg-emerald-600 text-white',
+            toastMessage.type === 'error' && 'border-destructive/40 bg-destructive text-destructive-foreground',
+            toastMessage.type === 'info' && 'border-border bg-card/95 text-foreground',
+          )}>
+            <span className="flex-1">{toastMessage.text}</span>
+            <button type="button" onClick={clearToast} className="opacity-70 hover:opacity-100" aria-label="Đóng thông báo">×</button>
           </div>
         </div>
       )}

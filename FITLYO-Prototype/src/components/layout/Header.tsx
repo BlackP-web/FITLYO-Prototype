@@ -40,7 +40,7 @@ export function Header() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/88 backdrop-blur-xl">
-        <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
+        <div className="mx-auto flex h-[72px] max-w-[1320px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-12">
           <Link to="/player" aria-label="FITLYO - Trang chủ Player" className="shrink-0">
             <BrandLogo className="h-8 w-auto sm:h-9" />
           </Link>

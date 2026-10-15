@@ -1,1291 +1,762 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Sparkles,
-  MapPin,
-  Calendar,
-  Clock,
-  Users,
   ArrowRight,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
+  ArrowUpRight,
   Award,
   BookOpen,
-  Phone,
-  Mail,
-  Globe,
-  Share2,
-  SlidersHorizontal,
-  ChevronDown,
-  ChevronUp,
-  Bell,
-  Crown,
-  LogOut,
-  User as UserIcon,
-  Search,
-  Target,
-  ShieldCheck,
-  GraduationCap,
   Building2,
+  Calendar,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  GraduationCap,
+  LogOut,
+  Mail,
+  MapPin,
+  Menu,
+  Phone,
   Star,
+  Target,
+  TicketCheck,
+  Users,
+  WalletCards,
+  X,
+  Zap,
 } from 'lucide-react'
-import { useFitlyoStore } from '@/store/useFitlyoStore'
+import { BrandLogo } from '@/components/brand/BrandLogo'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { Button } from '@/components/ui/button'
+import { roleHome, useAuthStore } from '@/store/useAuthStore'
 
-/* ─────────────────────── MOCK DATA ─────────────────────── */
+type VenueFilter = 'all' | 'indoor' | 'outdoor' | 'price' | 'rating'
 
 const heroSlides = [
   {
     id: 1,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCLPc6K_yXHrVqhQ50O8Yvng3Xc3FW9WsBAZF8yEx7kDVhgk1A01C7BOA6QtYUKQzwTl5Yd3vMOCZD3jxxZadzL7qsSQX0O70QAryhxAz4NJ6Ha9O8uKqTW1xzACaBWbBskSbwKY7gkjeeyw4C7kEhW-65lAE2SmUBrsOnUXgOzUC0aAVyYPBxoKjb5xkDd3WJfNMhFDx6_N-cQu_n9NuwzZIFhU8SlwlCiGfl4nLPO7OCfzzRug3uV',
+    image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1400&auto=format&fit=crop',
     title: 'D-Pickleball Thảo Điền',
-    availableCourts: '16 Sân khả dụng tối nay',
-    badge: 'Cụm Sân Tiêu Biểu',
-    rating: '4.95 / 5.0',
-    reviews: '8.5k+ • Sân trong nhà máy lạnh',
+    area: 'Thảo Điền · TP. Thủ Đức',
+    availability: '16 sân trống tối nay',
+    rating: '4.95',
   },
   {
     id: 2,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCbNpyC1SZInfMoOzFE6jfbAimGTADYpa_fqXc2us-iSl84ltn91luorsnk4uTGx_0RSMBn8k02b-Iwx0-UaHn8IydCBeJn_-C4uOVhgjZSlDXfUDgaOOEGjHU834m4Wassy2OQdf9KfX40QJ6Cwd61wQUzHAk6Q7fQPX7Ak03Ef_WcDcALQos1VvHNdgDhZpGe5U6cPkG3VGkQQ0Kx01tDX0K-kz9SFm4q64D68ZEfFCL5WkwHLs8-',
-    title: 'D-Sports Pickleball Linh Chiểu',
-    availableCourts: '38 Sân khả dụng hôm nay',
-    badge: 'Cụm Sân Tiêu Biểu',
-    rating: '4.90 / 5.0',
-    reviews: '12k+ • Chuẩn DUPR',
+    image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1400&auto=format&fit=crop',
+    title: 'Saigon Rackets Hiệp Phú',
+    area: 'Hiệp Phú · TP. Thủ Đức',
+    availability: '10 sân trống tối nay',
+    rating: '4.85',
   },
   {
     id: 3,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAC42tO8SYWipgKgRyhc7lafyb_eClVst_krHsKS4HH79pKPLMYd86cpnMMjSsG1gKphoj5qdBVFFMOa-DXB4g7ahsE-1Pfzb-T8m5E396udZKUvn-ItibJ22Rcwm8g1LDmsCS5SfP4WU2VYNfhO_Om5jB1z67Os29In35uIutlJv8vNH6c8RiDjyxugyDdCth2KO55CT42kBLCFExQbQJ_sxjKsvjIc8mK_DoINIg9bORT1tbFCbSW',
-    title: 'Saigon Rackets Hiệp Phú',
-    availableCourts: '10 Sân khả dụng tối nay',
-    badge: 'Cụm Sân Tiêu Biểu',
-    rating: '4.85 / 5.0',
-    reviews: '6.2k+ • Sân ngoài trời LED',
-  },
-  {
-    id: 4,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDUso72D9hyAGiU81n112PpGJ5eHgXHVWxJy4Yetc2nMBOffpVg2LgD1cRlmyFJIycMAlfoRHB15cfXAEseVQqj5QDmytiE5NGh_TLWbd2qUqCLU_oinRq_AdXCfmovCjAKl6rMxeq2i_z2Ovz3s8yO_LNIn27jFpCSk-p7BDuoXHwKMuMtljmFyhfWJ7GOedrjdJNKy2_PIRFk9IpTHRNiN7qNgn11ajSrHlrKM521JUFYcy_iewHL',
-    title: 'An Khánh Pickleball Club',
-    availableCourts: '6 Sân khả dụng hôm nay',
-    badge: 'Cụm Sân Tiêu Biểu',
-    rating: '4.80 / 5.0',
-    reviews: '5.1k+ • Mái che LED',
+    image: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1400&auto=format&fit=crop',
+    title: 'D-Sports Linh Chiểu',
+    area: 'Linh Chiểu · TP. Thủ Đức',
+    availability: '8 sân trống hôm nay',
+    rating: '4.90',
   },
 ]
 
-const courtsData = [
+const venues = [
   {
     id: 'd-pickleball-thao-dien',
     name: 'D-Pickleball Thảo Điền',
-    badge: 'Phổ biến',
-    typeTag: 'Trong nhà máy lạnh',
-    price: '180.000đ',
-    rating: '4.95',
-    reviewsCount: '142',
-    distance: '0.8 km',
-    courtsCount: '4 sân tiêu chuẩn',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCbNpyC1SZInfMoOzFE6jfbAimGTADYpa_fqXc2us-iSl84ltn91luorsnk4uTGx_0RSMBn8k02b-Iwx0-UaHn8IydCBeJn_-C4uOVhgjZSlDXfUDgaOOEGjHU834m4Wassy2OQdf9KfX40QJ6Cwd61wQUzHAk6Q7fQPX7Ak03Ef_WcDcALQos1VvHNdgDhZpGe5U6cPkG3VGkQQ0Kx01tDX0K-kz9SFm4q64D68ZEfFCL5WkwHLs8-',
-    slots: [
-      { time: '17:00', available: true, isPeak: false },
-      { time: '18:30', available: true, isPeak: true },
-      { time: '19:00', available: false, isPeak: false },
-      { time: '20:00', available: true, isPeak: false },
-    ],
+    area: 'Thảo Điền',
+    type: 'Trong nhà máy lạnh',
+    indoor: true,
+    price: 180000,
+    rating: 4.95,
+    reviews: 142,
+    distance: 0.8,
+    courts: '4 sân tiêu chuẩn',
+    image: heroSlides[0].image,
+    slots: ['17:00', '18:30', '20:00'],
   },
   {
     id: 'saigon-rackets-hiep-phu',
     name: 'Saigon Rackets Hiệp Phú',
-    badge: 'Ưa chuộng',
-    typeTag: 'Đèn LED ngoài trời',
-    price: '220.000đ',
-    rating: '4.90',
-    reviewsCount: '98',
-    distance: '2.1 km',
-    courtsCount: '6 sân (4 trong nhà + 2 ngoài trời)',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCLPc6K_yXHrVqhQ50O8Yvng3Xc3FW9WsBAZF8yEx7kDVhgk1A01C7BOA6QtYUKQzwTl5Yd3vMOCZD3jxxZadzL7qsSQX0O70QAryhxAz4NJ6Ha9O8uKqTW1xzACaBWbBskSbwKY7gkjeeyw4C7kEhW-65lAE2SmUBrsOnUXgOzUC0aAVyYPBxoKjb5xkDd3WJfNMhFDx6_N-cQu_n9NuwzZIFhU8SlwlCiGfl4nLPO7OCfzzRug3uV',
-    slots: [
-      { time: '17:00', available: true, isPeak: false },
-      { time: '18:30', available: true, isPeak: true },
-      { time: '19:00', available: true, isPeak: false },
-      { time: '20:00', available: false, isPeak: false },
-    ],
-  },
-  {
-    id: 'an-khanh-pickleball-club',
-    name: 'An Khánh Pickleball Club',
-    badge: 'Giá tốt',
-    typeTag: 'Trong nhà máy lạnh',
-    price: '160.000đ',
-    rating: '4.80',
-    reviewsCount: '210',
-    distance: '3.4 km',
-    courtsCount: '4 sân có mái che',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAC42tO8SYWipgKgRyhc7lafyb_eClVst_krHsKS4HH79pKPLMYd86cpnMMjSsG1gKphoj5qdBVFFMOa-DXB4g7ahsE-1Pfzb-T8m5E396udZKUvn-ItibJ22Rcwm8g1LDmsCS5SfP4WU2VYNfhO_Om5jB1z67Os29In35uIutlJv8vNH6c8RiDjyxugyDdCth2KO55CT42kBLCFExQbQJ_sxjKsvjIc8mK_DoINIg9bORT1tbFCbSW',
-    slots: [
-      { time: '15:30', available: false, isPeak: false },
-      { time: '17:00', available: true, isPeak: false },
-      { time: '18:30', available: true, isPeak: true },
-      { time: '20:00', available: true, isPeak: false },
-    ],
-  },
-  {
-    id: 'thu-thiem-sports-hub',
-    name: 'Thủ Thiêm Sports Hub (An Phú)',
-    badge: 'Đẳng cấp',
-    typeTag: 'Đèn LED giải đấu',
-    price: '150.000đ',
-    rating: '4.85',
-    reviewsCount: '85',
-    distance: '1.9 km',
-    courtsCount: '6 sân ngoài trời',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBxGyNaVnznr3bkMe9f85qSPoefCLz9qrlxiauMxBDg1yvPz0XdYZn5dV6tRXjVKDsh5eck18I7VuaE6o5GRMIvFfQK_bMZdbcv-BsgTDnkXZm6DNKlkgHf1iTMxoi6Ll9pP_-EAAgNBTeIKXqRJzGF6c7GDn31nxu-PiIAAg4A7QN_A0D0OlXghAb9GojShqjYDi9uNWHx-SamBevfIZNDudBNRYUylHJPFIJQXCpjScM04ZB_nWyo',
-    slots: [
-      { time: '17:00', available: true, isPeak: false },
-      { time: '18:30', available: true, isPeak: true },
-      { time: '19:00', available: true, isPeak: false },
-      { time: '20:00', available: true, isPeak: false },
-    ],
+    area: 'Hiệp Phú',
+    type: 'Ngoài trời LED',
+    indoor: false,
+    price: 140000,
+    rating: 4.9,
+    reviews: 98,
+    distance: 2.1,
+    courts: '6 sân thi đấu',
+    image: heroSlides[1].image,
+    slots: ['15:30', '17:00', '18:30'],
   },
   {
     id: 'd-sports-linh-chieu',
     name: 'D-Sports Pickleball Linh Chiểu',
-    badge: 'Quy mô lớn',
-    typeTag: 'Trong nhà máy lạnh Premium',
-    price: '200.000đ',
-    rating: '4.90',
-    reviewsCount: '175',
-    distance: '1.2 km',
-    courtsCount: '8 sân chuyên nghiệp',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDUso72D9hyAGiU81n112PpGJ5eHgXHVWxJy4Yetc2nMBOffpVg2LgD1cRlmyFJIycMAlfoRHB15cfXAEseVQqj5QDmytiE5NGh_TLWbd2qUqCLU_oinRq_AdXCfmovCjAKl6rMxeq2i_z2Ovz3s8yO_LNIn27jFpCSk-p7BDuoXHwKMuMtljmFyhfWJ7GOedrjdJNKy2_PIRFk9IpTHRNiN7qNgn11ajSrHlrKM521JUFYcy_iewHL',
-    slots: [
-      { time: '15:30', available: true, isPeak: false },
-      { time: '17:00', available: true, isPeak: false },
-      { time: '18:30', available: true, isPeak: true },
-      { time: '20:00', available: true, isPeak: false },
-    ],
+    area: 'Linh Chiểu',
+    type: 'Trong nhà premium',
+    indoor: true,
+    price: 200000,
+    rating: 4.9,
+    reviews: 175,
+    distance: 1.2,
+    courts: '8 sân chuyên nghiệp',
+    image: heroSlides[2].image,
+    slots: ['17:00', '18:30', '20:00'],
+  },
+  {
+    id: 'thu-thiem-sports-hub',
+    name: 'Thủ Thiêm Sports Hub',
+    area: 'An Phú',
+    type: 'Ngoài trời LED',
+    indoor: false,
+    price: 150000,
+    rating: 4.85,
+    reviews: 85,
+    distance: 1.9,
+    courts: '6 sân tiêu chuẩn',
+    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&auto=format&fit=crop',
+    slots: ['14:00', '17:00', '20:00'],
+  },
+  {
+    id: 'an-khanh-pickleball-club',
+    name: 'An Khánh Pickleball Club',
+    area: 'An Khánh',
+    type: 'Trong nhà máy lạnh',
+    indoor: true,
+    price: 160000,
+    rating: 4.8,
+    reviews: 210,
+    distance: 3.4,
+    courts: '4 sân có mái che',
+    image: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=1200&auto=format&fit=crop',
+    slots: ['15:30', '18:30', '20:00'],
   },
   {
     id: 'an-phu-racket-club',
-    name: 'An Phú Racket Club - Thủ Đức',
-    badge: 'Mát mẻ',
-    typeTag: 'Mái che ngoài trời',
-    price: '140.000đ',
-    rating: '4.75',
-    reviewsCount: '64',
-    distance: '2.8 km',
-    courtsCount: '4 sân thi đấu',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCbNpyC1SZInfMoOzFE6jfbAimGTADYpa_fqXc2us-iSl84ltn91luorsnk4uTGx_0RSMBn8k02b-Iwx0-UaHn8IydCBeJn_-C4uOVhgjZSlDXfUDgaOOEGjHU834m4Wassy2OQdf9KfX40QJ6Cwd61wQUzHAk6Q7fQPX7Ak03Ef_WcDcALQos1VvHNdgDhZpGe5U6cPkG3VGkQQ0Kx01tDX0K-kz9SFm4q64D68ZEfFCL5WkwHLs8-',
-    slots: [
-      { time: '17:00', available: true, isPeak: false },
-      { time: '18:30', available: false, isPeak: true },
-      { time: '19:00', available: true, isPeak: false },
-      { time: '20:00', available: true, isPeak: false },
-    ],
+    name: 'An Phú Racket Club',
+    area: 'An Phú',
+    type: 'Mái che ngoài trời',
+    indoor: false,
+    price: 135000,
+    rating: 4.75,
+    reviews: 64,
+    distance: 2.8,
+    courts: '4 sân cộng đồng',
+    image: 'https://images.unsplash.com/photo-1544919982-b61976f0ba43?w=1200&auto=format&fit=crop',
+    slots: ['12:30', '17:00', '19:00'],
   },
 ]
 
-const coachesData = [
+const coaches = [
   {
-    id: 'hoang-minh-triet',
-    name: 'Hoàng Minh Triết',
+    name: 'HLV Lê Hoàng Dũng',
+    certificate: 'IPTPA Level 2',
     dupr: '4.80',
-    cert: 'PPR Level 2',
-    rating: '4.90',
-    reviewsCount: '132',
-    court: 'Sân chính: D-Pickleball Thảo Điền',
-    specialty: 'Kỹ thuật: Dinking nâng cao, Chiến thuật đôi nam nữ & Kiểm soát Non-Volley Zone.',
+    rating: '4.95',
+    specialty: 'Dinking nâng cao · Chiến thuật đôi',
     rate: '400.000đ',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDUso72D9hyAGiU81n112PpGJ5eHgXHVWxJy4Yetc2nMBOffpVg2LgD1cRlmyFJIycMAlfoRHB15cfXAEseVQqj5QDmytiE5NGh_TLWbd2qUqCLU_oinRq_AdXCfmovCjAKl6rMxeq2i_z2Ovz3s8yO_LNIn27jFpCSk-p7BDuoXHwKMuMtljmFyhfWJ7GOedrjdJNKy2_PIRFk9IpTHRNiN7qNgn11ajSrHlrKM521JUFYcy_iewHL',
+    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=700&auto=format&fit=crop',
   },
   {
-    id: 'dang-thao-linh',
     name: 'Đặng Thảo Linh',
+    certificate: 'PPR Coach',
     dupr: '4.60',
-    cert: 'PPR Coach',
-    rating: '4.95',
-    reviewsCount: '88',
-    court: 'Sân chính: Saigon Rackets Hiệp Phú',
-    specialty: 'Kỹ thuật: Tăng tốc trên lưới (Kitchen Speed-up), Đấu tay nhanh & Chuyển tiếp.',
+    rating: '4.90',
+    specialty: 'Kitchen speed-up · Phản xạ trên lưới',
     rate: '350.000đ',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCLPc6K_yXHrVqhQ50O8Yvng3Xc3FW9WsBAZF8yEx7kDVhgk1A01C7BOA6QtYUKQzwTl5Yd3vMOCZD3jxxZadzL7qsSQX0O70QAryhxAz4NJ6Ha9O8uKqTW1xzACaBWbBskSbwKY7gkjeeyw4C7kEhW-65lAE2SmUBrsOnUXgOzUC0aAVyYPBxoKjb5xkDd3WJfNMhFDx6_N-cQu_n9NuwzZIFhU8SlwlCiGfl4nLPO7OCfzzRug3uV',
+    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=700&auto=format&fit=crop',
   },
   {
-    id: 'le-tuan-khang',
     name: 'Lê Tuấn Khang',
+    certificate: 'IPTPA Master',
     dupr: '5.15',
-    cert: 'IPTPA Master',
     rating: '4.95',
-    reviewsCount: '210',
-    court: 'Sân chính: D-Sports Linh Chiểu',
-    specialty: 'Kỹ thuật: Chiến thuật giải đấu, Đấu đối kháng nâng cao & Chuẩn hóa DUPR.',
+    specialty: 'Chiến thuật giải đấu · Chuẩn hóa DUPR',
     rate: '500.000đ',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAC42tO8SYWipgKgRyhc7lafyb_eClVst_krHsKS4HH79pKPLMYd86cpnMMjSsG1gKphoj5qdBVFFMOa-DXB4g7ahsE-1Pfzb-T8m5E396udZKUvn-ItibJ22Rcwm8g1LDmsCS5SfP4WU2VYNfhO_Om5jB1z67Os29In35uIutlJv8vNH6c8RiDjyxugyDdCth2KO55CT42kBLCFExQbQJ_sxjKsvjIc8mK_DoINIg9bORT1tbFCbSW',
+    image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=700&auto=format&fit=crop',
   },
   {
-    id: 'nguyen-bao-ngoc',
     name: 'Nguyễn Bảo Ngọc',
+    certificate: 'PPR Coach',
     dupr: '4.40',
-    cert: 'PPR Coach',
     rating: '4.85',
-    reviewsCount: '76',
-    court: 'Sân chính: An Khánh Pickleball Club',
-    specialty: 'Kỹ thuật: Bộ chân di chuyển, Kỷ luật vạch Non-Volley & Bài tập cơ bản.',
+    specialty: 'Bộ chân · Nền tảng cho người mới',
     rate: '320.000đ',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBxGyNaVnznr3bkMe9f85qSPoefCLz9qrlxiauMxBDg1yvPz0XdYZn5dV6tRXjVKDsh5eck18I7VuaE6o5GRMIvFfQK_bMZdbcv-BsgTDnkXZm6DNKlkgHf1iTMxoi6Ll9pP_-EAAgNBTeIKXqRJzGF6c7GDn31nxu-PiIAAg4A7QN_A0D0OlXghAb9GojShqjYDi9uNWHx-SamBevfIZNDudBNRYUylHJPFIJQXCpjScM04ZB_nWyo',
+    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=700&auto=format&fit=crop',
   },
 ]
 
-const curriculumData = [
+const courses = [
   {
-    id: 'course-101',
     level: 'Cấp độ 101',
-    duprRange: 'Từ số 0 đến DUPR 2.5',
-    title: 'Nền Tảng Nhập Môn',
-    sessions: '6 buổi • 90 phút/buổi',
-    description: 'Học luật thi đấu USAPA, kỹ năng cầm vợt, kỹ thuật Dinking cơ bản, giao bóng sâu và trả giao bóng ổn định.',
-    leadCoach: 'Nguyễn Bảo Ngọc',
+    range: 'Từ số 0 đến DUPR 2.5',
+    title: 'Nền tảng nhập môn',
+    sessions: '6 buổi · 90 phút/buổi',
+    description: 'Luật thi đấu, cầm vợt, giao bóng sâu và dinking cơ bản.',
     price: '1.800.000đ',
   },
   {
-    id: 'course-201',
     level: 'Cấp độ 201',
-    duprRange: 'DUPR 2.5 — 3.5',
-    title: 'Chiến Thuật Trung Cấp',
-    sessions: '8 buổi • 90 phút/buổi',
-    description: 'Làm chủ cú thả bóng 3 (Drop shot), Reset trước lưới, Đấu lưới Dinking tốc độ cao, Xếp đôi Stacking và đổi hướng bóng.',
-    leadCoach: 'Hoàng Minh Triết',
+    range: 'DUPR 2.5–3.5',
+    title: 'Chiến thuật trung cấp',
+    sessions: '8 buổi · 90 phút/buổi',
+    description: 'Third-shot drop, reset trước lưới, stacking và chuyển hướng bóng.',
     price: '2.500.000đ',
-    isFeatured: true,
+    featured: true,
   },
   {
-    id: 'course-301',
     level: 'Cấp độ 301',
-    duprRange: 'DUPR 3.5 — 4.5+',
-    title: 'Thi Đấu Nâng Cao',
-    sessions: '10 buổi • 120 phút/buổi',
-    description: 'Tăng tốc bóng tốc độ cao, kỹ thuật Erne & ATP poaching, phản công chớp nhoáng và phân tích video chuyển động chậm.',
-    leadCoach: 'Lê Tuấn Khang',
+    range: 'DUPR 3.5–4.5+',
+    title: 'Thi đấu nâng cao',
+    sessions: '10 buổi · 120 phút/buổi',
+    description: 'Erne, ATP, phản công tốc độ cao và phân tích video.',
     price: '3.600.000đ',
   },
   {
-    id: 'course-junior',
-    level: 'Lớp Trẻ Em',
-    duprRange: 'Độ tuổi 7 — 15',
-    title: 'Học Viện Junior',
-    sessions: '8 buổi • 60 phút/buổi',
-    description: 'Bộ chân nhanh nhẹn, phối hợp mắt tay, tinh thần thể thao Fair-play USAPA và các trận đấu giao lưu hào hứng.',
-    leadCoach: 'Đặng Thảo Linh',
+    level: 'Lớp trẻ em',
+    range: 'Độ tuổi 7–15',
+    title: 'Học viện Junior',
+    sessions: '8 buổi · 60 phút/buổi',
+    description: 'Phối hợp mắt tay, bộ chân và tinh thần thể thao fair-play.',
     price: '1.600.000đ',
   },
 ]
 
-/* ─────────────────────── COMPONENT ─────────────────────── */
+const valueCards = [
+  {
+    icon: Target,
+    eyebrow: 'Cân bằng',
+    title: 'Ghép kèo đúng trình',
+    description: 'DUPR được dùng làm lớp lọc cốt lõi để mỗi trận đủ cạnh tranh nhưng vẫn thoải mái.',
+    tone: 'bg-secondary text-secondary-foreground',
+  },
+  {
+    icon: WalletCards,
+    eyebrow: 'Minh bạch',
+    title: 'Cọc được bảo vệ',
+    description: 'Chi phí, chính sách hoàn cọc và trạng thái thanh toán luôn rõ ràng trước khi xác nhận.',
+    tone: 'bg-accent text-accent-foreground',
+  },
+  {
+    icon: TicketCheck,
+    eyebrow: 'Liền mạch',
+    title: 'Một vé cho cả hành trình',
+    description: 'Đặt sân, nhận Dynamic QR, check-in và đánh giá sau trận trong cùng một trải nghiệm.',
+    tone: 'bg-primary text-primary-foreground',
+  },
+]
+
+const formatCurrency = (value: number) => value.toLocaleString('vi-VN') + 'đ'
 
 export function LandingPage() {
   const navigate = useNavigate()
-  const { currentUser, isLoggedIn, handleLogout } = useFitlyoStore()
-
-  // Carousel
+  const session = useAuthStore((state) => state.session)
+  const logout = useAuthStore((state) => state.logout)
   const [currentSlide, setCurrentSlide] = useState(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  // Quick Search Form
-  const [searchLocation, setSearchLocation] = useState('Thảo Điền, Hiệp Phú')
-  const [searchDate, setSearchDate] = useState('Hôm nay, 14/10')
-  const [searchSlot, setSearchSlot] = useState('18:30 - 20:00 (Slot 5)')
-  const [searchFormat, setSearchFormat] = useState('Đánh Đôi (4 người)')
-
-  // Court results visibility
-  const [showAvailableCourts, setShowAvailableCourts] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [searchLocation, setSearchLocation] = useState('TP. Thủ Đức')
+  const [searchDate, setSearchDate] = useState('Hôm nay, 15/10')
+  const [searchSlot, setSearchSlot] = useState('18:30–20:00 · Slot 5')
+  const [searchFormat, setSearchFormat] = useState('Đánh đôi · 4 người')
   const [isSearching, setIsSearching] = useState(false)
-
-  // Venue filter / sort
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'indoor' | 'outdoor' | 'price' | 'rating'>('all')
+  const [showResults, setShowResults] = useState(false)
+  const [venueFilter, setVenueFilter] = useState<VenueFilter>('all')
   const [sortBy, setSortBy] = useState('distance')
 
-  // Profile menu
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
-
-  // Mobile menu
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-
-  // Auto-play carousel
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length)
-    }, 4000)
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
+    const intervalId = window.setInterval(() => {
+      setCurrentSlide((current) => (current + 1) % heroSlides.length)
+    }, 5000)
+    return () => window.clearInterval(intervalId)
   }, [])
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % heroSlides.length)
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)
+  const filteredVenues = useMemo(() => {
+    const result = venues.filter((venue) => {
+      if (venueFilter === 'indoor') return venue.indoor
+      if (venueFilter === 'outdoor') return !venue.indoor
+      if (venueFilter === 'price') return venue.price <= 150000
+      if (venueFilter === 'rating') return venue.rating >= 4.85
+      return true
+    })
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    return [...result].sort((a, b) => {
+      if (sortBy === 'price') return a.price - b.price
+      if (sortBy === 'rating') return b.rating - a.rating
+      return a.distance - b.distance
+    })
+  }, [sortBy, venueFilter])
+
+  const scrollTo = (sectionId: string) => {
+    setMobileMenuOpen(false)
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const showVenueResults = () => {
+    setShowResults(true)
+    window.setTimeout(() => scrollTo('san-noi-bat'), 80)
+  }
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     setIsSearching(true)
-    setShowAvailableCourts(true)
-    setTimeout(() => {
+    window.setTimeout(() => {
       setIsSearching(false)
-      const el = document.getElementById('danh-muc-san')
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 300)
+      showVenueResults()
+    }, 450)
   }
 
-  const scrollToSection = (id: string, open?: boolean) => {
-    if (open) setShowAvailableCourts(true)
-    setTimeout(() => {
-      const el = document.getElementById(id)
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, open ? 120 : 0)
-  }
+  const nextSlide = () => setCurrentSlide((current) => (current + 1) % heroSlides.length)
+  const previousSlide = () => setCurrentSlide((current) => (current - 1 + heroSlides.length) % heroSlides.length)
+  const playerDestination = session?.role === 'player' ? '/player/venues' : '/venues'
+  const matchDestination = session?.role === 'player' ? '/player/matches' : '/matches/detail'
 
   return (
-    <div className="w-full min-h-screen bg-[#f8f9ff] text-[#0b1c30] font-sans antialiased">
-      {/* Canvas centred at 1440px */}
-      <div className="w-full max-w-[1440px] mx-auto relative flex flex-col min-h-screen shadow-2xl">
+    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
+      <header className="sticky top-0 z-50 border-b border-border/70 bg-background/88 backdrop-blur-xl">
+        <div className="mx-auto flex h-18 max-w-[1320px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-12">
+          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Về đầu trang">
+            <BrandLogo className="h-8 w-auto sm:h-9" />
+          </button>
 
-        {/* ══════════════════════════════════════════════════════
-            STICKY HEADER
-        ══════════════════════════════════════════════════════ */}
-        <header className="sticky top-0 z-50 w-full bg-[#f8f9ff]/95 backdrop-blur-md border-b border-slate-200">
-          <div className="h-20 px-4 sm:px-8 lg:px-12 flex items-center justify-between">
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Điều hướng chính">
+            <button type="button" onClick={showVenueResults} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:bg-secondary/55">
+              Khám phá sân
+            </button>
+            <button type="button" onClick={() => scrollTo('huan-luyen-vien')} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:bg-secondary/55">
+              Huấn luyện viên
+            </button>
+            <button type="button" onClick={() => scrollTo('giao-trinh')} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:bg-secondary/55">
+              Giáo trình DUPR
+            </button>
+            <button type="button" onClick={() => navigate(matchDestination)} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:bg-secondary/55">
+              Kèo đấu
+            </button>
+          </nav>
 
-            {/* LEFT: Logo + City Badge */}
-            <div className="flex items-center gap-4 sm:gap-6">
-              <button
-                type="button"
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="flex items-center gap-2 cursor-pointer focus:outline-none"
-              >
-                <div className="flex items-center gap-1">
-                  <span className="text-2xl font-black text-[#0b1c30] tracking-tight leading-none">FITLYO</span>
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#16A34A] mb-1.5 animate-pulse" />
-                </div>
-                <span className="text-xs tracking-widest text-[#16A34A] font-bold px-2 py-0.5 bg-green-100 rounded">
-                  PICKLEBALL
-                </span>
-              </button>
-
-              <div className="hidden sm:block h-6 w-px bg-slate-300" />
-
-              <div className="hidden md:flex items-center gap-2 h-10 px-4 rounded-xl bg-slate-100 text-[#0b1c30] text-xs font-semibold">
-                <MapPin className="w-4 h-4 text-[#16A34A]" />
-                <span>TP. Thủ Đức</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 rounded-xl border border-border/70 bg-card px-3 py-2 text-xs font-bold text-muted-foreground xl:flex">
+              <MapPin className="h-4 w-4 text-primary" /> TP. Thủ Đức
             </div>
+            <ThemeToggle />
+            {session ? (
+              <>
+                <Button onClick={() => navigate(roleHome[session.role])} className="hidden rounded-xl sm:inline-flex">
+                  Vào portal <ArrowRight />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Đăng xuất"
+                  onClick={() => {
+                    logout()
+                    navigate('/')
+                  }}
+                >
+                  <LogOut />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => navigate('/login')} className="hidden sm:inline-flex">Đăng nhập</Button>
+                <Button onClick={() => navigate('/auth/register')} className="hidden rounded-xl sm:inline-flex">Tham gia ngay</Button>
+              </>
+            )}
+            <button
+              type="button"
+              aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card lg:hidden"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
 
-            {/* CENTER: Nav */}
-            <nav className="hidden lg:flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => scrollToSection('danh-muc-san', true)}
-                className="h-10 flex items-center px-4 rounded-xl bg-[#16A34A] text-white font-semibold text-sm transition"
-              >
-                Sân Bóng
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection('doi-ngu-hlv')}
-                className="h-10 flex items-center px-4 rounded-xl font-medium text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
-              >
-                Huấn Luyện Viên
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection('giao-trinh-dao-tao')}
-                className="h-10 flex items-center px-4 rounded-xl font-medium text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
-              >
-                Giáo Trình DUPR
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/matches/detail')}
-                className="h-10 flex items-center px-4 rounded-xl font-medium text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
-              >
-                Kèo Đấu
-              </button>
-            </nav>
-
-            {/* RIGHT: Auth Buttons */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              {!isLoggedIn ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/login')}
-                    className="hidden sm:flex h-10 px-4 rounded-xl border border-slate-300 text-slate-800 font-semibold text-sm hover:bg-slate-100 transition items-center"
-                  >
-                    ĐĂNG NHẬP
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/auth/register')}
-                    className="h-10 px-4 rounded-xl bg-[#16A34A] hover:bg-green-700 text-white font-extrabold text-sm shadow-md shadow-green-600/30 transition flex items-center"
-                  >
-                    THAM GIA NGAY
-                  </button>
-                </>
-              ) : (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                    className="flex items-center gap-2 p-1 rounded-full border border-slate-200 hover:bg-slate-100 transition"
-                  >
-                    <img
-                      src={currentUser.avatarUrl}
-                      alt={currentUser.name}
-                      className="w-9 h-9 rounded-full object-cover border border-[#16A34A]"
-                    />
-                    <span className="hidden md:inline text-xs font-bold text-slate-800 pr-1">
-                      {currentUser.name}
-                    </span>
-                  </button>
-                  {isProfileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
-                      <button
-                        type="button"
-                        onClick={() => navigate('/profile')}
-                        className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                      >
-                        <UserIcon className="w-4 h-4 text-[#16A34A]" /> Hồ Sơ DUPR
-                      </button>
-                      <button
-                        type="button"
-                        className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                      >
-                        <Bell className="w-4 h-4 text-[#16A34A]" /> Thông Báo
-                      </button>
-                      <div className="border-t border-slate-100 my-1" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleLogout()
-                          setIsProfileMenuOpen(false)
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
-                      >
-                        <LogOut className="w-4 h-4" /> Đăng Xuất
-                      </button>
-                    </div>
-                  )}
+        {mobileMenuOpen && (
+          <div className="border-t border-border bg-card px-4 py-4 shadow-xl lg:hidden">
+            <div className="mx-auto grid max-w-[1320px] gap-1">
+              <button type="button" onClick={showVenueResults} className="rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-muted">Khám phá sân</button>
+              <button type="button" onClick={() => scrollTo('huan-luyen-vien')} className="rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-muted">Huấn luyện viên</button>
+              <button type="button" onClick={() => scrollTo('giao-trinh')} className="rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-muted">Giáo trình DUPR</button>
+              <button type="button" onClick={() => navigate(matchDestination)} className="rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-muted">Kèo đấu</button>
+              {!session && (
+                <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border pt-3">
+                  <Button variant="outline" onClick={() => navigate('/login')}>Đăng nhập</Button>
+                  <Button onClick={() => navigate('/auth/register')}>Tham gia ngay</Button>
                 </div>
               )}
-
-              {/* Mobile hamburger */}
-              <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden h-10 w-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-100 transition"
-              >
-                <div className="space-y-1.5">
-                  <span className="block w-5 h-0.5 bg-current" />
-                  <span className="block w-4 h-0.5 bg-current" />
-                  <span className="block w-5 h-0.5 bg-current" />
-                </div>
-              </button>
             </div>
           </div>
+        )}
+      </header>
 
-          {/* Mobile menu dropdown */}
-          {isMobileMenuOpen && (
-            <div className="lg:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
-              {[
-                { label: 'Sân Bóng', action: () => { scrollToSection('danh-muc-san', true); setIsMobileMenuOpen(false) } },
-                { label: 'Huấn Luyện Viên', action: () => { scrollToSection('doi-ngu-hlv'); setIsMobileMenuOpen(false) } },
-                { label: 'Giáo Trình DUPR', action: () => { scrollToSection('giao-trinh-dao-tao'); setIsMobileMenuOpen(false) } },
-                { label: 'Kèo Đấu', action: () => { navigate('/matches/detail'); setIsMobileMenuOpen(false) } },
-              ].map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={item.action}
-                  className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-                >
-                  {item.label}
-                </button>
-              ))}
-              <div className="pt-2 border-t border-slate-100 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate('/login')}
-                  className="flex-1 h-10 rounded-xl border border-slate-300 text-sm font-semibold"
-                >
-                  Đăng nhập
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/auth/register')}
-                  className="flex-1 h-10 rounded-xl bg-[#16A34A] text-white text-sm font-bold"
-                >
-                  Đăng ký
-                </button>
-              </div>
-            </div>
-          )}
-        </header>
+      <main>
+        <section className="relative isolate overflow-hidden px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-12 lg:px-12">
+          <div className="absolute -left-36 top-20 -z-10 h-96 w-96 rounded-full bg-secondary/45 blur-3xl" />
+          <div className="absolute -right-36 bottom-0 -z-10 h-96 w-96 rounded-full bg-accent/35 blur-3xl" />
 
-        {/* ══════════════════════════════════════════════════════
-            MAIN
-        ══════════════════════════════════════════════════════ */}
-        <main className="px-4 sm:px-8 lg:px-12 flex flex-col space-y-16 py-10 sm:py-14">
-
-          {/* ── 1. HERO (12 col: 7 Carousel | 5 Search Card) ── */}
-          <section className="grid grid-cols-12 gap-6 items-center">
-
-            {/* LEFT: Hero Carousel */}
-            <div className="col-span-12 lg:col-span-7 relative">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-slate-900 aspect-[7/5] group">
-                {/* Slides */}
-                <div
-                  className="w-full h-full flex transition-transform duration-500 ease-out"
-                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-                >
-                  {heroSlides.map((slide) => (
-                    <div key={slide.id} className="w-full h-full shrink-0 relative">
-                      <img
-                        src={slide.image}
-                        alt={slide.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-
-                      {/* Top badge */}
-                      <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md flex items-center gap-1.5">
-                        <span className="text-[#84CC16] text-xs">⚡</span>
-                        <span className="text-white text-xs font-semibold">{slide.availableCourts}</span>
-                      </div>
-
-                      {/* Bottom info */}
-                      <div className="absolute bottom-4 left-4 z-10">
-                        <span className="text-[10px] uppercase tracking-wider bg-[#16A34A]/90 backdrop-blur-md px-2 py-0.5 rounded font-bold text-white">
-                          {slide.badge}
-                        </span>
-                        <p className="text-lg font-bold mt-1 text-white">{slide.title}</p>
-                      </div>
-                      <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md flex items-center gap-2 z-10">
-                        <span className="text-[#84CC16] font-bold text-xs">★</span>
-                        <span className="text-white text-xs font-medium">{slide.rating}</span>
-                        <span className="text-slate-400 text-[11px]">{slide.reviews}</span>
-                      </div>
-                    </div>
-                  ))}
+          <div className="mx-auto max-w-[1320px]">
+            <div className="grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-secondary/55 px-3.5 py-2 text-xs font-black uppercase tracking-[0.14em] text-primary">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  Your Fit. Your Way.
                 </div>
-
-                {/* Prev / Next */}
-                <button
-                  type="button"
-                  onClick={prevSlide}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition z-20"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={nextSlide}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition z-20"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-
-                {/* Dots */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full">
-                  {heroSlides.map((_, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setCurrentSlide(idx)}
-                      className={`h-2 rounded-full transition-all cursor-pointer ${
-                        currentSlide === idx ? 'w-6 bg-[#16A34A]' : 'w-2 bg-white/70 hover:bg-white'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT: Value Props + Search Card */}
-            <div className="col-span-12 lg:col-span-5 flex flex-col space-y-5">
-              {/* Live badge */}
-              <div className="inline-flex items-center gap-2 self-start px-3.5 py-1.5 rounded-full bg-green-100 text-[#16A34A]">
-                <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
-                <span className="text-xs uppercase tracking-wider font-extrabold">
-                  Mạng lưới Pickleball TP. Thủ Đức Trực Tuyến
-                </span>
-                <span className="text-slate-400 text-xs">•</span>
-                <span className="text-xs text-slate-700 font-semibold">42 Cụm Sân</span>
-              </div>
-
-              {/* Headline */}
-              <div className="flex flex-col space-y-2">
-                <h1 className="text-[30px] sm:text-[34px] leading-[38px] sm:leading-[42px] text-slate-900 tracking-tight font-black">
-                  Đặt sân pickleball gần bạn{' '}
-                  <span className="text-[#16A34A]">và bắt đầu chơi ngay</span>
+                <h1 className="mt-6 text-5xl font-black leading-[0.98] tracking-[-0.055em] sm:text-[60px]">
+                  Ra sân đúng giờ.
+                  <span className="mt-2 block text-primary">Gặp đúng người.</span>
                 </h1>
-                <p className="text-sm text-slate-600 leading-relaxed pt-1">
-                  Giữ chỗ sân tức thì, ghép kèo DUPR cân bằng trình độ, huấn luyện viên chứng chỉ quốc tế và hệ thống 6 slot chuẩn hóa tại TP. Thủ Đức.
+                <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
+                  Đặt sân, ghép kèo theo DUPR và học cùng huấn luyện viên đã xác thực — tất cả trong một hành trình rõ ràng, an toàn và đầy hứng thú.
                 </p>
-              </div>
-
-              {/* Search Card */}
-              <div className="p-5 rounded-2xl bg-white shadow-xl border border-slate-200 flex flex-col space-y-4">
-                <form onSubmit={handleSearchSubmit} className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Khu vực */}
-                    <div className="relative flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 transition min-h-[48px] border border-slate-200 focus-within:ring-2 focus-within:ring-[#16A34A] focus-within:border-transparent">
-                      <div className="flex flex-col min-w-0 pr-2 pointer-events-none">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold leading-tight tracking-wider">Khu vực</span>
-                        <span className="text-xs text-slate-900 font-bold truncate mt-0.5">{searchLocation}</span>
-                      </div>
-                      <MapPin className="w-4 h-4 text-[#16A34A] shrink-0 pointer-events-none" />
-                      <select
-                        value={searchLocation}
-                        onChange={(e) => setSearchLocation(e.target.value)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        title="Chọn khu vực"
-                      >
-                        <option>Thảo Điền, Hiệp Phú</option>
-                        <option>Thảo Điền, An Khánh</option>
-                        <option>An Phú, Bình Trưng Đông</option>
-                        <option>Linh Chiểu, Hiệp Phú</option>
-                        <option>Tăng Nhơn Phú, Long Thạnh Mỹ</option>
-                        <option>Toàn TP. Thủ Đức</option>
-                      </select>
-                    </div>
-
-                    {/* Ngày chơi */}
-                    <div className="relative flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 transition min-h-[48px] border border-slate-200 focus-within:ring-2 focus-within:ring-[#16A34A] focus-within:border-transparent">
-                      <div className="flex flex-col min-w-0 pr-2 pointer-events-none">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold leading-tight tracking-wider">Ngày chơi</span>
-                        <span className="text-xs text-slate-900 font-bold truncate mt-0.5">{searchDate}</span>
-                      </div>
-                      <Calendar className="w-4 h-4 text-slate-500 shrink-0 pointer-events-none" />
-                      <select
-                        value={searchDate}
-                        onChange={(e) => setSearchDate(e.target.value)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        title="Chọn ngày"
-                      >
-                        <option>Hôm nay, 14/10</option>
-                        <option>Ngày mai, 15/10</option>
-                        <option>Thứ Năm, 16/10</option>
-                        <option>Thứ Sáu, 17/10</option>
-                        <option>Thứ Bảy, 18/10</option>
-                        <option>Chủ Nhật, 19/10</option>
-                      </select>
-                    </div>
-
-                    {/* Khung giờ */}
-                    <div className="relative flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 transition min-h-[48px] border border-slate-200 focus-within:ring-2 focus-within:ring-[#16A34A] focus-within:border-transparent">
-                      <div className="flex flex-col min-w-0 pr-2 pointer-events-none">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold leading-tight tracking-wider">Khung giờ</span>
-                        <span className="text-xs text-slate-900 font-bold truncate mt-0.5">{searchSlot}</span>
-                      </div>
-                      <Clock className="w-4 h-4 text-slate-500 shrink-0 pointer-events-none" />
-                      <select
-                        value={searchSlot}
-                        onChange={(e) => setSearchSlot(e.target.value)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        title="Chọn slot"
-                      >
-                        <option>12:30 - 14:00 (Slot 1)</option>
-                        <option>14:00 - 15:30 (Slot 2)</option>
-                        <option>15:30 - 17:00 (Slot 3)</option>
-                        <option>17:00 - 18:30 (Slot 4)</option>
-                        <option>18:30 - 20:00 (Slot 5)</option>
-                        <option>20:00 - 21:30 (Slot 6)</option>
-                      </select>
-                    </div>
-
-                    {/* Thể thức */}
-                    <div className="relative flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 transition min-h-[48px] border border-slate-200 focus-within:ring-2 focus-within:ring-[#16A34A] focus-within:border-transparent">
-                      <div className="flex flex-col min-w-0 pr-2 pointer-events-none">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold leading-tight tracking-wider">Thể thức</span>
-                        <span className="text-xs text-slate-900 font-bold truncate mt-0.5">{searchFormat}</span>
-                      </div>
-                      <Users className="w-4 h-4 text-slate-500 shrink-0 pointer-events-none" />
-                      <select
-                        value={searchFormat}
-                        onChange={(e) => setSearchFormat(e.target.value)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        title="Chọn thể thức"
-                      >
-                        <option>Đánh Đôi (4 người)</option>
-                        <option>Đánh Đơn (2 người)</option>
-                        <option>Ghép Kèo DUPR</option>
-                        <option>Huấn Luyện 1-1</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Search button */}
-                  <button
-                    type="submit"
-                    disabled={isSearching}
-                    className="h-12 w-full px-6 rounded-xl bg-[#16A34A] hover:bg-green-700 active:scale-[0.99] text-white font-extrabold text-sm inline-flex items-center justify-center gap-2 shadow-lg shadow-green-600/30 transition-all disabled:opacity-80"
-                  >
-                    {isSearching ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Đang tìm kiếm cụm sân...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Tìm kiếm sân đấu ngay</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </form>
-              </div>
-
-              {/* Checkmarks */}
-              <div className="flex items-center gap-4 text-slate-600 text-xs px-1 flex-wrap">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-[#16A34A]" /> Vé QR tức thì
-                </span>
-                <span className="flex items-center gap-1.5 font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-[#16A34A]" /> Ký quỹ Escrow bảo lãnh
-                </span>
-                <span className="flex items-center gap-1.5 font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-[#16A34A]" /> Mượn vợt miễn phí
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* ── 2. COURT RESULTS (ẨN MẶC ĐỊNH, hiện khi search) ── */}
-          {showAvailableCourts && (
-            <section
-              id="danh-muc-san"
-              className="flex flex-col space-y-6 scroll-mt-24"
-            >
-              {/* Header */}
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-black text-slate-900">12 cụm sân khả dụng</h2>
-                    <span className="px-2.5 py-0.5 rounded-full bg-green-100 text-[#16A34A] text-xs font-black uppercase tracking-wider">
-                      CÓ SẴN HÔM NAY
-                    </span>
-                  </div>
-
-                  {/* Dynamic filter chips */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    {[
-                      { icon: <MapPin className="w-3.5 h-3.5 text-[#16A34A]" />, label: `TP. Thủ Đức, ${searchLocation}` },
-                      { icon: <Calendar className="w-3.5 h-3.5 text-[#16A34A]" />, label: searchDate },
-                      { icon: <Clock className="w-3.5 h-3.5 text-[#16A34A]" />, label: searchSlot },
-                      { icon: <Users className="w-3.5 h-3.5 text-[#16A34A]" />, label: searchFormat },
-                    ].map((chip, i) => (
-                      <div key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
-                        {chip.icon}
-                        <span>{chip.label}</span>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const el = document.querySelector('form')
-                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                      }}
-                      className="text-xs font-bold text-[#16A34A] hover:underline px-2 py-1.5"
-                    >
-                      Sửa bộ lọc
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowAvailableCourts(false)}
-                      className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-700 transition"
-                    >
-                      <ChevronUp className="w-3.5 h-3.5" />
-                      <span>Thu gọn</span>
-                    </button>
-                  </div>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Button size="lg" onClick={showVenueResults} className="h-12 rounded-2xl px-6 font-black shadow-xl shadow-primary/15">
+                    Tìm sân phù hợp <ArrowRight />
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={() => navigate(matchDestination)} className="h-12 rounded-2xl px-6 font-black">
+                    Xem kèo đang mở
+                  </Button>
                 </div>
-
-                {/* Sort */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <label className="text-xs uppercase font-bold text-slate-500">Sắp xếp theo:</label>
-                  <div className="relative">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="h-10 pl-3.5 pr-8 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 appearance-none outline-none focus:ring-2 focus:ring-[#84CC16] cursor-pointer"
-                    >
-                      <option value="distance">Gần nhất (Khoảng cách)</option>
-                      <option value="price">Giá thấp nhất</option>
-                      <option value="rating">Đánh giá cao nhất</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Filter pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                {[
-                  { key: 'all', label: 'Tất cả', count: '12' },
-                  { key: 'indoor', label: 'Trong nhà máy lạnh' },
-                  { key: 'outdoor', label: 'Ngoài trời LED' },
-                  { key: 'price', label: 'Giá dưới 150k' },
-                  { key: 'rating', label: 'Đánh giá 4.8+' },
-                ].map((pill) => (
-                  <button
-                    key={pill.key}
-                    type="button"
-                    onClick={() => setSelectedFilter(pill.key as typeof selectedFilter)}
-                    className={`h-9 px-4 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                      selectedFilter === pill.key
-                        ? 'bg-[#16A34A] text-white shadow-sm font-extrabold'
-                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    {pill.label}
-                    {pill.count && (
-                      <span className="ml-1 text-[10px] bg-black/20 px-1.5 rounded-full">{pill.count}</span>
-                    )}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className="h-9 px-3.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold inline-flex items-center gap-1.5 shrink-0"
-                >
-                  <span>Tiện ích</span>
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-                </button>
-              </div>
-
-              {/* 6 Court Cards Grid (2 col x 3 row) */}
-              <div className="grid grid-cols-12 gap-6">
-                {courtsData.map((court) => (
-                  <div
-                    key={court.id}
-                    className="col-span-12 md:col-span-6 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row gap-5"
-                  >
-                    {/* Thumbnail */}
-                    <div className="w-full sm:w-44 shrink-0 relative rounded-xl overflow-hidden bg-slate-100 h-48 sm:h-auto sm:min-h-[190px]">
-                      <img
-                        src={court.image}
-                        alt={court.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[#16A34A] text-white text-[10px] font-black uppercase tracking-wider">
-                        {court.badge}
-                      </span>
+                <div className="mt-9 grid max-w-lg grid-cols-3 gap-3">
+                  {[
+                    ['42+', 'Cụm sân'],
+                    ['1.8K', 'Người chơi'],
+                    ['4.9/5', 'Đánh giá'],
+                  ].map(([value, label]) => (
+                    <div key={label} className="border-l-2 border-secondary pl-3">
+                      <p className="text-xl font-black text-primary sm:text-2xl">{value}</p>
+                      <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground sm:text-xs">{label}</p>
                     </div>
-
-                    {/* Info */}
-                    <div className="flex flex-col justify-between flex-1 min-w-0 space-y-3">
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="px-2 py-0.5 rounded bg-green-50 text-[#16A34A] text-xs font-bold">{court.typeTag}</span>
-                          <div className="flex items-baseline gap-0.5">
-                            <span className="text-base font-black text-[#16A34A]">{court.price}</span>
-                            <span className="text-[10px] text-slate-500 uppercase font-semibold">/giờ</span>
-                          </div>
-                        </div>
-                        <h3 className="text-base font-extrabold text-slate-900 truncate">{court.name}</h3>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
-                          <span className="flex items-center gap-0.5 text-amber-600 font-bold">
-                            ★ {court.rating} <span className="font-normal text-slate-400">({court.reviewsCount})</span>
-                          </span>
-                          <span>•</span>
-                          <span>{court.distance}</span>
-                          <span>•</span>
-                          <span>{court.courtsCount}</span>
-                        </div>
-
-                        {/* Slots */}
-                        <div className="pt-1">
-                          <span className="text-[10px] text-slate-500 uppercase font-bold block mb-1">
-                            Ca Slot Khả Dụng
-                          </span>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {court.slots.map((slot, si) =>
-                              slot.available ? (
-                                <button
-                                  key={si}
-                                  type="button"
-                                  onClick={() => navigate('/matches/detail')}
-                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    slot.isPeak
-                                      ? 'bg-[#16A34A] text-white shadow-sm'
-                                      : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
-                                  }`}
-                                >
-                                  {slot.time}
-                                </button>
-                              ) : (
-                                <span
-                                  key={si}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-100/60 text-slate-400 text-xs line-through cursor-not-allowed"
-                                >
-                                  {slot.time}
-                                </span>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                        <button
-                          type="button"
-                          onClick={() => navigate('/coaches')}
-                          className="text-xs text-[#16A34A] hover:underline font-bold inline-flex items-center gap-0.5 cursor-pointer"
-                        >
-                          <span>HLV & Khóa học</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => navigate('/matches/detail')}
-                          className="h-9 px-4 rounded-xl bg-[#16A34A] hover:bg-green-700 text-white text-xs font-bold shadow-sm transition cursor-pointer"
-                        >
-                          Đặt sân ngay
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Load more */}
-              <div className="flex justify-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => navigate('/venues')}
-                  className="h-11 px-8 rounded-xl bg-white border border-slate-200 text-slate-800 hover:bg-slate-100 text-sm font-bold shadow-sm inline-flex items-center gap-2 transition cursor-pointer"
-                >
-                  <span>Xem thêm cụm sân tại TP. Thủ Đức</span>
-                  <ChevronDown className="w-4 h-4 text-slate-500" />
-                </button>
-              </div>
-
-              {/* Helper banner */}
-              <div className="p-5 rounded-2xl bg-slate-100 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#16A34A] shrink-0">
-                    <Search className="w-5 h-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-slate-900">Không tìm thấy khung giờ hoặc sân đấu phù hợp quanh bạn?</span>
-                    <span className="text-xs text-slate-500">Thử mở rộng bán kính tìm kiếm sang các phường lân cận tại Thủ Đức hoặc đổi ca Slot.</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedFilter('all')}
-                  className="h-9 px-4 rounded-xl bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 text-xs font-bold transition shrink-0 cursor-pointer"
-                >
-                  Đặt lại bộ lọc
-                </button>
-              </div>
-            </section>
-          )}
-
-          {/* ── 3. GIÁ TRỊ CỐT LÕI ── */}
-          <section className="flex flex-col space-y-8">
-            <div className="text-center max-w-2xl mx-auto space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-[#16A34A] text-xs font-bold uppercase tracking-wider">
-                <Star className="w-3.5 h-3.5" /> 3 Giá Trị Vượt Trội Của FITLYO
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-                Giải Quyết Triệt Để Mọi Nỗi Đau Khi Chơi Pickleball
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                {
-                  icon: <Target className="w-7 h-7" />,
-                  title: 'Ghép Kèo DUPR Chuẩn Quốc Tế',
-                  desc: 'Không lo lệch trình. Thuật toán ghép trận lọc ±0.25 điểm DUPR, đảm bảo mọi trận đấu cân bằng và hấp dẫn.',
-                  color: 'bg-green-100 text-[#16A34A]',
-                },
-                {
-                  icon: <Clock className="w-7 h-7" />,
-                  title: 'Ma Trận 6 Slot 90 Phút Cố Định',
-                  desc: 'Khung giờ chuẩn hóa từ 12:30 đến 21:30. Tối ưu Giờ Vàng 18:30-20:00. Đặt trước lên đến 14 ngày.',
-                  color: 'bg-orange-100 text-orange-600',
-                },
-                {
-                  icon: <ShieldCheck className="w-7 h-7" />,
-                  title: 'Ký Quỹ Escrow Bảo Lãnh Cọc',
-                  desc: 'Bảo lãnh tiền cọc 100%. Bùng kèo phạt 100% cọc. Hoàn tiền tự động khi hủy sân do thời tiết.',
-                  color: 'bg-blue-100 text-blue-600',
-                },
-              ].map((card, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-slate-200 bg-white p-6 space-y-3 shadow-sm hover:shadow-md hover:border-[#16A34A]/40 transition-all"
-                >
-                  <div className={`w-14 h-14 rounded-2xl ${card.color} flex items-center justify-center`}>
-                    {card.icon}
-                  </div>
-                  <h3 className="font-extrabold text-lg text-slate-900">{card.title}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">{card.desc}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* ── 4. COACHES ── */}
-          <section id="doi-ngu-hlv" className="flex flex-col space-y-6 scroll-mt-24">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-              <div className="flex flex-col space-y-1.5">
-                <div className="flex items-center gap-2.5">
-                  <Award className="text-[#16A34A] w-6 h-6" />
-                  <h2 className="text-2xl font-black text-slate-900">Huấn Luyện Viên Pickleball Đạt Chuẩn</h2>
-                  <span className="px-2.5 py-0.5 rounded-full bg-green-100 text-[#16A34A] text-xs font-black uppercase">
-                    IPTPA & PPR Certified
-                  </span>
-                </div>
-                <p className="text-sm text-slate-500">
-                  Đội ngũ HLV được Admin thẩm định bằng cấp, giảng dạy trực tiếp tại TP. Thủ Đức.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate('/coaches')}
-                className="h-10 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-bold transition flex items-center gap-1.5 shrink-0"
-              >
-                Xem tất cả HLV
-                <ChevronRight className="w-4 h-4 text-slate-500" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-              {coachesData.map((coach) => (
-                <div
-                  key={coach.id}
-                  className="rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-[#16A34A]/40 transition-all overflow-hidden flex flex-col"
-                >
-                  <div className="relative h-44 sm:h-52 bg-slate-100">
-                    <img src={coach.image} alt={coach.name} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-3 left-3">
-                      <span className="text-[10px] bg-[#16A34A] text-white px-2 py-0.5 rounded font-bold">
-                        {coach.cert}
-                      </span>
-                      <p className="text-white text-sm font-extrabold mt-0.5">{coach.name}</p>
-                    </div>
-                  </div>
-                  <div className="p-4 flex flex-col gap-2 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500 font-semibold">DUPR: <span className="text-[#16A34A] font-black">{coach.dupr}</span></span>
-                      <span className="text-xs text-amber-600 font-bold">★ {coach.rating} <span className="text-slate-400 font-normal">({coach.reviewsCount})</span></span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">{coach.specialty}</p>
-                    <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <div>
-                        <span className="text-base font-black text-[#16A34A]">{coach.rate}</span>
-                        <span className="text-[10px] text-slate-400 ml-0.5">/buổi</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => navigate('/coaches')}
-                        className="h-8 px-3 rounded-lg bg-[#16A34A] hover:bg-green-700 text-white text-xs font-bold transition cursor-pointer"
-                      >
-                        Xem hồ sơ
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* ── 5. CURRICULUM ── */}
-          <section id="giao-trinh-dao-tao" className="flex flex-col space-y-6 scroll-mt-24">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-              <div className="flex flex-col space-y-1.5">
-                <div className="flex items-center gap-2.5">
-                  <BookOpen className="text-[#16A34A] w-6 h-6" />
-                  <h2 className="text-2xl font-black text-slate-900">Giáo Trình Đào Tạo Có Cấu Trúc</h2>
-                </div>
-                <p className="text-sm text-slate-500">
-                  DUPR liên kết từng cấp độ bài học, thiết kế để nâng dần kỹ năng từng bước vững chắc.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-              {curriculumData.map((course) => (
-                <div
-                  key={course.id}
-                  className={`rounded-2xl border bg-white shadow-sm hover:shadow-md transition-all p-5 flex flex-col gap-3 ${
-                    course.isFeatured ? 'border-[#16A34A] ring-1 ring-[#16A34A]/30' : 'border-slate-200'
-                  }`}
-                >
-                  {course.isFeatured && (
-                    <span className="self-start px-2 py-0.5 rounded-full bg-[#84CC16] text-white text-[10px] font-black uppercase tracking-wider">
-                      Khuyên dùng
-                    </span>
-                  )}
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-bold">{course.level}</span>
-                    <p className="text-xs text-[#16A34A] font-bold">{course.duprRange}</p>
-                  </div>
-                  <h3 className="text-base font-extrabold text-slate-900">{course.title}</h3>
-                  <p className="text-xs text-slate-500">{course.sessions}</p>
-                  <p className="text-xs text-slate-600 leading-relaxed flex-1">{course.description}</p>
-                  <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                    HLV phụ trách: <span className="font-bold text-slate-700">{course.leadCoach}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-base font-black text-[#16A34A]">{course.price}</span>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/coaches')}
-                      className="h-8 px-3 rounded-lg bg-[#16A34A] hover:bg-green-700 text-white text-xs font-bold transition cursor-pointer"
-                    >
-                      Đăng ký
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* ── 6. PARTNER CTA ── */}
-          <section className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-green-50 to-white p-6 sm:p-8 flex flex-col gap-4 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-green-100 text-[#16A34A] flex items-center justify-center">
-                <GraduationCap className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-extrabold text-slate-900">Trở thành Huấn Luyện Viên FITLYO</h3>
-                <p className="text-sm text-slate-500 mt-1">Tiếp cận hàng ngàn học viên, quản lý lịch dạy thông minh và tăng thu nhập bền vững.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate('/auth/register')}
-                className="self-start h-10 px-5 rounded-xl bg-[#16A34A] hover:bg-green-700 text-white text-sm font-bold transition inline-flex items-center gap-2"
-              >
-                ĐĂNG KÝ LÀM HLV
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 to-white p-6 sm:p-8 flex flex-col gap-4 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                <Building2 className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-extrabold text-slate-900">Đưa Cụm Sân Lên Nền Tảng FITLYO</h3>
-                <p className="text-sm text-slate-500 mt-1">Tăng công suất lấp đầy, quản lý ma trận 6 slot chuyên nghiệp và tiếp cận cộng đồng người chơi chất lượng.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate('/fm/calendar')}
-                className="self-start h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition inline-flex items-center gap-2"
-              >
-                ĐĂNG KÝ CỤM SÂN
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </section>
-        </main>
-
-        {/* ══════════════════════════════════════════════════════
-            FOOTER
-        ══════════════════════════════════════════════════════ */}
-        <footer className="w-full bg-slate-900 text-slate-400 border-t border-slate-800 mt-auto">
-          <div className="px-4 sm:px-8 lg:px-12 pt-16 pb-8">
-            <div className="grid grid-cols-12 gap-8 pb-12">
-              {/* Col 4: Brand */}
-              <div className="col-span-12 md:col-span-4 flex flex-col space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-black text-white tracking-tight">FITLYO</span>
-                  <span className="text-xs tracking-widest text-[#84CC16] font-bold px-2 py-0.5 bg-slate-800 rounded">
-                    PICKLEBALL
-                  </span>
-                </div>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  Nền tảng thể thao Pickleball thông minh đầu tiên tại TP. Thủ Đức. Ghép kèo DUPR cân bằng, đặt sân 6 slot chuẩn hóa, ký quỹ Escrow bảo đảm cọc.
-                </p>
-                <div className="flex items-center gap-3 pt-2">
-                  {[Globe, Share2, Mail].map((Icon, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition"
-                    >
-                      <Icon className="w-4 h-4" />
-                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Col 2: Links */}
-              <div className="col-span-6 md:col-span-2 flex flex-col space-y-3">
-                <h4 className="text-sm font-extrabold text-white uppercase tracking-wider">Nền tảng</h4>
-                {['Kèo Đấu DUPR', 'Đặt Sân 6 Slot', 'Huấn Luyện Viên', 'Giáo Trình DUPR'].map((link) => (
-                  <button key={link} type="button" className="text-sm text-slate-400 hover:text-white transition text-left">
-                    {link}
-                  </button>
-                ))}
-              </div>
-
-              {/* Col 2: Support */}
-              <div className="col-span-6 md:col-span-2 flex flex-col space-y-3">
-                <h4 className="text-sm font-extrabold text-white uppercase tracking-wider">Hỗ trợ</h4>
-                {['Về chúng tôi', 'Điều khoản dịch vụ', 'Chính sách Escrow', 'Trung tâm trợ giúp'].map((link) => (
-                  <button key={link} type="button" className="text-sm text-slate-400 hover:text-white transition text-left">
-                    {link}
-                  </button>
-                ))}
-              </div>
-
-              {/* Col 4: Contact */}
-              <div className="col-span-12 md:col-span-4 flex flex-col space-y-4">
-                <h4 className="text-sm font-extrabold text-white uppercase tracking-wider">Liên hệ & Hỗ trợ</h4>
-                {[
-                  { icon: <Phone className="w-4 h-4" />, text: '0901 234 567 (8:00 – 22:00)' },
-                  { icon: <Mail className="w-4 h-4" />, text: 'hotline@fitlyo.vn' },
-                  { icon: <MapPin className="w-4 h-4" />, text: 'TP. Thủ Đức, TP. Hồ Chí Minh' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2.5 text-sm text-slate-400">
-                    <span className="text-[#84CC16]">{item.icon}</span>
-                    <span>{item.text}</span>
+              <div className="relative">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] border border-white/30 bg-primary shadow-[0_35px_90px_rgba(20,63,66,0.22)]">
+                  <div
+                    className="flex h-full transition-transform duration-700 ease-out"
+                    style={{ transform: 'translateX(-' + currentSlide * 100 + '%)' }}
+                  >
+                    {heroSlides.map((slide) => (
+                      <article key={slide.id} className="relative h-full w-full shrink-0">
+                        <img src={slide.image} alt={slide.title} className="h-full w-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#102E31]/90 via-[#143F42]/10 to-transparent" />
+                        <div className="absolute left-5 top-5 rounded-full border border-white/20 bg-[#143F42]/70 px-3 py-2 text-xs font-bold text-white backdrop-blur-md">
+                          <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#AFF0D3]" />
+                          {slide.availability}
+                        </div>
+                        <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4 text-white">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/65">{slide.area}</p>
+                            <h2 className="mt-1 text-xl font-black sm:text-2xl">{slide.title}</h2>
+                          </div>
+                          <div className="rounded-2xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-black backdrop-blur-md">
+                            <Star className="mr-1 inline h-4 w-4 fill-[#FFB697] text-[#FFB697]" /> {slide.rating}
+                          </div>
+                        </div>
+                      </article>
+                    ))}
                   </div>
-                ))}
+
+                  <button type="button" onClick={previousSlide} aria-label="Ảnh trước" className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-[#143F42]/55 text-white backdrop-blur-md transition hover:bg-[#143F42]/80">
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button type="button" onClick={nextSlide} aria-label="Ảnh tiếp theo" className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-[#143F42]/55 text-white backdrop-blur-md transition hover:bg-[#143F42]/80">
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="absolute -bottom-5 -left-3 rounded-2xl border border-primary/10 bg-card/95 p-4 shadow-xl backdrop-blur-xl sm:-left-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground"><Zap className="h-5 w-5" /></div>
+                    <div>
+                      <p className="text-xs font-bold text-muted-foreground">Đặt nhanh hôm nay</p>
+                      <p className="text-sm font-black">Còn 34 slot phù hợp</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-slate-600 text-center sm:text-left">
-                © 2026 FITLYO. Dự án Khởi nghiệp EXE101 – FPT University.
-              </p>
-              <div className="flex items-center gap-4 text-xs text-slate-600">
-                <button type="button" className="hover:text-slate-400 transition">Chính sách quyền riêng tư</button>
-                <span>•</span>
-                <button type="button" className="hover:text-slate-400 transition">Điều khoản</button>
+            <form onSubmit={handleSearch} className="brand-card relative z-10 mt-16 grid gap-2 rounded-[1.75rem] p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+              {[
+                {
+                  label: 'Khu vực',
+                  icon: MapPin,
+                  value: searchLocation,
+                  onChange: setSearchLocation,
+                  options: ['TP. Thủ Đức', 'Thảo Điền', 'An Phú', 'Hiệp Phú', 'Linh Chiểu'],
+                },
+                {
+                  label: 'Ngày chơi',
+                  icon: Calendar,
+                  value: searchDate,
+                  onChange: setSearchDate,
+                  options: ['Hôm nay, 15/10', 'Ngày mai, 16/10', 'Thứ Bảy, 17/10', 'Chủ Nhật, 18/10'],
+                },
+                {
+                  label: 'Khung giờ',
+                  icon: Clock,
+                  value: searchSlot,
+                  onChange: setSearchSlot,
+                  options: ['15:30–17:00 · Slot 3', '17:00–18:30 · Slot 4', '18:30–20:00 · Slot 5', '20:00–21:30 · Slot 6'],
+                },
+                {
+                  label: 'Thể thức',
+                  icon: Users,
+                  value: searchFormat,
+                  onChange: setSearchFormat,
+                  options: ['Đánh đôi · 4 người', 'Đánh đơn · 2 người', 'Ghép kèo DUPR', 'Huấn luyện 1-1'],
+                },
+              ].map((field) => {
+                const Icon = field.icon
+                return (
+                  <label key={field.label} className="flex min-w-0 items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-muted/65">
+                    <Icon className="h-5 w-5 shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{field.label}</span>
+                      <select value={field.value} onChange={(event) => field.onChange(event.target.value)} className="mt-0.5 w-full appearance-none bg-transparent text-sm font-black outline-none">
+                        {field.options.map((option) => <option key={option}>{option}</option>)}
+                      </select>
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </label>
+                )
+              })}
+              <Button type="submit" disabled={isSearching} className="min-h-13 rounded-2xl bg-accent px-6 font-black text-accent-foreground hover:bg-accent/90">
+                {isSearching ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <ArrowRight />}
+                {isSearching ? 'Đang tìm...' : 'Tìm sân'}
+              </Button>
+            </form>
+
+            <div className="mt-5 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-bold text-muted-foreground">
+              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Vé QR tức thì</span>
+              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Ký quỹ an toàn</span>
+              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Lịch 6 slot rõ ràng</span>
+            </div>
+          </div>
+        </section>
+
+        {showResults && (
+          <section id="san-noi-bat" className="scroll-mt-24 border-y border-border/70 bg-card/55 px-4 py-16 sm:px-6 lg:px-12">
+            <div className="mx-auto max-w-[1320px]">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">Kết quả theo lựa chọn của bạn</p>
+                  <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{filteredVenues.length} cụm sân sẵn sàng</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">{searchLocation} · {searchDate} · {searchSlot}</p>
+                </div>
+                <label className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold">
+                  Sắp xếp
+                  <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="bg-transparent font-black outline-none">
+                    <option value="distance">Gần nhất</option>
+                    <option value="price">Giá thấp nhất</option>
+                    <option value="rating">Đánh giá cao nhất</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
+                {[
+                  ['all', 'Tất cả'],
+                  ['indoor', 'Trong nhà'],
+                  ['outdoor', 'Ngoài trời'],
+                  ['price', 'Dưới 150.000đ'],
+                  ['rating', 'Đánh giá 4.85+'],
+                ].map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setVenueFilter(key as VenueFilter)}
+                    className={'shrink-0 rounded-full px-4 py-2 text-xs font-black transition ' + (venueFilter === key ? 'bg-primary text-primary-foreground' : 'border border-border bg-background text-muted-foreground hover:text-foreground')}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {filteredVenues.map((venue) => (
+                  <article key={venue.id} className="group overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                    <div className="relative h-48 overflow-hidden">
+                      <img src={venue.image} alt={venue.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#143F42]/70 to-transparent" />
+                      <span className="absolute left-4 top-4 rounded-full bg-secondary px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-secondary-foreground">{venue.type}</span>
+                      <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between text-white">
+                        <div><p className="text-xs text-white/70">{venue.area}</p><h3 className="mt-1 text-lg font-black">{venue.name}</h3></div>
+                        <span className="rounded-xl bg-white/15 px-2.5 py-1.5 text-xs font-black backdrop-blur-md"><Star className="mr-1 inline h-3.5 w-3.5 fill-[#FFB697] text-[#FFB697]" />{venue.rating}</span>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{venue.distance} km · {venue.courts}</span>
+                        <span>{venue.reviews} đánh giá</span>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Slot khả dụng</p>
+                        <div className="mt-2 flex gap-2">
+                          {venue.slots.map((slot, index) => (
+                            <button key={slot} type="button" onClick={() => navigate(playerDestination)} className={'rounded-lg px-2.5 py-1.5 text-xs font-black ' + (index === 1 ? 'bg-accent text-accent-foreground' : 'bg-muted text-foreground')}>
+                              {slot}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
+                        <div><strong className="text-lg text-primary">{formatCurrency(venue.price)}</strong><span className="text-xs text-muted-foreground"> / giờ</span></div>
+                        <Button size="sm" onClick={() => navigate(playerDestination)}>Xem sân <ArrowUpRight /></Button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section className="px-4 py-20 sm:px-6 lg:px-12">
+          <div className="mx-auto max-w-[1320px]">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Được thiết kế cho nhịp chơi thật</p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Ít thao tác hơn. Nhiều thời gian trên sân hơn.</h2>
+            </div>
+            <div className="mt-10 grid gap-5 md:grid-cols-3">
+              {valueCards.map((card) => {
+                const Icon = card.icon
+                return (
+                  <article key={card.title} className="brand-card rounded-[1.6rem] p-6 sm:p-7">
+                    <div className={'flex h-13 w-13 items-center justify-center rounded-2xl ' + card.tone}><Icon className="h-6 w-6" /></div>
+                    <p className="mt-6 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">{card.eyebrow}</p>
+                    <h3 className="mt-1 text-xl font-black">{card.title}</h3>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{card.description}</p>
+                  </article>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="huan-luyen-vien" className="scroll-mt-24 bg-secondary/28 px-4 py-20 sm:px-6 lg:px-12">
+          <div className="mx-auto max-w-[1320px]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-primary"><Award className="h-4 w-4" /> Coach đã xác thực</p>
+                <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Học đúng kỹ thuật, tiến bộ có lộ trình.</h2>
+                <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Hồ sơ, chứng chỉ và lịch dạy đều được kiểm tra trước khi xuất hiện trên FITLYO.</p>
+              </div>
+              <Button variant="outline" onClick={() => navigate('/coaches')}>Xem tất cả Coach <ArrowRight /></Button>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {coaches.map((coach) => (
+                <article key={coach.name} className="group overflow-hidden rounded-[1.5rem] border border-border bg-card">
+                  <div className="relative h-60 overflow-hidden">
+                    <img src={coach.image} alt={coach.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#143F42]/85 via-transparent to-transparent" />
+                    <span className="absolute left-4 top-4 rounded-full bg-secondary px-3 py-1.5 text-[10px] font-black text-secondary-foreground">{coach.certificate}</span>
+                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                      <h3 className="font-black">{coach.name}</h3>
+                      <p className="mt-1 text-xs text-white/70">DUPR {coach.dupr} · ★ {coach.rating}</p>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <p className="min-h-10 text-xs leading-5 text-muted-foreground">{coach.specialty}</p>
+                    <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                      <strong className="text-sm text-primary">{coach.rate}<span className="font-normal text-muted-foreground"> / buổi</span></strong>
+                      <button type="button" onClick={() => navigate('/coaches')} className="text-xs font-black text-primary hover:underline">Xem hồ sơ</button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="giao-trinh" className="scroll-mt-24 px-4 py-20 sm:px-6 lg:px-12">
+          <div className="brand-gradient mx-auto max-w-[1320px] overflow-hidden rounded-[2rem] px-5 py-10 text-white sm:px-10 sm:py-14 lg:px-14">
+            <div className="max-w-2xl">
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[#AFF0D3]"><BookOpen className="h-4 w-4" /> Giáo trình theo DUPR</p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Biết mình đang ở đâu và bước tiếp theo là gì.</h2>
+              <p className="mt-4 text-sm leading-6 text-white/65">Mỗi khóa học gắn với mục tiêu kỹ thuật cụ thể, lịch học rõ ràng và Coach phụ trách xuyên suốt.</p>
+            </div>
+
+            <div className="mt-9 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {courses.map((course) => (
+                <article key={course.level} className={'relative rounded-[1.4rem] border p-5 backdrop-blur-sm ' + (course.featured ? 'border-[#AFF0D3] bg-[#AFF0D3] text-[#143F42]' : 'border-white/15 bg-white/8 text-white')}>
+                  {course.featured && <span className="absolute right-4 top-4 rounded-full bg-[#143F42] px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#AFF0D3]">Khuyên dùng</span>}
+                  <p className={'text-[10px] font-black uppercase tracking-[0.16em] ' + (course.featured ? 'text-[#143F42]/60' : 'text-white/55')}>{course.level}</p>
+                  <p className="mt-2 text-xs font-black">{course.range}</p>
+                  <h3 className="mt-5 text-lg font-black">{course.title}</h3>
+                  <p className={'mt-1 text-xs ' + (course.featured ? 'text-[#143F42]/65' : 'text-white/55')}>{course.sessions}</p>
+                  <p className={'mt-4 min-h-18 text-xs leading-5 ' + (course.featured ? 'text-[#143F42]/75' : 'text-white/65')}>{course.description}</p>
+                  <div className={'mt-5 flex items-center justify-between border-t pt-4 ' + (course.featured ? 'border-[#143F42]/15' : 'border-white/10')}>
+                    <strong className="text-sm">{course.price}</strong>
+                    <button type="button" onClick={() => navigate('/coaches')} className="text-xs font-black underline underline-offset-4">Đăng ký</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 pb-20 sm:px-6 lg:px-12">
+          <div className="mx-auto grid max-w-[1320px] gap-5 md:grid-cols-2">
+            <article className="relative overflow-hidden rounded-[1.75rem] border border-primary/10 bg-secondary p-7 text-secondary-foreground sm:p-9">
+              <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full border-[24px] border-white/20" />
+              <GraduationCap className="h-8 w-8" />
+              <h2 className="mt-8 text-2xl font-black">Bạn là Coach chuyên nghiệp?</h2>
+              <p className="mt-2 max-w-md text-sm leading-6 opacity-70">Quản lý lịch dạy, khóa học và thu nhập trong một portal được thiết kế riêng cho Coach.</p>
+              <Button onClick={() => navigate('/auth/register')} className="mt-6">Đăng ký làm Coach <ArrowRight /></Button>
+            </article>
+            <article className="relative overflow-hidden rounded-[1.75rem] border border-primary/10 bg-accent p-7 text-accent-foreground sm:p-9">
+              <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full border-[24px] border-white/20" />
+              <Building2 className="h-8 w-8" />
+              <h2 className="mt-8 text-2xl font-black">Bạn đang vận hành cụm sân?</h2>
+              <p className="mt-2 max-w-md text-sm leading-6 opacity-70">Tối ưu công suất 6 slot, check-in QR và doanh thu bằng portal Field Manager.</p>
+              <Button onClick={() => navigate('/auth/register')} className="mt-6">Đưa sân lên FITLYO <ArrowRight /></Button>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer className="bg-[#0E3033] px-4 py-12 text-white sm:px-6 lg:px-12">
+        <div className="mx-auto max-w-[1320px]">
+          <div className="grid gap-10 border-b border-white/10 pb-10 md:grid-cols-[1.4fr_0.8fr_0.8fr_1fr]">
+            <div>
+              <BrandLogo tone="white" className="h-9 w-auto" />
+              <p className="mt-5 max-w-sm text-sm leading-6 text-white/55">Nền tảng Pickleball giúp mỗi người tìm đúng sân, đúng bạn chơi và đúng lộ trình phát triển.</p>
+            </div>
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-[0.18em] text-[#AFF0D3]">Khám phá</h3>
+              <div className="mt-4 grid gap-3 text-sm text-white/60">
+                <button type="button" onClick={showVenueResults} className="text-left hover:text-white">Cụm sân</button>
+                <button type="button" onClick={() => navigate(matchDestination)} className="text-left hover:text-white">Kèo đấu DUPR</button>
+                <button type="button" onClick={() => navigate('/coaches')} className="text-left hover:text-white">Huấn luyện viên</button>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-[0.18em] text-[#AFF0D3]">Hỗ trợ</h3>
+              <div className="mt-4 grid gap-3 text-sm text-white/60">
+                <span>Điều khoản dịch vụ</span>
+                <span>Chính sách ký quỹ</span>
+                <span>Trung tâm trợ giúp</span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-[0.18em] text-[#AFF0D3]">Liên hệ</h3>
+              <div className="mt-4 grid gap-3 text-sm text-white/60">
+                <span className="flex items-center gap-2"><Phone className="h-4 w-4 text-[#FFB697]" /> 0901 234 567</span>
+                <span className="flex items-center gap-2"><Mail className="h-4 w-4 text-[#FFB697]" /> hello@fitlyo.vn</span>
+                <span className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 text-[#FFB697]" /> TP. Thủ Đức, TP.HCM</span>
               </div>
             </div>
           </div>
-        </footer>
-
-      </div>
+          <div className="flex flex-col gap-3 pt-6 text-xs text-white/35 sm:flex-row sm:items-center sm:justify-between">
+            <p>© 2026 FITLYO. Your Fit. Your Way.</p>
+            <p>EXE101 · FPT University</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

@@ -14,6 +14,7 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
+import { PublicAuthHeader } from '@/components/auth/PublicAuthHeader'
 
 export function SignInPage() {
   const navigate = useNavigate()
@@ -120,38 +121,26 @@ export function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex flex-col justify-between selection:bg-[#84CC16] selection:text-slate-950 font-sans">
-      {/* Top Simple Header */}
-      <header className="h-16 px-4 sm:px-8 border-b border-slate-200/80 bg-white/80 backdrop-blur-md flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex items-center gap-1">
-            <span className="text-xl font-black text-[#0b1c30] tracking-tight">FITLYO</span>
-            <div className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
-          </div>
-          <span className="text-[10px] tracking-widest text-[#16A34A] font-bold px-1.5 py-0.5 bg-green-100 rounded">
-            PICKLEBALL
-          </span>
-        </Link>
-        <Link
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-secondary selection:text-secondary-foreground font-sans">
+      <PublicAuthHeader action={<Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition"
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-muted-foreground transition hover:bg-muted hover:text-foreground"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Về trang chủ</span>
-        </Link>
-      </header>
+        </Link>} />
 
       {/* Main Container */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 my-6">
-        <div className="w-full max-w-[440px] bg-white rounded-3xl shadow-xl border border-slate-200/80 p-6 sm:p-8 space-y-6">
+        <div className="w-full max-w-[440px] bg-card rounded-3xl shadow-xl border border-border/80 p-6 sm:p-8 space-y-6">
           {/* Header Title */}
           <div className="space-y-1.5 text-center">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-[#16A34A] text-xs font-bold mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/35 text-primary text-xs font-bold mb-2">
               <Sparkles className="w-3.5 h-3.5" />
               <span>SCR_AUTH_01 • CỔNG XÁC THỰC</span>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Đăng Nhập FITLYO</h1>
-            <p className="text-xs text-slate-500">
+            <h1 className="text-2xl font-black text-foreground tracking-tight">Đăng Nhập FITLYO</h1>
+            <p className="text-xs text-muted-foreground">
               Chào mừng bạn trở lại với cộng đồng Pickleball TP. Thủ Đức!
             </p>
           </div>
@@ -167,12 +156,12 @@ export function SignInPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Phone */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+              <label className="text-xs font-bold text-foreground/85 flex items-center justify-between">
                 <span>Số điện thoại di động (*)</span>
-                <span className="text-[10px] text-slate-400 font-normal">Định dạng VN</span>
+                <span className="text-[10px] text-muted-foreground/70 font-normal">Định dạng VN</span>
               </label>
               <div className="relative flex items-center">
-                <div className="absolute left-3.5 text-slate-400 pointer-events-none">
+                <div className="absolute left-3.5 text-muted-foreground/70 pointer-events-none">
                   <Phone className="w-4 h-4" />
                 </div>
                 <input
@@ -180,7 +169,7 @@ export function SignInPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="0912 345 678"
-                  className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A] focus:border-transparent transition"
+                  className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-muted/45 border border-border text-sm font-semibold text-foreground focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
                 />
               </div>
             </div>
@@ -188,17 +177,17 @@ export function SignInPage() {
             {/* Password */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-700">Mật khẩu (*)</label>
+                <label className="text-xs font-bold text-foreground/85">Mật khẩu (*)</label>
                 <button
                   type="button"
                   onClick={() => setIsForgotPasswordOpen(true)}
-                  className="text-xs font-bold text-[#16A34A] hover:underline"
+                  className="text-xs font-bold text-primary hover:underline"
                 >
                   Quên mật khẩu?
                 </button>
               </div>
               <div className="relative flex items-center">
-                <div className="absolute left-3.5 text-slate-400 pointer-events-none">
+                <div className="absolute left-3.5 text-muted-foreground/70 pointer-events-none">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -206,12 +195,12 @@ export function SignInPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Nhập mật khẩu của bạn"
-                  className="w-full h-11 pl-10 pr-10 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A] focus:border-transparent transition"
+                  className="w-full h-11 pl-10 pr-10 rounded-xl bg-muted/45 border border-border text-sm font-semibold text-foreground focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 transition"
+                  className="absolute right-3.5 text-muted-foreground/70 hover:text-muted-foreground transition"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -226,9 +215,9 @@ export function SignInPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded text-[#16A34A] focus:ring-[#16A34A] border-slate-300"
+                  className="w-4 h-4 rounded text-primary focus:ring-primary border-border"
                 />
-                <span className="text-xs text-slate-600 font-medium">Ghi nhớ đăng nhập</span>
+                <span className="text-xs text-muted-foreground font-medium">Ghi nhớ đăng nhập</span>
               </label>
             </div>
 
@@ -236,7 +225,7 @@ export function SignInPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-11 rounded-xl bg-[#16A34A] hover:bg-green-700 text-white font-extrabold text-sm shadow-md shadow-green-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-75 cursor-pointer"
+              className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold text-sm shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-75 cursor-pointer"
             >
               {isLoading ? (
                 <>
@@ -254,8 +243,8 @@ export function SignInPage() {
 
           {/* Divider */}
           <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-200 w-full" />
-            <span className="bg-white px-3 text-[11px] uppercase font-bold text-slate-400 shrink-0">
+            <div className="border-t border-border w-full" />
+            <span className="bg-card px-3 text-[11px] uppercase font-bold text-muted-foreground/70 shrink-0">
               HOẶC
             </span>
           </div>
@@ -265,7 +254,7 @@ export function SignInPage() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full h-11 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-2.5 shadow-2xs transition cursor-pointer"
+            className="w-full h-11 rounded-xl border border-border bg-card hover:bg-muted/45 text-foreground/85 font-bold text-xs flex items-center justify-center gap-2.5 shadow-2xs transition cursor-pointer"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
@@ -289,15 +278,15 @@ export function SignInPage() {
           </button>
 
           {/* Quick Demo Switcher for Evaluation */}
-          <div className="pt-2 border-t border-slate-100 space-y-2">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block text-center tracking-wider">
+          <div className="pt-2 border-t border-border space-y-2">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground/70 block text-center tracking-wider">
               ⚡ ĐĂNG NHẬP NHANH (DEMO CHỨC DANH)
             </span>
             <div className="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 onClick={() => handleQuickDemo('player')}
-                className="py-1.5 px-2 rounded-lg bg-green-50 hover:bg-green-100 text-[11px] font-bold text-[#16A34A] transition text-center"
+                className="py-1.5 px-2 rounded-lg bg-secondary/35 hover:bg-secondary/55 text-[11px] font-bold text-primary transition text-center"
               >
                 VĐV An (2.85)
               </button>
@@ -319,11 +308,11 @@ export function SignInPage() {
           </div>
 
           {/* Signup Link */}
-          <div className="text-center text-xs text-slate-600 pt-1">
+          <div className="text-center text-xs text-muted-foreground pt-1">
             <span>Chưa có tài khoản? </span>
             <Link
               to="/auth/register"
-              className="font-extrabold text-[#16A34A] hover:underline inline-flex items-center gap-0.5"
+              className="font-extrabold text-primary hover:underline inline-flex items-center gap-0.5"
             >
               <span>Đăng ký ngay</span>
               <ArrowRight className="w-3 h-3" />
@@ -335,23 +324,23 @@ export function SignInPage() {
       {/* Forgot Password Modal */}
       {isForgotPasswordOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="w-full max-w-sm bg-card rounded-3xl p-6 shadow-2xl border border-border space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900">Quên Mật Khẩu</h3>
+              <h3 className="text-base font-bold text-foreground">Quên Mật Khẩu</h3>
               <button
                 type="button"
                 onClick={() => {
                   setIsForgotPasswordOpen(false)
                   setForgotSubmitted(false)
                 }}
-                className="text-slate-400 hover:text-slate-700"
+                className="text-muted-foreground/70 hover:text-foreground/85"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             {!forgotSubmitted ? (
               <div className="space-y-3">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Nhập số điện thoại đã đăng ký để nhận mã khôi phục mật khẩu qua SMS.
                 </p>
                 <input
@@ -359,26 +348,26 @@ export function SignInPage() {
                   value={forgotPhone}
                   onChange={(e) => setForgotPhone(e.target.value)}
                   placeholder="0912 345 678"
-                  className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold"
+                  className="w-full h-10 px-3 rounded-xl bg-muted/45 border border-border text-xs font-semibold"
                 />
                 <button
                   type="button"
                   onClick={() => setForgotSubmitted(true)}
-                  className="w-full h-10 rounded-xl bg-[#16A34A] text-white text-xs font-bold"
+                  className="w-full h-10 rounded-xl bg-primary text-white text-xs font-bold"
                 >
                   Gửi mã xác thực khôi phục
                 </button>
               </div>
             ) : (
               <div className="space-y-3 text-center py-2">
-                <CheckCircle2 className="w-10 h-10 text-[#16A34A] mx-auto" />
-                <p className="text-xs text-slate-700 font-semibold">
+                <CheckCircle2 className="w-10 h-10 text-primary mx-auto" />
+                <p className="text-xs text-foreground/85 font-semibold">
                   Mã xác thực đã được gửi tới SĐT {forgotPhone || 'của bạn'}. Vui lòng kiểm tra tin nhắn SMS.
                 </p>
                 <button
                   type="button"
                   onClick={() => setIsForgotPasswordOpen(false)}
-                  className="w-full h-9 rounded-xl bg-slate-100 text-xs font-bold"
+                  className="w-full h-9 rounded-xl bg-muted text-xs font-bold"
                 >
                   Đóng
                 </button>
@@ -389,7 +378,7 @@ export function SignInPage() {
       )}
 
       {/* Footer Note */}
-      <footer className="py-4 text-center text-xs text-slate-400">
+      <footer className="py-4 text-center text-xs text-muted-foreground/70">
         © 2026 FITLYO Pickleball • Nền tảng thể thao thông minh TP. Thủ Đức
       </footer>
     </div>

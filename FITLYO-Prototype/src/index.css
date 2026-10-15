@@ -29,6 +29,38 @@
 @layer base {
   :root {
     color-scheme: light;
+    --fitlyo-xanh-tram: #143F42;
+    --fitlyo-mint: #AFF0D3;
+    --fitlyo-cam-dao: #FFB697;
+    --fitlyo-kem: #F8F6F0;
+    --fitlyo-trang: #FFFFFF;
+    --fitlyo-chu-phu: #536B6C;
+    --fitlyo-duong-chia: #D6DFD8;
+    --fitlyo-loi: #B42318;
+    --fitlyo-nen-loi: #FEF3F2;
+    --fitlyo-noi-dung: 16px;
+    --fitlyo-dong: 24px;
+    --fitlyo-nhan: 14px;
+    --fitlyo-h1-may-tinh: 60px;
+    --fitlyo-h1-dien-thoai: 34px;
+    --fitlyo-h2: 28px;
+    --fitlyo-tieu-de-the: 20px;
+    --fitlyo-bo-o-nhap: 16px;
+    --fitlyo-bo-the: 24px;
+    --fitlyo-bo-sheet: 28px;
+    --fitlyo-bo-pill: 999px;
+    --fitlyo-rong-toi-da: 1320px;
+    --fitlyo-le-may-tinh: 48px;
+    --fitlyo-le-dien-thoai: 20px;
+    --fitlyo-glass-nen: rgba(248, 246, 240, 0.86);
+    --fitlyo-glass-vien: rgba(255, 255, 255, 0.8);
+    --fitlyo-glass-bong: 0 12px 32px rgba(20, 63, 66, 0.10);
+    --fitlyo-motion-nhan: 120ms;
+    --fitlyo-motion-loc: 180ms;
+    --fitlyo-motion-sheet: 260ms;
+    --fitlyo-motion-chi-tiet: 280ms;
+    --fitlyo-motion-mo-dau: 480ms;
+    --fitlyo-ease: cubic-bezier(0.22, 1, 0.36, 1);
     --background: 45 36% 96%;
     --foreground: 183 53% 17%;
     --card: 40 43% 99%;
@@ -52,11 +84,14 @@
     --border: 150 9% 85%;
     --input: 150 9% 85%;
     --ring: 153 68% 48%;
-    --radius: 0.875rem;
+    --radius: 1rem;
   }
 
   .dark {
     color-scheme: dark;
+    --fitlyo-glass-nen: rgba(14, 48, 51, 0.86);
+    --fitlyo-glass-vien: rgba(175, 240, 211, 0.12);
+    --fitlyo-glass-bong: 0 16px 38px rgba(0, 0, 0, 0.18);
     --background: 185 57% 8%;
     --foreground: 45 36% 96%;
     --card: 184 50% 13%;
@@ -147,6 +182,46 @@ body {
   transition: background-color 200ms ease, color 200ms ease;
 }
 
+.fitlyo-shell {
+  width: 100%;
+  max-width: var(--fitlyo-rong-toi-da);
+  margin-inline: auto;
+  padding-inline: var(--fitlyo-le-may-tinh);
+}
+
+.fitlyo-glass {
+  border: 1px solid var(--fitlyo-glass-vien);
+  background: var(--fitlyo-glass-nen);
+  box-shadow: var(--fitlyo-glass-bong);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+}
+
+.fitlyo-card {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--fitlyo-bo-the);
+  background: hsl(var(--card));
+  box-shadow: 0 1px 2px rgb(20 63 66 / 0.05), 0 14px 32px rgb(20 63 66 / 0.05);
+}
+
+.fitlyo-title {
+  font-size: clamp(var(--fitlyo-h1-dien-thoai), 5vw, var(--fitlyo-h1-may-tinh));
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+@media (max-width: 767px) {
+  .fitlyo-shell {
+    padding-inline: var(--fitlyo-le-dien-thoai);
+  }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .fitlyo-glass {
+    background: hsl(var(--background));
+  }
+}
+
 ::selection {
   background-color: #AFF0D3;
   color: #143F42;
@@ -205,6 +280,20 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --fitlyo-motion-nhan: 0ms;
+    --fitlyo-motion-loc: 0ms;
+    --fitlyo-motion-sheet: 0ms;
+    --fitlyo-motion-chi-tiet: 0ms;
+    --fitlyo-motion-mo-dau: 0ms;
+  }
+
+  .fitlyo-motion {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
   .kiosk-scan-line {
     animation: none;
     top: 50%;

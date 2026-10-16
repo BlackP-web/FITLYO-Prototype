@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { coachMale, communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
 import type {
   UserAccount,
   MatchRoom,
@@ -549,7 +550,7 @@ const initialCoachCourses: CoachCourse[] = [
 const initialCoachAccount: CoachAccount = {
   id: 'coach_dung',
   name: 'HLV Lê Hoàng Dũng',
-  avatarUrl: 'https://ui-avatars.com/api/?name=Le+Hoang+Dung&background=1d4ed8&color=ffffff&size=240&bold=true',
+  avatarUrl: coachMale,
   email: 'lehoangdung@fitlyo.vn',
   phone: '0909 485 285',
   duprRating: 4.85,
@@ -632,6 +633,7 @@ const initialCoaches: CoachItem[] = [
     id: 'coach_dung',
     name: 'HLV LÊ HOÀNG DŨNG',
     avatarUrl: initialCoachAccount.avatarUrl,
+    duprRating: 4.85,
     isCertified: true,
     certTitle: 'Certified Coach (IPTPA Level 2)',
     rating: 4.9,
@@ -649,6 +651,7 @@ const initialCoaches: CoachItem[] = [
     id: 'coach_long',
     name: 'HLV NGUYỄN HOÀNG LONG',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+    duprRating: 4.7,
     isCertified: true,
     certTitle: 'Certified Coach (PPR Level 2)',
     rating: 4.9,
@@ -666,6 +669,7 @@ const initialCoaches: CoachItem[] = [
     id: 'coach_kiet',
     name: 'HLV ĐẶNG TUẤN KIỆT',
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+    duprRating: 4.62,
     isCertified: true,
     certTitle: 'Certified Coach (IPTPA Level 2)',
     rating: 4.95,
@@ -683,6 +687,7 @@ const initialCoaches: CoachItem[] = [
     id: 'coach_minhanh',
     name: 'HLV TRẦN MINH ANH',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    duprRating: 3.88,
     isCertified: true,
     certTitle: 'Certified Coach (PPR Level 1)',
     rating: 4.8,
@@ -761,7 +766,7 @@ const initialVenues: VenueItem[] = [
     rating: 4.8,
     reviewCount: 124,
     amenities: ['Mặt sân trong nhà', 'Đèn LED thi đấu', 'Phòng tắm nước nóng', 'Căng tin'],
-    imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500',
+    imageUrl: venueIndoor,
     priceRange: '150.000đ - 220.000đ/slot 90p',
   },
   {
@@ -774,7 +779,7 @@ const initialVenues: VenueItem[] = [
     rating: 4.9,
     reviewCount: 89,
     amenities: ['Mặt sân ngoài trời & mái che', 'Bãi đậu ô tô rộng', 'Khu vực khán giả'],
-    imageUrl: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=500',
+    imageUrl: communityHero,
     priceRange: '160.000đ - 240.000đ/slot 90p',
   },
   {
@@ -787,7 +792,7 @@ const initialVenues: VenueItem[] = [
     rating: 4.95,
     reviewCount: 156,
     amenities: ['Sân máy lạnh khép kín', 'Quầy bar sinh tố', 'Pro Shop bán vợt & bóng'],
-    imageUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=500',
+    imageUrl: matchNewbie,
     priceRange: '200.000đ - 300.000đ/slot 90p',
   },
   {
@@ -800,7 +805,7 @@ const initialVenues: VenueItem[] = [
     rating: 4.7,
     reviewCount: 64,
     amenities: ['Không gian công viên thoáng đãng', 'Mặt sân giảm chấn', 'Kiosk check-in'],
-    imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=500',
+    imageUrl: matchWeekend,
     priceRange: '130.000đ - 180.000đ/slot 90p',
   },
 ]

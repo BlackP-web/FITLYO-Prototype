@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, Crown, LogOut, MapPin, UserRound, WalletCards } from 'lucide-react'
+import { Bell, CalendarDays, Crown, GraduationCap, LogOut, MapPin, UserRound, WalletCards } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
@@ -21,6 +21,7 @@ const desktopNav = [
   { label: 'Kèo đấu', href: '/player/matches' },
   { label: 'Sân', href: '/player/venues' },
   { label: 'Huấn luyện viên', href: '/player/coaches' },
+  { label: 'HLV của tôi', href: '/player/coaching' },
   { label: 'Lịch của tôi', href: '/player/schedule' },
 ]
 
@@ -39,8 +40,8 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/88 backdrop-blur-xl">
-        <div className="mx-auto flex h-[72px] max-w-[1320px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-12">
+      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5">
+        <div className="fitlyo-nav-shell mx-auto flex h-[70px] max-w-[1320px] items-center justify-between gap-4 rounded-[1.65rem] px-4 sm:px-6 lg:px-8">
           <Link to="/player" aria-label="FITLYO - Trang chủ Player" className="shrink-0">
             <BrandLogo className="h-8 w-auto sm:h-9" />
           </Link>
@@ -52,8 +53,8 @@ export function Header() {
                 to={item.href}
                 end={item.href === '/player'}
                 className={({ isActive }) => cn(
-                  'relative rounded-xl px-3.5 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground',
-                  isActive && 'bg-secondary/55 text-primary after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-5 after:-translate-x-1/2 after:rounded-full after:bg-primary',
+                  'relative rounded-xl px-3.5 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground',
+                  isActive && 'text-primary after:absolute after:-bottom-1 after:left-1/2 after:h-1 after:w-8 after:-translate-x-1/2 after:rounded-full after:bg-secondary',
                 )}
               >
                 {item.label}
@@ -62,17 +63,17 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="hidden items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-2 text-xs font-bold text-foreground xl:flex">
+            <div className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-2 text-xs font-bold text-foreground xl:flex">
               <MapPin className="h-3.5 w-3.5 text-primary" /> TP. Thủ Đức
             </div>
-            <Button variant="ghost" size="sm" className="hidden gap-1.5 rounded-xl border border-border/70 bg-card md:inline-flex" onClick={() => navigate('/player/profile')}>
+            <Button variant="ghost" size="sm" className="hidden gap-1.5 rounded-full border border-border/60 bg-background/60 md:inline-flex" onClick={() => navigate('/player/profile')}>
               <WalletCards className="h-4 w-4 text-primary" />
               <span className="font-bold">{profile.walletBalance.toLocaleString('vi-VN')}đ</span>
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="relative rounded-xl border border-border/70 bg-card"
+              className="relative rounded-full border border-border/60 bg-background/60"
               aria-label="Thông báo"
               onClick={() => showToast('Bạn có 2 lịch sắp tới và 1 ưu đãi VIP mới.', 'info')}
             >
@@ -100,6 +101,7 @@ export function Header() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild><Link to="/player/profile"><UserRound className="mr-2 h-4 w-4" />Hồ sơ người chơi</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/player/schedule"><CalendarDays className="mr-2 h-4 w-4" />Lịch của tôi</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/player/coaching"><GraduationCap className="mr-2 h-4 w-4" />Huấn luyện của tôi</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/player/vip"><Crown className="mr-2 h-4 w-4 text-amber-500" />{profile.isVip ? 'Quản lý FITLYO VIP' : 'Nâng cấp FITLYO VIP'}</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive"><LogOut className="mr-2 h-4 w-4" />Đăng xuất</DropdownMenuItem>

@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   LogOut,
+  MessagesSquare,
   ShieldCheck,
   Sparkles,
   UserRound,
@@ -18,6 +19,7 @@ import { useAuthStore } from '@/store/useAuthStore'
 
 const coachNavigation = [
   { label: 'Tổng quan / Lịch dạy', shortLabel: 'Lịch dạy', to: '/coach/schedule', icon: CalendarDays },
+  { label: 'Học viên & Tin nhắn', shortLabel: 'Học viên', to: '/coach/bookings', icon: MessagesSquare },
   { label: 'Khóa học', shortLabel: 'Khóa học', to: '/coach/courses', icon: BookOpenCheck },
   { label: 'Điểm danh / Đánh giá', shortLabel: 'Đánh giá', to: '/coach/attendance', icon: ClipboardCheck },
   { label: 'Cụm sân liên kết', shortLabel: 'Cụm sân', to: '/coach/venues', icon: Building2 },

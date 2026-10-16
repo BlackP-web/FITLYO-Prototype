@@ -123,6 +123,7 @@ export interface CoachItem {
   id: string
   name: string
   avatarUrl: string
+  duprRating: number
   isCertified: boolean
   certTitle: string
   rating: number

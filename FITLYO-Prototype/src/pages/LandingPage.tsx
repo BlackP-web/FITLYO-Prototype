@@ -11,7 +11,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Clock,
   GraduationCap,
   LogOut,
   Mail,
@@ -21,7 +20,6 @@ import {
   Star,
   Target,
   TicketCheck,
-  Users,
   WalletCards,
   X,
   Zap,
@@ -29,6 +27,14 @@ import {
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { Button } from '@/components/ui/button'
+import {
+  coachFemale,
+  coachMale,
+  communityHero,
+  matchNewbie,
+  matchWeekend,
+  venueIndoor,
+} from '@/assets/pickleball'
 import { roleHome, useAuthStore } from '@/store/useAuthStore'
 
 type VenueFilter = 'all' | 'indoor' | 'outdoor' | 'price' | 'rating'
@@ -36,7 +42,7 @@ type VenueFilter = 'all' | 'indoor' | 'outdoor' | 'price' | 'rating'
 const heroSlides = [
   {
     id: 1,
-    image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1400&auto=format&fit=crop',
+    image: venueIndoor,
     title: 'D-Pickleball Thảo Điền',
     area: 'Thảo Điền · TP. Thủ Đức',
     availability: '16 sân trống tối nay',
@@ -44,7 +50,7 @@ const heroSlides = [
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1400&auto=format&fit=crop',
+    image: communityHero,
     title: 'Saigon Rackets Hiệp Phú',
     area: 'Hiệp Phú · TP. Thủ Đức',
     availability: '10 sân trống tối nay',
@@ -52,11 +58,34 @@ const heroSlides = [
   },
   {
     id: 3,
-    image: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1400&auto=format&fit=crop',
+    image: matchWeekend,
     title: 'D-Sports Linh Chiểu',
     area: 'Linh Chiểu · TP. Thủ Đức',
     availability: '8 sân trống hôm nay',
     rating: '4.90',
+  },
+]
+
+const suggestedMatches = [
+  {
+    id: 'newbie-social',
+    title: 'Giao lưu cho người mới',
+    venue: 'Sân Mây · Gò Vấp',
+    date: '17/10 · 18:30–20:00',
+    level: 'Mới bắt đầu',
+    seats: 'Còn 2 chỗ',
+    price: '100.000đ',
+    image: matchNewbie,
+  },
+  {
+    id: 'weekend-social',
+    title: 'Chơi cuối tuần',
+    venue: 'Sân Lá · Bình Thạnh',
+    date: '17/10 · 19:00–20:30',
+    level: 'DUPR 2.5–3.5',
+    seats: 'Còn 4 chỗ',
+    price: '120.000đ',
+    image: matchWeekend,
   },
 ]
 
@@ -114,7 +143,7 @@ const venues = [
     reviews: 85,
     distance: 1.9,
     courts: '6 sân tiêu chuẩn',
-    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&auto=format&fit=crop',
+    image: communityHero,
     slots: ['14:00', '17:00', '20:00'],
   },
   {
@@ -128,7 +157,7 @@ const venues = [
     reviews: 210,
     distance: 3.4,
     courts: '4 sân có mái che',
-    image: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=1200&auto=format&fit=crop',
+    image: venueIndoor,
     slots: ['15:30', '18:30', '20:00'],
   },
   {
@@ -142,7 +171,7 @@ const venues = [
     reviews: 64,
     distance: 2.8,
     courts: '4 sân cộng đồng',
-    image: 'https://images.unsplash.com/photo-1544919982-b61976f0ba43?w=1200&auto=format&fit=crop',
+    image: matchNewbie,
     slots: ['12:30', '17:00', '19:00'],
   },
 ]
@@ -155,7 +184,7 @@ const coaches = [
     rating: '4.95',
     specialty: 'Dinking nâng cao · Chiến thuật đôi',
     rate: '400.000đ',
-    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=700&auto=format&fit=crop',
+    image: coachMale,
   },
   {
     name: 'Đặng Thảo Linh',
@@ -164,7 +193,7 @@ const coaches = [
     rating: '4.90',
     specialty: 'Kitchen speed-up · Phản xạ trên lưới',
     rate: '350.000đ',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=700&auto=format&fit=crop',
+    image: coachFemale,
   },
   {
     name: 'Lê Tuấn Khang',
@@ -173,7 +202,7 @@ const coaches = [
     rating: '4.95',
     specialty: 'Chiến thuật giải đấu · Chuẩn hóa DUPR',
     rate: '500.000đ',
-    image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=700&auto=format&fit=crop',
+    image: coachMale,
   },
   {
     name: 'Nguyễn Bảo Ngọc',
@@ -182,7 +211,7 @@ const coaches = [
     rating: '4.85',
     specialty: 'Bộ chân · Nền tảng cho người mới',
     rate: '320.000đ',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=700&auto=format&fit=crop',
+    image: coachFemale,
   },
 ]
 
@@ -254,10 +283,9 @@ export function LandingPage() {
   const logout = useAuthStore((state) => state.logout)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [searchLevel, setSearchLevel] = useState('Mới bắt đầu')
   const [searchLocation, setSearchLocation] = useState('TP. Thủ Đức')
-  const [searchDate, setSearchDate] = useState('Hôm nay, 15/10')
-  const [searchSlot, setSearchSlot] = useState('18:30–20:00 · Slot 5')
-  const [searchFormat, setSearchFormat] = useState('Đánh đôi · 4 người')
+  const [searchDate, setSearchDate] = useState('Thứ Bảy, 17/10')
   const [isSearching, setIsSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
   const [venueFilter, setVenueFilter] = useState<VenueFilter>('all')
@@ -301,7 +329,7 @@ export function LandingPage() {
     setIsSearching(true)
     window.setTimeout(() => {
       setIsSearching(false)
-      showVenueResults()
+      navigate(matchDestination)
     }, 450)
   }
 
@@ -311,25 +339,20 @@ export function LandingPage() {
   const matchDestination = session?.role === 'player' ? '/player/matches' : '/matches/detail'
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border/70 bg-background/88 backdrop-blur-xl">
-        <div className="mx-auto flex h-18 max-w-[1320px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-12">
+    <div className="fitlyo-page-canvas min-h-screen overflow-x-hidden text-foreground">
+      <header className="sticky top-0 z-50 px-3 pt-3 sm:px-5">
+        <div className="fitlyo-nav-shell mx-auto flex h-[72px] max-w-[1320px] items-center justify-between gap-4 rounded-[1.7rem] px-4 sm:px-6 lg:px-8">
           <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Về đầu trang">
             <BrandLogo className="h-8 w-auto sm:h-9" />
           </button>
 
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Điều hướng chính">
-            <button type="button" onClick={showVenueResults} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:bg-secondary/55">
-              Khám phá sân
+            <button type="button" onClick={() => navigate(matchDestination)} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:text-primary">
+              Buổi chơi
             </button>
+            <button type="button" onClick={showVenueResults} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:text-primary">Sân</button>
             <button type="button" onClick={() => scrollTo('huan-luyen-vien')} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:bg-secondary/55">
               Huấn luyện viên
-            </button>
-            <button type="button" onClick={() => scrollTo('giao-trinh')} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:bg-secondary/55">
-              Giáo trình DUPR
-            </button>
-            <button type="button" onClick={() => navigate(matchDestination)} className="rounded-xl px-4 py-2 text-sm font-bold transition hover:bg-secondary/55">
-              Kèo đấu
             </button>
           </nav>
 
@@ -391,47 +414,25 @@ export function LandingPage() {
       </header>
 
       <main>
-        <section className="relative isolate overflow-hidden px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-12 lg:px-12">
+        <section className="relative isolate overflow-hidden px-4 pb-10 pt-12 sm:px-6 sm:pb-14 sm:pt-16 lg:px-12">
           <div className="absolute -left-36 top-20 -z-10 h-96 w-96 rounded-full bg-secondary/45 blur-3xl" />
           <div className="absolute -right-36 bottom-0 -z-10 h-96 w-96 rounded-full bg-accent/35 blur-3xl" />
 
           <div className="mx-auto max-w-[1320px]">
-            <div className="grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14">
-              <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-secondary/55 px-3.5 py-2 text-xs font-black uppercase tracking-[0.14em] text-primary">
-                  <span className="h-2 w-2 rounded-full bg-primary" />
-                  Your Fit. Your Way.
-                </div>
-                <h1 className="mt-6 text-5xl font-black leading-[0.98] tracking-[-0.055em] sm:text-[60px]">
-                  Ra sân đúng giờ.
-                  <span className="mt-2 block text-primary">Gặp đúng người.</span>
+            <div className="grid items-center gap-9 lg:grid-cols-[0.78fr_1.22fr] lg:gap-10">
+              <div className="fitlyo-rise max-w-2xl py-4">
+                <p className="text-xl font-black text-[#3dbca1] sm:text-2xl">Your Fit. Your Way.</p>
+                <h1 className="fitlyo-display mt-4 text-[clamp(3.2rem,6.5vw,6rem)] font-black">
+                  Tìm buổi chơi <span className="fitlyo-swoosh">hợp với bạn.</span>
                 </h1>
-                <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-                  Đặt sân, ghép kèo theo DUPR và học cùng huấn luyện viên đã xác thực — tất cả trong một hành trình rõ ràng, an toàn và đầy hứng thú.
-                </p>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Button size="lg" onClick={showVenueResults} className="h-12 rounded-2xl px-6 font-black shadow-xl shadow-primary/15">
-                    Tìm sân phù hợp <ArrowRight />
-                  </Button>
-                  <Button size="lg" variant="outline" onClick={() => navigate(matchDestination)} className="h-12 rounded-2xl px-6 font-black">
-                    Xem kèo đang mở
-                  </Button>
-                </div>
-                <div className="mt-9 grid max-w-lg grid-cols-3 gap-3">
-                  {[
-                    ['42+', 'Cụm sân'],
-                    ['1.8K', 'Người chơi'],
-                    ['4.9/5', 'Đánh giá'],
-                  ].map(([value, label]) => (
-                    <div key={label} className="border-l-2 border-secondary pl-3">
-                      <p className="text-xl font-black text-primary sm:text-2xl">{value}</p>
-                      <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground sm:text-xs">{label}</p>
-                    </div>
-                  ))}
+                <p className="mt-7 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">Chọn theo trình độ, khu vực và giờ rảnh. Từ người mới đến tay vợt dày dạn, luôn có một buổi chơi đang chờ bạn.</p>
+                <div className="mt-8 flex flex-wrap items-center gap-4">
+                  <Button size="lg" onClick={() => navigate(matchDestination)} className="fitlyo-coral-button h-13 rounded-2xl border-0 px-6 font-black">Khám phá buổi chơi <ArrowRight /></Button>
+                  <span className="text-xs font-bold text-muted-foreground"><strong className="text-primary">1.800+</strong> người chơi đã tham gia</span>
                 </div>
               </div>
 
-              <div className="relative">
+              <div className="fitlyo-rise fitlyo-rise-delay-1 relative">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] border border-white/30 bg-primary shadow-[0_35px_90px_rgba(20,63,66,0.22)]">
                   <div
                     className="flex h-full transition-transform duration-700 ease-out"
@@ -466,7 +467,7 @@ export function LandingPage() {
                   </button>
                 </div>
 
-                <div className="absolute -bottom-5 -left-3 rounded-2xl border border-primary/10 bg-card/95 p-4 shadow-xl backdrop-blur-xl sm:-left-6">
+                <div className="absolute -bottom-5 -left-3 rounded-2xl border border-primary/10 bg-card/95 p-4 shadow-xl backdrop-blur-xl sm:-left-5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground"><Zap className="h-5 w-5" /></div>
                     <div>
@@ -478,8 +479,15 @@ export function LandingPage() {
               </div>
             </div>
 
-            <form onSubmit={handleSearch} className="brand-card relative z-10 mt-16 grid gap-2 rounded-[1.75rem] p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+            <form onSubmit={handleSearch} className="fitlyo-elevated relative z-10 mt-14 grid gap-2 rounded-[1.75rem] p-3 sm:grid-cols-2 sm:p-4 lg:-mt-1 lg:grid-cols-[1fr_1.15fr_1fr_auto]">
               {[
+                {
+                  label: 'Trình độ',
+                  icon: Target,
+                  value: searchLevel,
+                  onChange: setSearchLevel,
+                  options: ['Mới bắt đầu', 'DUPR 2.0–3.0', 'DUPR 3.0–3.75', 'DUPR 3.75–4.5+'],
+                },
                 {
                   label: 'Khu vực',
                   icon: MapPin,
@@ -492,21 +500,7 @@ export function LandingPage() {
                   icon: Calendar,
                   value: searchDate,
                   onChange: setSearchDate,
-                  options: ['Hôm nay, 15/10', 'Ngày mai, 16/10', 'Thứ Bảy, 17/10', 'Chủ Nhật, 18/10'],
-                },
-                {
-                  label: 'Khung giờ',
-                  icon: Clock,
-                  value: searchSlot,
-                  onChange: setSearchSlot,
-                  options: ['15:30–17:00 · Slot 3', '17:00–18:30 · Slot 4', '18:30–20:00 · Slot 5', '20:00–21:30 · Slot 6'],
-                },
-                {
-                  label: 'Thể thức',
-                  icon: Users,
-                  value: searchFormat,
-                  onChange: setSearchFormat,
-                  options: ['Đánh đôi · 4 người', 'Đánh đơn · 2 người', 'Ghép kèo DUPR', 'Huấn luyện 1-1'],
+                  options: ['Hôm nay, 16/10', 'Ngày mai, 17/10', 'Thứ Bảy, 17/10', 'Chủ Nhật, 18/10'],
                 },
               ].map((field) => {
                 const Icon = field.icon
@@ -523,16 +517,25 @@ export function LandingPage() {
                   </label>
                 )
               })}
-              <Button type="submit" disabled={isSearching} className="min-h-13 rounded-2xl bg-accent px-6 font-black text-accent-foreground hover:bg-accent/90">
+              <Button type="submit" disabled={isSearching} className="fitlyo-coral-button min-h-14 rounded-2xl border-0 px-7 font-black">
                 {isSearching ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <ArrowRight />}
-                {isSearching ? 'Đang tìm...' : 'Tìm sân'}
+                {isSearching ? 'Đang tìm...' : 'Tìm buổi phù hợp'}
               </Button>
             </form>
 
             <div className="mt-5 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-bold text-muted-foreground">
-              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Vé QR tức thì</span>
+              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Ghép đúng trình</span>
               <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Ký quỹ an toàn</span>
-              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Lịch 6 slot rõ ràng</span>
+              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Vé QR tức thì</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 pb-16 sm:px-6 lg:px-12">
+          <div className="mx-auto max-w-[1320px]">
+            <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-[#3dbca1]">Gợi ý hôm nay</p><h2 className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">Buổi chơi đang được quan tâm</h2></div><button type="button" onClick={() => navigate(matchDestination)} className="hidden items-center gap-2 text-sm font-black text-primary sm:flex">Xem tất cả <ArrowRight className="h-4 w-4" /></button></div>
+            <div className="mt-7 grid gap-5 lg:grid-cols-2">
+              {suggestedMatches.map((match) => <article key={match.id} className="fitlyo-elevated fitlyo-interactive grid overflow-hidden rounded-[1.6rem] sm:grid-cols-[0.78fr_1.22fr]"><img src={match.image} alt={match.title} className="h-56 w-full object-cover sm:h-full" /><div className="flex flex-col p-5"><h3 className="text-xl font-black tracking-tight">{match.title}</h3><p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" />{match.venue}</p><p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Calendar className="h-4 w-4 text-primary" />{match.date}</p><div className="mt-4 flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full bg-secondary/55 px-3 py-1.5 text-primary">{match.level}</span><span className="rounded-full bg-muted px-3 py-1.5">{match.seats}</span></div><div className="mt-auto flex items-end justify-between border-t border-border/60 pt-4"><strong className="text-xl">{match.price}<span className="text-xs font-medium text-muted-foreground"> / người</span></strong><button type="button" onClick={() => navigate(matchDestination)} className="flex items-center gap-2 text-sm font-black text-primary">Xem buổi chơi <ArrowRight className="h-4 w-4" /></button></div></div></article>)}
             </div>
           </div>
         </section>
@@ -544,7 +547,7 @@ export function LandingPage() {
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">Kết quả theo lựa chọn của bạn</p>
                   <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{filteredVenues.length} cụm sân sẵn sàng</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">{searchLocation} · {searchDate} · {searchSlot}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{searchLocation} · {searchDate} · {searchLevel}</p>
                 </div>
                 <label className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold">
                   Sắp xếp

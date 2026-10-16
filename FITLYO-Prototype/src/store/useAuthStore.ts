@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { coachMale } from '@/assets/pickleball'
 
 export type AuthRole = 'player' | 'fm' | 'coach' | 'admin'
 
@@ -54,7 +55,7 @@ export const demoAccounts: DemoAccount[] = [
     role: 'coach',
     name: 'HLV Lê Hoàng Dũng',
     title: 'Coach · IPTPA Level 2',
-    avatarUrl: 'https://ui-avatars.com/api/?name=Le+Hoang+Dung&background=143F42&color=ffffff&size=240&bold=true',
+    avatarUrl: coachMale,
   },
   {
     id: 'admin_super',

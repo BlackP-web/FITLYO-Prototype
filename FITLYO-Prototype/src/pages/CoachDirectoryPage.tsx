@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Search,
   CheckCircle2,
@@ -12,17 +12,22 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { CoachBookingDialog } from '@/components/player/CoachBookingDialog'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import type { CoachItem } from '@/types/pickleball'
 
 export const CoachDirectoryPage: React.FC = () => {
   const navigate = useNavigate()
-  const { coaches, showToast } = useFitlyoStore()
+  const location = useLocation()
+  const { coaches } = useFitlyoStore()
+  const isPlayerView = location.pathname.startsWith('/player')
+  const bookingCoachId = (location.state as { bookingCoachId?: string } | null)?.bookingCoachId
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCertifiedOnly, setFilterCertifiedOnly] = useState(true)
-  const [selectedCoachForBooking, setSelectedCoachForBooking] = useState<CoachItem | null>(null)
-  const [bookingType, setBookingType] = useState<'single' | 'course'>('single')
+  const [selectedCoachForBooking, setSelectedCoachForBooking] = useState<CoachItem | null>(
+    () => coaches.find((coach) => coach.id === bookingCoachId) ?? null,
+  )
 
   const filteredCoaches = coaches.filter((coach) => {
     if (filterCertifiedOnly && !coach.isCertified) return false
@@ -40,20 +45,6 @@ export const CoachDirectoryPage: React.FC = () => {
     setSelectedCoachForBooking(coach)
   }
 
-  const handleConfirmBooking = () => {
-    if (!selectedCoachForBooking) return
-    const cost =
-      bookingType === 'single'
-        ? selectedCoachForBooking.ratePerSession
-        : selectedCoachForBooking.ratePerMonthCourse
-
-    showToast(
-      `Đặt lịch thành công với ${selectedCoachForBooking.name}! Đã giữ chỗ tạm thời (${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cost)}).`,
-      'success'
-    )
-    setSelectedCoachForBooking(null)
-  }
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-20">
@@ -63,7 +54,7 @@ export const CoachDirectoryPage: React.FC = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/')}
+              onClick={() => navigate(isPlayerView ? '/player' : '/')}
               className="rounded-xl border hover:bg-muted"
               title="Về Trang Chủ"
             >
@@ -87,14 +78,16 @@ export const CoachDirectoryPage: React.FC = () => {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/coach/dashboard')}
-            className="text-xs font-semibold self-start sm:self-auto"
-          >
-            Vào Portal Quản Lý Khóa Học
-          </Button>
+          {!isPlayerView && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/login')}
+              className="text-xs font-semibold self-start sm:self-auto"
+            >
+              Đăng nhập để đặt lịch
+            </Button>
+          )}
         </div>
 
       {/* Search & Filters */}
@@ -131,6 +124,7 @@ export const CoachDirectoryPage: React.FC = () => {
         {filteredCoaches.map((coach) => (
           <div
             key={coach.id}
+            data-coach-id={coach.id}
             className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6 shadow-xs hover:border-primary/50 hover:shadow-md transition-all space-y-4"
           >
             {/* Top row */}
@@ -153,6 +147,8 @@ export const CoachDirectoryPage: React.FC = () => {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <span className="font-black text-primary">DUPR {coach.duprRating.toFixed(2)}</span>
+                    <span>•</span>
                     <span className="font-bold text-amber-500">⭐ {coach.rating} ({coach.reviewCount} đánh giá)</span>
                     <span>•</span>
                     <span>{coach.experienceYears} năm kinh nghiệm</span>
@@ -227,9 +223,10 @@ export const CoachDirectoryPage: React.FC = () => {
             {/* Actions */}
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-border/50">
               <Button
+                data-testid={`coach-detail-${coach.id}`}
                 variant="outline"
                 size="sm"
-                onClick={() => showToast(`Xem đầy đủ chứng chỉ và video dạy của ${coach.name}`, 'info')}
+                onClick={() => navigate(`/player/coaches/${coach.id}`)}
                 className="text-xs"
               >
                 Xem Hồ Sơ Chi Tiết
@@ -247,77 +244,12 @@ export const CoachDirectoryPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Booking Modal */}
       {selectedCoachForBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border/80 bg-card p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
-            <div className="border-b pb-3">
-              <span className="text-xs font-bold text-primary uppercase">
-                ĐẶT LỊCH HỌC HUẤN LUYỆN VIÊN
-              </span>
-              <h4 className="font-bold text-xl text-foreground mt-0.5">
-                {selectedCoachForBooking.name}
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                {selectedCoachForBooking.certTitle} • Đánh giá ⭐ {selectedCoachForBooking.rating}
-              </p>
-            </div>
-
-            {/* Choose Booking Type */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-foreground">
-                Chọn hình thức tập luyện:
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setBookingType('single')}
-                  className={`p-3.5 rounded-xl border text-left transition-all ${
-                    bookingType === 'single'
-                      ? 'border-primary bg-primary/10 ring-1 ring-primary'
-                      : 'border-border hover:bg-muted'
-                  }`}
-                >
-                  <p className="font-bold text-foreground text-sm">Buổi Lẻ (90p)</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Kèm 1:1 kỹ năng chuyên biệt</p>
-                  <p className="font-extrabold text-primary text-sm mt-2">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedCoachForBooking.ratePerSession)}
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBookingType('course')}
-                  className={`p-3.5 rounded-xl border text-left transition-all ${
-                    bookingType === 'course'
-                      ? 'border-primary bg-primary/10 ring-1 ring-primary'
-                      : 'border-border hover:bg-muted'
-                  }`}
-                >
-                  <p className="font-bold text-foreground text-sm">Khóa Học 1 Tháng</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">8 buổi (2 buổi/tuần)</p>
-                  <p className="font-extrabold text-primary text-sm mt-2">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedCoachForBooking.ratePerMonthCourse)}
-                  </p>
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
-              <p>📍 <b>Địa điểm tập:</b> Cụm sân D-Sports Thủ Đức hoặc Thảo Điền Club.</p>
-              <p>⏰ <b>Khung giờ:</b> Khớp theo 6 slot tiêu chuẩn (Slot 1 đến Slot 6).</p>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2 border-t">
-              <Button variant="outline" onClick={() => setSelectedCoachForBooking(null)}>
-                Hủy bỏ
-              </Button>
-              <Button onClick={handleConfirmBooking} className="gap-1.5 shadow-md active:scale-[0.98]">
-                <span>Xác nhận Đặt lịch</span>
-              </Button>
-            </div>
-          </div>
-        </div>
+        <CoachBookingDialog
+          key={selectedCoachForBooking.id}
+          coach={selectedCoachForBooking}
+          onClose={() => setSelectedCoachForBooking(null)}
+        />
       )}
       </div>
     </div>

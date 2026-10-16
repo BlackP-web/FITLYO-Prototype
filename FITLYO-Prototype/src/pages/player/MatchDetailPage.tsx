@@ -2,6 +2,7 @@ import { ArrowLeft, Check, CheckCircle2, Clock3, ExternalLink, MapPin, QrCode, S
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
+import { BrandLogo } from '@/components/brand/BrandLogo'
 import { Button } from '@/components/ui/button'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
@@ -104,14 +105,38 @@ export function PlayerMatchDetailPage() {
       </section>
 
       {showCheckout && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#082A2D]/65 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[1.8rem] border border-border bg-card p-6 shadow-2xl sm:p-7">
-            <div className="flex items-start justify-between"><div><p className="text-xs font-black uppercase tracking-wider text-primary">Thanh toán ký quỹ</p><h2 className="mt-1 text-2xl font-black">Xác nhận tham gia</h2></div><Button variant="ghost" size="icon" onClick={() => setShowCheckout(false)}><X className="h-5 w-5" /></Button></div>
-            <div className="mt-5 rounded-2xl border border-border/70 bg-muted/35 p-4"><p className="font-black">{match.title}</p><p className="mt-1 text-sm text-muted-foreground">{match.venueName} · {match.dateLabel} · {match.timeRange}</p><div className="mt-4 flex items-end justify-between border-t border-border/60 pt-4"><span className="text-sm font-bold">Tổng cọc</span><b className="text-2xl">{formatMoney(match.deposit)}</b></div></div>
-            <div className="mt-5 space-y-2"><p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Phương thức thanh toán</p><button type="button" onClick={() => setPaymentMethod('WALLET')} className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left ${paymentMethod === 'WALLET' ? 'border-primary bg-secondary/25 ring-1 ring-primary/20' : 'border-border'}`}><WalletCards className="h-5 w-5 text-primary" /><span className="flex-1"><b className="block text-sm">Ví FITLYO</b><small className="text-muted-foreground">Số dư {formatMoney(profile.walletBalance)}</small></span>{paymentMethod === 'WALLET' && <CheckCircle2 className="h-5 w-5 text-primary" />}</button><button type="button" onClick={() => setPaymentMethod('VIETQR')} className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left ${paymentMethod === 'VIETQR' ? 'border-primary bg-secondary/25 ring-1 ring-primary/20' : 'border-border'}`}><QrCode className="h-5 w-5 text-primary" /><span className="flex-1"><b className="block text-sm">VietQR mô phỏng</b><small className="text-muted-foreground">Không thu tiền thật trong bản demo</small></span>{paymentMethod === 'VIETQR' && <CheckCircle2 className="h-5 w-5 text-primary" />}</button></div>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#082A2D]/65 p-0 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true">
+          <div className="h-full w-full overflow-y-auto bg-background px-5 pb-8 pt-5 shadow-2xl sm:max-h-[94vh] sm:max-w-3xl sm:rounded-[2rem] sm:border sm:border-border sm:p-8">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="icon" onClick={() => setShowCheckout(false)} className="rounded-full"><ArrowLeft className="h-5 w-5" /></Button>
+              <BrandLogo className="h-8 w-auto" />
+              <Button variant="ghost" size="icon" onClick={() => setShowCheckout(false)} className="rounded-full"><X className="h-5 w-5" /></Button>
+            </div>
+            <h2 className="fitlyo-display mt-8 text-4xl font-black sm:text-5xl">Xác nhận tham gia</h2>
+
+            <div className="fitlyo-elevated mt-7 grid overflow-hidden rounded-[1.6rem] sm:grid-cols-[210px_1fr]">
+              <img src={match.imageUrl} alt={match.title} className="h-52 w-full object-cover sm:h-full" />
+              <div className="p-5 sm:p-6">
+                <h3 className="text-xl font-black">{match.title}</h3>
+                <div className="mt-4 space-y-3 text-sm text-muted-foreground"><p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" />{match.venueName} · {match.area}</p><p className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-primary" />{match.dateLabel} · {match.timeRange}</p></div>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full bg-secondary/55 px-3 py-1.5 text-primary">DUPR {match.duprMin}–{match.duprMax}</span><span className="rounded-full bg-muted px-3 py-1.5">1 suất / 1 người</span><span className="rounded-full bg-muted px-3 py-1.5">Còn {remaining} chỗ</span></div>
+              </div>
+            </div>
+
+            <div className="fitlyo-elevated mt-5 rounded-[1.6rem] p-5 sm:p-6">
+              <h3 className="text-xl font-black">Thông tin buổi chơi</h3>
+              <div className="mt-5 space-y-3 text-sm text-muted-foreground"><p className="flex gap-3"><UserRound className="h-5 w-5 shrink-0 text-primary" />Người tổ chức: {match.participants.find((person) => person.isHost)?.name ?? 'FITLYO Host'}</p><p className="flex gap-3"><ShieldCheck className="h-5 w-5 shrink-0 text-primary" />Phí gồm: sân, bóng dùng chung và phí giữ chỗ.</p><p className="flex gap-3"><Clock3 className="h-5 w-5 shrink-0 text-primary" />Hoàn 100% nếu hủy trước giờ đấu ít nhất 6 tiếng.</p></div>
+              <div className="mt-5 flex items-end justify-between border-t border-border/60 pt-5"><span className="text-lg font-black">Tổng phí</span><b className="text-3xl">{formatMoney(match.deposit)}</b></div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <button type="button" onClick={() => setPaymentMethod('WALLET')} className={`flex items-center gap-3 rounded-[1.35rem] border p-4 text-left transition ${paymentMethod === 'WALLET' ? 'border-primary bg-secondary/25 ring-1 ring-primary/20' : 'border-border bg-card'}`}><WalletCards className="h-6 w-6 text-primary" /><span className="flex-1"><b className="block text-sm">Ví FITLYO</b><small className="text-muted-foreground">Số dư {formatMoney(profile.walletBalance)}</small></span>{paymentMethod === 'WALLET' && <CheckCircle2 className="h-5 w-5 text-primary" />}</button>
+              <button type="button" onClick={() => setPaymentMethod('VIETQR')} className={`flex items-center gap-3 rounded-[1.35rem] border p-4 text-left transition ${paymentMethod === 'VIETQR' ? 'border-primary bg-secondary/25 ring-1 ring-primary/20' : 'border-border bg-card'}`}><QrCode className="h-6 w-6 text-primary" /><span className="flex-1"><b className="block text-sm">Thanh toán mô phỏng</b><small className="text-muted-foreground">Bản demo không thu tiền thật</small></span>{paymentMethod === 'VIETQR' && <CheckCircle2 className="h-5 w-5 text-primary" />}</button>
+            </div>
             {paymentMethod === 'VIETQR' && <div className="mt-4 rounded-2xl border border-dashed border-primary/25 bg-white p-4 text-center text-[#143F42]"><QrCode className="mx-auto h-20 w-20" /><p className="mt-2 font-mono text-xs font-bold">FITLYO-{match.id.toUpperCase()}</p><p className="text-[10px] text-slate-500">Mã thanh toán mô phỏng</p></div>}
-            <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-border/70 p-4 text-sm"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#143F42]" /><span>Tôi đã đọc và đồng ý với <button type="button" className="font-bold text-primary underline">điều kiện tham gia và hoàn cọc</button>.</span></label>
-            <Button onClick={confirmJoin} disabled={!accepted || processing} className="mt-5 h-13 w-full rounded-2xl bg-accent font-black text-accent-foreground hover:bg-accent/90">{processing ? 'Đang khóa cọc an toàn...' : `Xác nhận tham gia · ${formatMoney(match.deposit)}`}</Button>
+            <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-[1.35rem] border border-border bg-card p-4 text-sm"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-0.5 h-5 w-5 accent-[#143F42]" /><span>Tôi đã đọc và đồng ý với <button type="button" className="font-bold text-primary underline">điều kiện tham gia và hoàn cọc</button>.</span></label>
+            <Button onClick={confirmJoin} disabled={!accepted || processing} className="fitlyo-coral-button mt-5 h-14 w-full rounded-2xl border-0 font-black disabled:opacity-45">{processing ? 'Đang khóa cọc an toàn...' : `Xác nhận tham gia · ${formatMoney(match.deposit)}`}</Button>
+            <p className="mt-3 text-center text-xs text-muted-foreground">Chọn ô xác nhận để tiếp tục.</p>
           </div>
         </div>
       )}

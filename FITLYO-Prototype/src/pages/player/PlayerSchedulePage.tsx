@@ -26,6 +26,7 @@ export function PlayerSchedulePage() {
 
   const primaryAction = (item: PlayerScheduleItem) => {
     if (item.ticketCode && item.matchId) return navigate(`/player/matches/${item.matchId}/ticket`)
+    if (item.coachBookingId) return navigate(`/player/coaching?booking=${item.coachBookingId}`)
     if (item.kind === 'COURSE') return showToast('Vé QR buổi học đã được mở trong prototype.', 'info')
     if (item.kind === 'COURT') return showToast('Mã đặt sân đã được sao chép.', 'success')
     if (item.status === 'COMPLETED' && item.matchId && matches.some((match) => match.id === item.matchId) && !reviewedIds.includes(item.matchId)) return navigate(`/player/matches/${item.matchId}/review`)

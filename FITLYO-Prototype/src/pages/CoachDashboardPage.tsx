@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
+import { useCoachBookingStore } from '@/store/useCoachBookingStore'
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', {
   style: 'currency',
@@ -25,13 +26,13 @@ const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', {
 }).format(value)
 
 const weekDays = [
-  { label: 'Thứ Hai', date: '12/10' },
-  { label: 'Thứ Ba', date: '13/10' },
-  { label: 'Thứ Tư', date: '14/10', today: true },
-  { label: 'Thứ Năm', date: '15/10' },
-  { label: 'Thứ Sáu', date: '16/10' },
-  { label: 'Thứ Bảy', date: '17/10' },
-  { label: 'Chủ Nhật', date: '18/10' },
+  { label: 'Thứ Hai', date: '12/10', dateKey: '2026-10-12' },
+  { label: 'Thứ Ba', date: '13/10', dateKey: '2026-10-13' },
+  { label: 'Thứ Tư', date: '14/10', dateKey: '2026-10-14', today: true },
+  { label: 'Thứ Năm', date: '15/10', dateKey: '2026-10-15' },
+  { label: 'Thứ Sáu', date: '16/10', dateKey: '2026-10-16' },
+  { label: 'Thứ Bảy', date: '17/10', dateKey: '2026-10-17' },
+  { label: 'Chủ Nhật', date: '18/10', dateKey: '2026-10-18' },
 ]
 
 const slots = [
@@ -46,6 +47,7 @@ const slots = [
 export function CoachDashboardPage() {
   const navigate = useNavigate()
   const { coachAccount, coachCourses, coachWalletSummary, coachAffiliations, showToast } = useFitlyoStore()
+  const coachBookings = useCoachBookingStore((state) => state.bookings)
   const [selectedDay, setSelectedDay] = useState(2)
 
   const ownCourses = useMemo(
@@ -55,6 +57,23 @@ export function CoachDashboardPage() {
   const studentCount = new Set(ownCourses.flatMap((course) => course.students.map((student) => student.id))).size
 
   const getScheduleItem = (slotNumber: number) => {
+    const playerBooking = coachBookings.find((booking) => (
+      booking.coachId === coachAccount.id
+      && booking.status === 'CONFIRMED'
+      && booking.sessions.some((session) => (
+        session.date === weekDays[selectedDay].dateKey && session.slotNumber === slotNumber
+      ))
+    ))
+    if (playerBooking) {
+      return {
+        id: playerBooking.id,
+        bookingId: playerBooking.id,
+        title: `${playerBooking.type === 'COURSE' ? 'Khóa 8 buổi' : 'PT 1-1'} · ${playerBooking.playerName}`,
+        venue: playerBooking.venueName,
+        currentStudents: 1,
+        maxStudents: playerBooking.type === 'COURSE' ? 4 : 1,
+      }
+    }
     if (selectedDay === 2 && slotNumber === 2) return ownCourses.find((course) => course.id === 'COURSE-DUNG-02')
     if (selectedDay === 2 && slotNumber === 4) return ownCourses.find((course) => course.id === 'COURSE-DUNG-03')
     if (selectedDay === 2 && slotNumber === 5) return ownCourses.find((course) => course.id === 'COURSE-DUNG-01')
@@ -153,7 +172,7 @@ export function CoachDashboardPage() {
                 {course ? (
                   <button
                     type="button"
-                    onClick={() => navigate(`/coach/attendance?course=${course.id}`)}
+                    onClick={() => navigate('bookingId' in course ? `/coach/bookings?booking=${course.bookingId}` : `/coach/attendance?course=${course.id}`)}
                     className={`group flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition ${isGolden ? 'border-amber-300/60 bg-amber-500/10 hover:border-amber-400' : 'border-primary/15 bg-secondary/30 hover:border-primary/35 dark:bg-secondary/10'}`}
                   >
                     <div className="min-w-0">

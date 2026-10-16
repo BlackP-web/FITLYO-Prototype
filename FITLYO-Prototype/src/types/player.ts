@@ -95,6 +95,8 @@ export interface PlayerScheduleItem {
   matchId?: string
   coachName?: string
   progress?: string
+  coachBookingId?: string
+  coachSessionId?: string
 }
 
 export interface VenueSlot {

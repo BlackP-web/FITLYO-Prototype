@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
 import type {
   PlayerMatch,
   PlayerProfile,
@@ -8,6 +9,7 @@ import type {
   PlayerVenue,
   ReviewDraft,
 } from '@/types/player'
+import type { CoachBookingSession, CoachBookingType, CoachPaymentMethod } from '@/types/coachBooking'
 
 interface ActionResult {
   success: boolean
@@ -53,6 +55,18 @@ interface PlayerState {
     dateLabel: string
     mode: 'PRIVATE' | 'SOCIAL'
     paymentMethod?: 'WALLET' | 'VIETQR'
+  }) => ActionResult
+  recordCoachBooking: (input: {
+    bookingId: string
+    coachId: string
+    coachName: string
+    type: CoachBookingType
+    title: string
+    venueName: string
+    courtName: string
+    depositAmount: number
+    paymentMethod: CoachPaymentMethod
+    sessions: CoachBookingSession[]
   }) => ActionResult
   resetPlayerDemo: () => void
 }
@@ -119,17 +133,17 @@ const people = {
 
 const venueImages = {
   thaoDien: [
-    'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1400&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1599474924187-334a4ae5bd3c?w=1400&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1400&auto=format&fit=crop',
+    venueIndoor,
+    matchNewbie,
+    communityHero,
   ],
   hiepPhu: [
-    'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=1400&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?w=1400&auto=format&fit=crop',
+    communityHero,
+    matchWeekend,
   ],
   anPhu: [
-    'https://images.unsplash.com/photo-1542144582-1ba00456b5e3?w=1400&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1551773188-0801da12ddc9?w=1400&auto=format&fit=crop',
+    matchWeekend,
+    venueIndoor,
   ],
 }
 
@@ -370,6 +384,27 @@ const initialSchedule: PlayerScheduleItem[] = [
 ]
 
 const playerStorageKey = 'fitlyo-player-portal-v1'
+
+const migratePlayerImages = (persistedState: unknown): PlayerState => {
+  const state = persistedState as PlayerState
+  const imagesByVenueId = new Map(initialVenues.map((venue) => [venue.id, venue.images]))
+  const imageByMatchId = new Map(initialMatches.map((match) => [match.id, match.imageUrl]))
+
+  return {
+    ...state,
+    venues: (state.venues ?? initialVenues).map((venue) => ({
+      ...venue,
+      images: imagesByVenueId.get(venue.id) ?? venue.images,
+    })),
+    matches: (state.matches ?? initialMatches).map((match) => ({
+      ...match,
+      imageUrl:
+        imageByMatchId.get(match.id)
+        ?? imagesByVenueId.get(match.venueId)?.[0]
+        ?? match.imageUrl,
+    })),
+  }
+}
 
 const ticketCodeFor = (matchId: string) => `FTL-${matchId.slice(-4).toUpperCase()}-${String(Date.now()).slice(-4)}`
 
@@ -641,6 +676,65 @@ export const usePlayerStore = create<PlayerState>()(
         return { success: true, message: 'Đã đặt bao sân và thêm lịch vào Lịch của tôi.', ticketCode }
       },
 
+      recordCoachBooking: (input) => {
+        const state = get()
+        if (state.schedule.some((item) => item.coachBookingId === input.bookingId)) {
+          return { success: true, message: 'Lịch học này đã có trong Lịch của tôi.' }
+        }
+
+        const conflict = input.sessions.find((session) => state.schedule.some((item) => (
+          item.status === 'UPCOMING'
+          && item.date === session.date
+          && item.timeRange === session.timeRange
+        )))
+        if (conflict) {
+          const existing = state.schedule.find((item) => (
+            item.status === 'UPCOMING'
+            && item.date === conflict.date
+            && item.timeRange === conflict.timeRange
+          ))
+          return {
+            success: false,
+            message: `Bạn đã trùng lịch với “${existing?.title ?? 'một hoạt động khác'}” vào ${conflict.dateLabel}, ${conflict.timeRange}.`,
+          }
+        }
+
+        if (input.paymentMethod === 'WALLET' && state.profile.walletBalance < input.depositAmount) {
+          return { success: false, message: 'Số dư Ví FITLYO không đủ để thanh toán cọc 50%.' }
+        }
+
+        const scheduleItems: PlayerScheduleItem[] = input.sessions.map((session) => ({
+          id: `schedule-coach-${input.bookingId}-${session.sequence}`,
+          kind: 'COURSE',
+          title: input.title,
+          subtitle: input.type === 'COURSE'
+            ? `Buổi ${session.sequence}/${input.sessions.length} · Đã xác nhận với Coach`
+            : 'Buổi PT 1-1 · Đã xác nhận với Coach',
+          venueName: input.venueName,
+          courtName: input.courtName,
+          date: session.date,
+          dateLabel: session.dateLabel,
+          timeRange: session.timeRange,
+          status: 'UPCOMING',
+          amount: session.sequence === 1 ? input.depositAmount : 0,
+          coachName: input.coachName,
+          progress: input.type === 'COURSE' ? `Buổi ${session.sequence}/${input.sessions.length}` : 'PT 1-1',
+          coachBookingId: input.bookingId,
+          coachSessionId: session.id,
+        }))
+
+        set((current) => ({
+          profile: {
+            ...current.profile,
+            walletBalance: input.paymentMethod === 'WALLET'
+              ? current.profile.walletBalance - input.depositAmount
+              : current.profile.walletBalance,
+          },
+          schedule: [...scheduleItems, ...current.schedule],
+        }))
+        return { success: true, message: 'Đã thanh toán cọc 50% và thêm lịch học vào Lịch của tôi.' }
+      },
+
       resetPlayerDemo: () => set({
         profile: initialProfile,
         matches: initialMatches,
@@ -654,6 +748,8 @@ export const usePlayerStore = create<PlayerState>()(
     {
       name: playerStorageKey,
       storage: createJSONStorage(() => window.localStorage),
+      version: 1,
+      migrate: migratePlayerImages,
     },
   ),
 )

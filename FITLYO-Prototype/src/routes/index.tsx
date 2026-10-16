@@ -39,6 +39,9 @@ import { VenueDetailPage } from "@/pages/player/VenueDetailPage"
 import { PlayerProfilePage } from "@/pages/player/PlayerProfilePage"
 import { VipMembershipPage } from "@/pages/player/VipMembershipPage"
 import { PlayerSchedulePage } from "@/pages/player/PlayerSchedulePage"
+import { PlayerCoachDetailPage } from "@/pages/player/PlayerCoachDetailPage"
+import { PlayerCoachingPage } from "@/pages/player/PlayerCoachingPage"
+import { CoachBookingsPage } from "@/pages/CoachBookingsPage"
 
 export const router = createBrowserRouter([
   // SCR_PUB_01: Public Landing Page
@@ -82,6 +85,8 @@ export const router = createBrowserRouter([
           { path: "venues", element: <VenueDiscoveryPage /> },
           { path: "venues/:venueId", element: <VenueDetailPage /> },
           { path: "coaches", element: <CoachDirectoryPage /> },
+          { path: "coaches/:coachId", element: <PlayerCoachDetailPage /> },
+          { path: "coaching", element: <PlayerCoachingPage /> },
           { path: "profile", element: <PlayerProfilePage /> },
           { path: "vip", element: <VipMembershipPage /> },
           { path: "schedule", element: <PlayerSchedulePage /> },
@@ -104,6 +109,7 @@ export const router = createBrowserRouter([
           { path: "venues", element: <CoachVenuesPage /> },
           { path: "profile", element: <CoachProfilePage /> },
           { path: "wallet", element: <CoachWalletPage /> },
+          { path: "bookings", element: <CoachBookingsPage /> },
         ],
       },
     ],

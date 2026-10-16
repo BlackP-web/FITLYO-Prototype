@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
@@ -18,6 +18,7 @@ const roleMeta: Record<DemoAccount['role'], { label: string; short: string; tone
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { session, login } = useAuthStore()
   const [email, setEmail] = useState('admin@fitlyo.vn')
   const [password, setPassword] = useState('Admin@123')
@@ -42,7 +43,8 @@ export function LoginPage() {
       setError(result.message)
       return
     }
-    navigate(roleHome[result.session.role], { replace: true })
+    const from = (location.state as { from?: string } | null)?.from
+    navigate(from ?? roleHome[result.session.role], { replace: true })
   }
 
   return (

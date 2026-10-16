@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { coachMale, communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
+import { useAuthStore } from '@/store/useAuthStore'
 import type {
   UserAccount,
   MatchRoom,
@@ -135,6 +136,8 @@ interface FitlyoState {
   requestCoachWithdrawal: (amount: number) => boolean
   approveAuditApplication: (id: string) => void
   rejectAuditApplication: (id: string, reason: string) => void
+  requestAuditSupplement: (id: string, reason: string) => void
+  submitAuditApplication: (application: AuditApplication) => { success: boolean; message: string; application?: AuditApplication }
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void
   clearToast: () => void
 }
@@ -755,6 +758,26 @@ const initialAuditApps: AuditApplication[] = [
   },
 ]
 
+const auditApplicationsStorageKey = 'fitlyo-audit-applications'
+
+const readAuditApplications = (): AuditApplication[] => {
+  if (typeof window === 'undefined') return initialAuditApps
+  try {
+    const raw = window.localStorage.getItem(auditApplicationsStorageKey)
+    if (!raw) return initialAuditApps
+    const stored = JSON.parse(raw) as AuditApplication[]
+    return Array.isArray(stored) ? stored : initialAuditApps
+  } catch {
+    return initialAuditApps
+  }
+}
+
+const persistAuditApplications = (applications: AuditApplication[]) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(auditApplicationsStorageKey, JSON.stringify(applications))
+  }
+}
+
 const initialVenues: VenueItem[] = [
   {
     id: 'ven_1',
@@ -854,7 +877,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   coachWalletTransactions: initialCoachWalletTransactions,
   coachWalletSummary: initialCoachWalletSummary,
 
-  auditApplications: initialAuditApps,
+  auditApplications: readAuditApplications(),
   selectedAuditId: 'FM-APP-0128',
 
   venues: initialVenues,
@@ -1395,11 +1418,37 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   },
 
   approveAuditApplication: (id) => {
-    const updated = get().auditApplications.map((app) =>
-      app.id === id ? { ...app, status: 'APPROVED' as const } : app
-    )
+    const target = get().auditApplications.find((app) => app.id === id)
+    if (!target || target.status === 'APPROVED') return
+
+    const generatedAccount = target.sourcePlayerEmail
+      ? useAuthStore.getState().createPartnerAccount({
+          applicationId: target.id,
+          role: target.type === 'COACH' ? 'coach' : 'fm',
+          name: target.ownerName,
+          sourceEmail: target.sourcePlayerEmail,
+        })
+      : null
+
+    const updated = get().auditApplications.map((app) => app.id === id
+      ? {
+          ...app,
+          status: 'APPROVED' as const,
+          rejectionReason: undefined,
+          generatedAccount: generatedAccount ? {
+            id: generatedAccount.id,
+            email: generatedAccount.email,
+            password: generatedAccount.password,
+            role: generatedAccount.role as 'coach' | 'fm',
+            createdAt: new Date().toISOString(),
+          } : app.generatedAccount,
+        }
+      : app)
+    persistAuditApplications(updated)
     set({ auditApplications: updated })
-    get().showToast(`Đã phê duyệt và kích hoạt giấy phép/chứng chỉ #${id}!`, 'success')
+    get().showToast(generatedAccount
+      ? `Đã phê duyệt #${id} và tạo tài khoản ${generatedAccount.email}.`
+      : `Đã phê duyệt và kích hoạt giấy phép/chứng chỉ #${id}!`, 'success')
   },
 
   rejectAuditApplication: (id, reason) => {
@@ -1408,8 +1457,44 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
         ? { ...app, status: 'REJECTED' as const, rejectionReason: reason }
         : app
     )
+    persistAuditApplications(updated)
     set({ auditApplications: updated })
     get().showToast(`Đã gửi thông báo từ chối hồ sơ #${id} kèm lý do.`, 'error')
+  },
+
+  requestAuditSupplement: (id, reason) => {
+    const updated = get().auditApplications.map((app) => app.id === id
+      ? { ...app, status: 'NEEDS_SUPPLEMENT' as const, rejectionReason: reason }
+      : app)
+    persistAuditApplications(updated)
+    set({ auditApplications: updated })
+    get().showToast(`Đã gửi yêu cầu bổ sung cho hồ sơ #${id}.`, 'info')
+  },
+
+  submitAuditApplication: (application) => {
+    const current = get().auditApplications
+    const existing = current.find((item) =>
+      item.sourcePlayerId === application.sourcePlayerId && item.type === application.type,
+    )
+
+    if (existing?.status === 'PENDING') {
+      return { success: false, message: 'Hồ sơ cùng loại đang chờ Admin thẩm định.', application: existing }
+    }
+    if (existing?.status === 'APPROVED') {
+      return { success: false, message: 'Hồ sơ đã được duyệt và tài khoản đối tác đã được tạo.', application: existing }
+    }
+
+    const submitted = existing
+      ? { ...application, id: existing.id, status: 'PENDING' as const, rejectionReason: undefined, generatedAccount: undefined }
+      : application
+    const updated = existing
+      ? current.map((item) => item.id === existing.id ? submitted : item)
+      : [submitted, ...current]
+
+    persistAuditApplications(updated)
+    set({ auditApplications: updated, selectedAuditId: submitted.id })
+    get().showToast(`Đã gửi hồ sơ #${submitted.id} đến Ban quản trị.`, 'success')
+    return { success: true, message: 'Hồ sơ đã được gửi thành công.', application: submitted }
   },
 
   showToast: (text, type = 'success') => {

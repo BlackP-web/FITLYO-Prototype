@@ -9,12 +9,13 @@ import { useFitlyoStore } from '@/store/useFitlyoStore'
 
 const statusMeta = {
   PENDING: { label: 'Chờ duyệt', className: 'border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300' },
+  NEEDS_SUPPLEMENT: { label: 'Cần bổ sung', className: 'border-orange-500/25 bg-orange-500/10 text-orange-700 dark:text-orange-300' },
   APPROVED: { label: 'Đã duyệt', className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
   REJECTED: { label: 'Từ chối', className: 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300' },
 }
 
 export function AdminKycPage() {
-  const { auditApplications, approveAuditApplication, rejectAuditApplication, showToast } = useFitlyoStore()
+  const { auditApplications, approveAuditApplication, rejectAuditApplication, requestAuditSupplement, showToast } = useFitlyoStore()
   const [search, setSearch] = useState('')
   const [type, setType] = useState<'ALL' | 'VENUE' | 'COACH'>('ALL')
   const [selectedId, setSelectedId] = useState(auditApplications.find((item) => item.status === 'PENDING')?.id ?? auditApplications[0]?.id)
@@ -41,6 +42,15 @@ export function AdminKycPage() {
       return
     }
     rejectAuditApplication(selected.id, reviewNote.trim())
+  }
+
+  const handleRequestSupplement = () => {
+    if (!selected) return
+    if (!reviewNote.trim()) {
+      showToast('Vui lòng nhập nội dung cần bổ sung.', 'error')
+      return
+    }
+    requestAuditSupplement(selected.id, reviewNote.trim())
   }
 
   return (
@@ -83,10 +93,12 @@ export function AdminKycPage() {
 
             <div className="mt-5 space-y-2"><label htmlFor="kyc-note" className="text-xs font-bold uppercase tracking-wider text-primary">Ghi chú kiểm duyệt</label><textarea id="kyc-note" rows={4} value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} className="w-full rounded-xl border border-input bg-background/70 px-3 py-2 text-sm leading-relaxed outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/40" /></div>
 
-            {selected.rejectionReason && <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-700 dark:text-red-300"><strong>Lý do từ chối:</strong> {selected.rejectionReason}</div>}
+            {selected.rejectionReason && <div className="mt-4 rounded-xl border border-orange-500/20 bg-orange-500/10 p-3 text-xs text-orange-800 dark:text-orange-200"><strong>{selected.status === 'NEEDS_SUPPLEMENT' ? 'Nội dung cần bổ sung:' : 'Lý do từ chối:'}</strong> {selected.rejectionReason}</div>}
+
+            {selected.generatedAccount && <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-xs text-emerald-900 dark:text-emerald-100"><p className="font-black">Tài khoản {selected.generatedAccount.role === 'coach' ? 'Coach' : 'Field Manager'} đã tạo</p><div className="mt-2 grid gap-2 sm:grid-cols-2"><p><span className="text-emerald-800/70 dark:text-emerald-200/70">Email: </span><b className="break-all">{selected.generatedAccount.email}</b></p><p><span className="text-emerald-800/70 dark:text-emerald-200/70">Mật khẩu tạm: </span><b>{selected.generatedAccount.password}</b></p></div></div>}
 
             <div className="mt-6 flex flex-col-reverse gap-2 border-t border-border pt-5 sm:flex-row sm:justify-end">
-              <Button variant="outline" disabled={selected.status !== 'PENDING'} onClick={() => showToast(`Đã gửi yêu cầu bổ sung chứng từ cho #${selected.id}.`, 'info')}><Send /> Yêu cầu bổ sung</Button>
+              <Button variant="outline" disabled={selected.status !== 'PENDING'} onClick={handleRequestSupplement}><Send /> Yêu cầu bổ sung</Button>
               <Button variant="destructive" disabled={selected.status !== 'PENDING'} onClick={handleReject}><XCircle /> Từ chối</Button>
               <Button disabled={selected.status !== 'PENDING'} onClick={handleApprove}><CheckCircle2 /> Phê duyệt & kích hoạt</Button>
             </div>

@@ -709,14 +709,14 @@ export function LandingPage() {
               <GraduationCap className="h-8 w-8" />
               <h2 className="mt-8 text-2xl font-black">Bạn là Coach chuyên nghiệp?</h2>
               <p className="mt-2 max-w-md text-sm leading-6 opacity-70">Quản lý lịch dạy, khóa học và thu nhập trong một portal được thiết kế riêng cho Coach.</p>
-              <Button onClick={() => navigate('/auth/register')} className="mt-6">Đăng ký làm Coach <ArrowRight /></Button>
+              <Button onClick={() => navigate('/auth/coach-application')} className="mt-6">Đăng ký làm Coach <ArrowRight /></Button>
             </article>
             <article className="relative overflow-hidden rounded-[1.75rem] border border-primary/10 bg-accent p-7 text-accent-foreground sm:p-9">
               <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full border-[24px] border-white/20" />
               <Building2 className="h-8 w-8" />
               <h2 className="mt-8 text-2xl font-black">Bạn đang vận hành cụm sân?</h2>
               <p className="mt-2 max-w-md text-sm leading-6 opacity-70">Tối ưu công suất 6 slot, check-in QR và doanh thu bằng portal Field Manager.</p>
-              <Button onClick={() => navigate('/auth/register')} className="mt-6">Đưa sân lên FITLYO <ArrowRight /></Button>
+              <Button onClick={() => navigate('/auth/venue-application')} className="mt-6">Đưa sân lên FITLYO <ArrowRight /></Button>
             </article>
           </div>
         </section>

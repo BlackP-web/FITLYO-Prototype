@@ -9,6 +9,8 @@ import { LandingPage } from "@/pages/LandingPage"
 import { SCR_AUTH_02 } from "@/pages/SCR_AUTH_02"
 import { SCR_AUTH_03 } from "@/pages/SCR_AUTH_03"
 import { SCR_AUTH_04 } from "@/pages/SCR_AUTH_04"
+import { SCR_AUTH_05 } from "@/pages/SCR_AUTH_05"
+import { SCR_AUTH_06 } from "@/pages/SCR_AUTH_06"
 import { MatchDetailPage } from "@/pages/MatchDetailPage"
 import { CourtCalendarPage } from "@/pages/CourtCalendarPage"
 import { OwnerCourtsPage } from "@/pages/OwnerCourtsPage"
@@ -73,6 +75,8 @@ export const router = createBrowserRouter([
   {
     element: <RoleGuard allow={["player"]} />,
     children: [
+      { path: "/auth/coach-application", element: <SCR_AUTH_05 /> },
+      { path: "/auth/venue-application", element: <SCR_AUTH_06 /> },
       {
         path: "/player",
         element: <AppLayout />,

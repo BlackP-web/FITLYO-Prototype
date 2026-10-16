@@ -247,10 +247,20 @@ export interface AuditApplication {
   address: string
   details: string
   documents: AuditDocument[]
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  status: 'PENDING' | 'NEEDS_SUPPLEMENT' | 'APPROVED' | 'REJECTED'
   inspectorNotes: string
   submittedDate: string
   rejectionReason?: string
+  sourcePlayerId?: string
+  sourcePlayerEmail?: string
+  applicationData?: Record<string, string | number | string[]>
+  generatedAccount?: {
+    id: string
+    email: string
+    password: string
+    role: 'coach' | 'fm'
+    createdAt: string
+  }
 }
 
 export interface VenueItem {

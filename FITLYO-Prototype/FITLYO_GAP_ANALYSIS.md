@@ -5,7 +5,7 @@
 
 ## 1. Kết luận điều hành
 
-Prototype hiện tại đã phủ giao diện của **34/36 màn hình được đặc tả** (xấp xỉ 94% về sự hiện diện của màn hình). Hai màn hình chưa có là `SCR_AUTH_05` và `SCR_AUTH_06`. Tuy nhiên, con số 94% chỉ phản ánh **đã có UI/route**, không phản ánh mức sẵn sàng vận hành thật.
+Prototype hiện tại đã phủ giao diện của **36/36 màn hình được đặc tả** (100% về sự hiện diện của màn hình). `SCR_AUTH_05` và `SCR_AUTH_06` đã có route, form nộp hồ sơ, trạng thái xét duyệt và kết nối với hàng đợi KYC của Admin. Tuy nhiên, con số 100% chỉ phản ánh **đã có UI/route**, không phản ánh mức sẵn sàng vận hành thật.
 
 Khoảng cách lớn nhất không nằm ở số lượng trang mà nằm ở kiến trúc và tính liên thông:
 
@@ -50,14 +50,14 @@ Mức ưu tiên:
 
 | Phân hệ | Số màn hình tài liệu | Có UI/route | Nhận định |
 |---|---:|---:|---|
-| Public & Authentication | 7 | 5 | Thiếu hồ sơ đăng ký Coach và Field Manager; auth thật/2FA chưa có |
+| Public & Authentication | 7 | 7 | Đủ UI/route; auth thật/2FA và lưu trữ tài liệu an toàn chưa có |
 | Social Matchmaking | 4 | 4 | Luồng demo khá đầy đủ; payment, QR, notification và rule thời gian chưa thật |
 | Venue Discovery & Booking | 2 | 2 | Có tìm sân/đặt sân; bản đồ, GPS và chống overbooking đang mô phỏng |
 | Player Profile & VIP | 3 | 3 | Có hồ sơ, VIP, lịch; lịch sử DUPR và subscription lifecycle còn thiếu |
 | Coach & Coach Booking | 7 | 7 | Có portal và booking hai phía; liên thông dữ liệu và rule Certified chưa đầy đủ |
 | Field Manager | 8 | 8 | Đủ page/modal; nhiều thao tác chỉ đổi state cục bộ hoặc dữ liệu demo |
-| Admin | 5 | 5 | Đủ 5 màn hình; chưa thực thi thật lên tài khoản, ví, Escrow và cấu hình toàn hệ thống |
-| **Tổng** | **36** | **34** | **Bao phủ UI cao, độ sẵn sàng production thấp** |
+| Admin | 5 | 5 | Đủ 5 màn hình; KYC prototype có thể sinh account đối tác, nhưng chưa thực thi thật lên hệ thống, ví, Escrow và cấu hình toàn hệ thống |
+| **Tổng** | **36** | **36** | **Bao phủ UI đầy đủ, độ sẵn sàng production thấp** |
 
 ## 5. Gap chi tiết theo màn hình
 
@@ -65,13 +65,13 @@ Mức ưu tiên:
 
 | Mã | Hiện trạng prototype | Gap chính | Ưu tiên |
 |---|---|---|---|
-| `SCR_PUB_01` | ✅ Landing page có nhận diện FITLYO, nội dung sân/Coach/kèo, CTA và responsive | Nội dung/số liệu là tĩnh; một số CTA đối tác chưa dẫn đến onboarding tương ứng; chưa có SEO metadata/structured data được kiểm chứng | P2 |
+| `SCR_PUB_01` | ✅ Landing page có nhận diện FITLYO, nội dung sân/Coach/kèo, CTA và responsive | Nội dung/số liệu là tĩnh; chưa có SEO metadata/structured data được kiểm chứng | P2 |
 | `SCR_AUTH_01` | 🟡 Login bằng 4 tài khoản mẫu; logout và điều hướng theo role hoạt động | Email/mật khẩu hard-code trong source; session có thể sửa trong localStorage; thiếu Google OAuth, Phone OTP login, quên mật khẩu, rate-limit và 2FA bắt buộc cho FM/Admin | P0 |
 | `SCR_AUTH_02` | 🔵 Có form đăng ký | Chưa tạo tài khoản thật; chưa có backend validation, kiểm tra email/SĐT trùng, điều khoản có version và lưu consent | P1 |
 | `SCR_AUTH_03` | 🔵 Có UI OTP 6 số | Không gửi/xác minh OTP thật; thiếu hạn 120 giây, giới hạn 5 lần sai và khóa 15 phút theo `BR-01`–`BR-03` | P0 |
 | `SCR_AUTH_04` | 🟡 Có khảo sát DUPR nhiều bước | Chưa đồng bộ DUPR ID quốc tế; kết quả chỉ là dữ liệu prototype; chưa có versioning/cơ chế hiệu chỉnh bài khảo sát | P1 |
-| `SCR_AUTH_05` | 🔴 Chưa có | Thiếu form nộp CCCD, chứng chỉ Coach, trạng thái hồ sơ và luồng gửi Admin duyệt | P1 |
-| `SCR_AUTH_06` | 🔴 Chưa có | Thiếu form GPKD, hợp đồng mặt bằng, ảnh sân, tổng số sân và luồng gửi Admin duyệt | P1 |
+| `SCR_AUTH_05` | 🔵 Có form hồ sơ Coach, chứng chỉ, khu vực, học phí, trạng thái chờ duyệt/cần bổ sung/đã duyệt; gửi ngay vào KYC Admin | Tệp chỉ lưu metadata/preview localStorage; không có xác minh người nộp, quét chứng chỉ, storage bảo mật hoặc email thông báo; account Coach sinh ra chỉ là credential prototype | P1/P0 khi chạy thật |
+| `SCR_AUTH_06` | 🔵 Có form hồ sơ cụm sân, pháp lý, tiện ích, ngân hàng, trạng thái chờ duyệt/cần bổ sung/đã duyệt; gửi ngay vào KYC Admin | Tệp chỉ lưu metadata/preview localStorage; không có kiểm tra GPKD/tài khoản ngân hàng, KYC pháp nhân, storage bảo mật hoặc quy trình kiểm định thật; account Field Manager sinh ra chỉ là credential prototype | P1/P0 khi chạy thật |
 
 ### 5.2. Social Matchmaking
 
@@ -130,7 +130,7 @@ Các trang bổ sung `CoachProfilePage`, `CoachWalletPage`, `CoachBookingsPage` 
 
 | Mã | Hiện trạng prototype | Gap chính | Ưu tiên |
 |---|---|---|---|
-| `SCR_ADMIN_01` | 🟡 Có queue KYC, hồ sơ, chứng từ và thao tác duyệt/yêu cầu bổ sung | File chỉ là metadata; xem file mô phỏng; quyết định duyệt chưa cấp/thu hồi quyền thật và chưa đồng bộ Coach/FM | P0 |
+| `SCR_ADMIN_01` | 🟡 Có queue KYC, hồ sơ, chứng từ và thao tác duyệt/từ chối/yêu cầu bổ sung; duyệt hồ sơ mới sinh credential Coach/FM riêng trong localStorage | File chỉ là metadata; xem file mô phỏng; credential không có backend, không gửi thông báo bảo mật, không có kích hoạt/đặt lại mật khẩu hay thu hồi account thật | P0 |
 | `SCR_ADMIN_02` | 🟡 Có tìm kiếm, đổi role, cảnh báo, đóng băng ví và đình chỉ | Store Admin không persist; hành động không ảnh hưởng auth session/API; không có immutable audit log hoặc nguyên tắc least privilege | P0 |
 | `SCR_ADMIN_03` | 🟡 Có ticket, bằng chứng, phán quyết hoàn tiền/bác/chuyển pháp lý | Không có ledger/Escrow thật, bằng chứng thật, workflow nhiều cấp và idempotency khi hoàn tiền | P0 |
 | `SCR_ADMIN_04` | 🟡 Có cấu hình slot, hoa hồng, Escrow và audit panel | Cấu hình chỉ nằm trong memory; không áp dụng sang các store khác; audit log hiển thị là tĩnh; thiếu version/rollback và xác nhận 2FA | P0 |
@@ -142,7 +142,7 @@ Các trang bổ sung `CoachProfilePage`, `CoachWalletPage`, `CoachBookingsPage` 
 
 Hiện có ít nhất các nguồn state độc lập:
 
-- `useAuthStore`: session và 4 tài khoản mẫu.
+- `useAuthStore`: session, 4 tài khoản mẫu và các account Coach/FM được Admin duyệt (persist localStorage).
 - `usePlayerStore`: hồ sơ Player, kèo, vé, lịch và venue phía Player; có persist localStorage.
 - `useCoachBookingStore`: booking Coach và chat; có persist localStorage.
 - `useFitlyoStore`: lịch FM, Coach, KYC, venue và dữ liệu dùng chung khác; phần lớn không persist.
@@ -154,9 +154,11 @@ Hậu quả cụ thể:
 - FM publish một kèo chưa đảm bảo Player thấy cùng bản ghi đó.
 - Player đặt sân chưa đảm bảo FM thấy slot bị khóa.
 - Admin đổi cấu hình slot chưa làm thay đổi lịch của Player/FM/Coach.
-- Admin khóa user hoặc đổi role không làm thay đổi tài khoản trong `useAuthStore`.
+- Admin khóa user hoặc đổi role không làm thay đổi account/session đang dùng.
 - FM duyệt Coach chưa đảm bảo portal Coach nhận quyền/sân liên kết.
 - Refresh trang làm mất một số thay đổi nhưng giữ một số thay đổi khác, tạo trạng thái khó dự đoán.
+
+Riêng luồng KYC đối tác mới đã dùng chung `useFitlyoStore` cho form Player và Admin KYC. Khi duyệt, `useAuthStore` tạo credential Coach/FM độc lập ở localStorage. Đây là liên thông đủ cho demo nhưng vẫn chưa thay thế được API/database chung.
 
 ### 6.2. Sai lệch chuẩn 6 slot — P0
 
@@ -227,7 +229,7 @@ Chưa có job/event server cho:
 - Một số màn hình dữ liệu rộng vẫn cần cuộn ngang trên mobile; tài liệu định hướng mobile-first cho Player.
 - Loading/error/empty/skeleton chưa được triển khai đủ “5 UI states” cho mọi màn hình.
 - Nhiều số điện thoại, ngày tháng và nội dung demo hard-code; chưa có i18n/timezone.
-- Build thành công nhưng bundle JS chính khoảng **1,018 kB** minified; Vite cảnh báo chunk trên 500 kB. Chưa lazy-load theo role/route.
+- Build thành công nhưng bundle JS chính khoảng **1,050 kB** minified; Vite cảnh báo chunk trên 500 kB. Chưa lazy-load theo role/route.
 - Ảnh JPEG khoảng 316–511 kB/ảnh; cần WebP/AVIF, responsive `srcset`, lazy loading và CDN cho production.
 
 ## 8. Kiểm thử và chất lượng
@@ -250,6 +252,7 @@ Những mục dưới đây là chủ đích demo, không nên ghi nhận như l
 - Booking Coach cọc 50%; khóa 8 buổi chọn buổi đầu rồi tự xếp 7 buổi còn lại với tần suất 2 buổi/tuần.
 - Chặn trùng với booking Coach khác và lịch hiện có của Player ở mức prototype.
 - Liên hệ Player–Coach bằng chat nội bộ; đã bỏ Zalo.
+- Chỉ Player đã đăng nhập mới có thể gửi `SCR_AUTH_05`/`SCR_AUTH_06`; Admin có thể duyệt, từ chối hoặc yêu cầu bổ sung. Duyệt sẽ tạo account Coach/FM riêng để người dùng logout rồi đăng nhập lại trong prototype.
 
 Các quyết định này cần được đưa vào PRD/Screen Spec phiên bản mới để tránh tài liệu và prototype tiếp tục lệch nhau.
 
@@ -264,7 +267,7 @@ Các quyết định này cần được đưa vào PRD/Screen Spec phiên bản
 5. Xây Booking service có database transaction, unique constraint/atomic lock và idempotency.
 6. Xây payment/Escrow ledger; VietQR/gateway callback; refund và reconciliation.
 7. Hợp nhất dữ liệu giữa 4 portal qua API/event; loại bỏ các bản sao domain data trong nhiều store.
-8. Bổ sung `SCR_AUTH_05` và `SCR_AUTH_06`; nối KYC với Admin và quyền account thực tế.
+8. Chuyển luồng KYC prototype sang backend: lưu tài liệu an toàn, kiểm định dữ liệu pháp lý, thông báo kết quả và kích hoạt/thu hồi account đối tác thực tế.
 
 ### Giai đoạn P1 — hoàn thiện hành trình nghiệp vụ
 

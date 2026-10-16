@@ -1,8 +1,12 @@
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Clock3, ExternalLink, Heart, MapPin, Phone, QrCode, ShieldCheck, Sparkles, Star, UsersRound, WalletCards, X } from 'lucide-react'
+import {
+  ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Clock3, ExternalLink,
+  Heart, MapPin, Phone, QrCode, ShieldCheck, Sparkles, Star, WalletCards, X,
+} from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { COURT_SLOT_NUMBERS } from '@/lib/courtSchedule'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
@@ -16,6 +20,12 @@ const statusStyle: Record<VenueSlot['status'], string> = {
   MAINTENANCE: 'border-slate-400/30 bg-slate-500/10 text-muted-foreground',
 }
 
+const dates = [
+  { value: '2026-10-15', label: 'Hôm nay, 15/10/2026', short: 'Hôm nay' },
+  { value: '2026-10-16', label: 'Ngày mai, 16/10/2026', short: 'Ngày mai' },
+  { value: '2026-10-17', label: 'Thứ Bảy, 17/10/2026', short: 'Thứ Bảy' },
+]
+
 export function VenueDetailPage() {
   const { venueId } = useParams()
   const navigate = useNavigate()
@@ -25,45 +35,102 @@ export function VenueDetailPage() {
   const bookCourt = usePlayerStore((state) => state.bookCourt)
   const showToast = useFitlyoStore((state) => state.showToast)
   const [imageIndex, setImageIndex] = useState(0)
-  const [date, setDate] = useState({ value: '2026-10-15', label: 'Hôm nay, 15/10/2026' })
+  const [date, setDate] = useState(dates[0])
   const [selection, setSelection] = useState<{ court: VenueCourt; slot: VenueSlot } | null>(null)
-  const [mode, setMode] = useState<'PRIVATE' | 'SOCIAL'>('PRIVATE')
   const [payment, setPayment] = useState<'WALLET' | 'VIETQR'>('WALLET')
   const [accepted, setAccepted] = useState(false)
   const [favorite, setFavorite] = useState(false)
 
-  if (!venue) return <div className="py-24 text-center"><h1 className="text-2xl font-black">Không tìm thấy cụm sân</h1><Button onClick={() => navigate('/player/venues')} className="mt-4">Quay lại khám phá sân</Button></div>
+  if (!venue) {
+    return <div className="py-24 text-center"><h1 className="text-2xl font-black">Không tìm thấy cụm sân</h1><Button onClick={() => navigate('/player/venues')} className="mt-4">Quay lại khám phá sân</Button></div>
+  }
 
-  const amount = selection ? (mode === 'PRIVATE' ? selection.slot.price : Math.ceil(selection.slot.price / 4)) : 0
   const isBooked = (court: VenueCourt, slot: VenueSlot) => bookedSlotKeys.includes(`${date.value}:${venue.id}:${court.id}:${slot.slotNumber}`)
 
   const handleBooking = () => {
     if (!selection || !accepted) return
-    const result = bookCourt({ venueId: venue.id, courtId: selection.court.id, slotNumber: selection.slot.slotNumber, date: date.value, dateLabel: date.label, mode, paymentMethod: payment })
+    const result = bookCourt({
+      venueId: venue.id,
+      courtId: selection.court.id,
+      slotNumber: selection.slot.slotNumber,
+      date: date.value,
+      dateLabel: date.label,
+      paymentMethod: payment,
+    })
     showToast(result.message, result.success ? 'success' : 'error')
     if (result.success) {
       setSelection(null)
-      if (mode === 'SOCIAL' && result.matchId) navigate(`/player/matches/${result.matchId}`)
-      else navigate('/player/schedule')
+      navigate('/player/schedule')
     }
   }
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex items-center justify-between"><Button variant="ghost" onClick={() => navigate('/player/venues')} className="gap-2 rounded-xl"><ArrowLeft className="h-4 w-4" /> Khám phá sân</Button><Button variant="outline" onClick={() => setFavorite(!favorite)} className={cn('gap-2 rounded-xl', favorite && 'border-rose-500/30 bg-rose-500/10 text-rose-600')}><Heart className={cn('h-4 w-4', favorite && 'fill-current')} />{favorite ? 'Đã yêu thích' : 'Yêu thích'}</Button></div>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => navigate('/player/venues')} className="gap-2 rounded-xl"><ArrowLeft className="h-4 w-4" /> Khám phá sân</Button>
+        <Button variant="outline" onClick={() => setFavorite(!favorite)} className={cn('gap-2 rounded-xl', favorite && 'border-rose-500/30 bg-rose-500/10 text-rose-600')}><Heart className={cn('h-4 w-4', favorite && 'fill-current')} />{favorite ? 'Đã yêu thích' : 'Yêu thích'}</Button>
+      </div>
 
       <section className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-lg">
-        <div className="relative h-[360px] sm:h-[500px]"><img src={venue.images[imageIndex]} alt={venue.name} className="h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-[#0B3437]/90 via-[#0B3437]/10 to-transparent" />{venue.images.length > 1 && <><Button size="icon" variant="secondary" onClick={() => setImageIndex((imageIndex - 1 + venue.images.length) % venue.images.length)} className="absolute left-4 top-1/2 rounded-full"><ChevronLeft className="h-5 w-5" /></Button><Button size="icon" variant="secondary" onClick={() => setImageIndex((imageIndex + 1) % venue.images.length)} className="absolute right-4 top-1/2 rounded-full"><ChevronRight className="h-5 w-5" /></Button></>}<div className="absolute bottom-0 left-0 right-0 p-6 text-white sm:p-9"><Badge className="border-0 bg-secondary text-[#143F42]">ĐẠT CHUẨN THI ĐẤU</Badge><h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">{venue.name}</h1><div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/80"><span><Star className="mr-1 inline h-4 w-4 fill-amber-400 text-amber-400" />{venue.rating} ({venue.reviewCount} đánh giá)</span><span><MapPin className="mr-1 inline h-4 w-4" />{venue.distanceKm}km từ bạn</span><span><Clock3 className="mr-1 inline h-4 w-4" />{venue.openingHours}</span></div></div></div>
-        <div className="grid gap-6 p-5 sm:p-8 lg:grid-cols-[1.2fr_0.8fr]"><div><p className="text-sm leading-7 text-muted-foreground">{venue.description}</p><div className="mt-4 flex flex-wrap gap-2">{venue.amenities.map((item) => <span key={item} className="rounded-full bg-secondary/40 px-3 py-1.5 text-xs font-bold text-primary"><CheckCircle2 className="mr-1 inline h-3.5 w-3.5" />{item}</span>)}</div></div><div className="rounded-2xl bg-muted/45 p-4 text-sm"><p className="flex gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{venue.address}</p><p className="mt-3 flex gap-2"><Phone className="h-4 w-4 text-primary" />{venue.hotline}</p><Button asChild variant="outline" className="mt-4 w-full gap-2 rounded-xl"><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}`} target="_blank" rel="noreferrer">Chỉ đường <ExternalLink className="h-3.5 w-3.5" /></a></Button></div></div>
+        <div className="relative h-[360px] sm:h-[500px]">
+          <img src={venue.images[imageIndex]} alt={venue.name} className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0B3437]/90 via-[#0B3437]/10 to-transparent" />
+          {venue.images.length > 1 && <>
+            <Button size="icon" variant="secondary" onClick={() => setImageIndex((imageIndex - 1 + venue.images.length) % venue.images.length)} className="absolute left-4 top-1/2 rounded-full"><ChevronLeft className="h-5 w-5" /></Button>
+            <Button size="icon" variant="secondary" onClick={() => setImageIndex((imageIndex + 1) % venue.images.length)} className="absolute right-4 top-1/2 rounded-full"><ChevronRight className="h-5 w-5" /></Button>
+          </>}
+          <div className="absolute bottom-0 left-0 right-0 p-6 text-white sm:p-9">
+            <Badge className="border-0 bg-secondary text-[#143F42]">ĐẠT CHUẨN THI ĐẤU</Badge>
+            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">{venue.name}</h1>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/80">
+              <span><Star className="mr-1 inline h-4 w-4 fill-amber-400 text-amber-400" />{venue.rating} ({venue.reviewCount} đánh giá)</span>
+              <span><MapPin className="mr-1 inline h-4 w-4" />{venue.distanceKm}km từ bạn</span>
+              <span><Clock3 className="mr-1 inline h-4 w-4" />{venue.openingHours}</span>
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-6 p-5 sm:p-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <div><p className="text-sm leading-7 text-muted-foreground">{venue.description}</p><div className="mt-4 flex flex-wrap gap-2">{venue.amenities.map((item) => <span key={item} className="rounded-full bg-secondary/40 px-3 py-1.5 text-xs font-bold text-primary"><CheckCircle2 className="mr-1 inline h-3.5 w-3.5" />{item}</span>)}</div></div>
+          <div className="rounded-2xl bg-muted/45 p-4 text-sm"><p className="flex gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{venue.address}</p><p className="mt-3 flex gap-2"><Phone className="h-4 w-4 text-primary" />{venue.hotline}</p><Button asChild variant="outline" className="mt-4 w-full gap-2 rounded-xl"><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}`} target="_blank" rel="noreferrer">Chỉ đường <ExternalLink className="h-3.5 w-3.5" /></a></Button></div>
+        </div>
       </section>
 
-      <section className="rounded-[2rem] border border-border/70 bg-card p-4 shadow-sm sm:p-7"><div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">SCR_VENUE_02 · 6-Slot Matrix</p><h2 className="mt-1 text-2xl font-black">Lịch sân 90 phút</h2><p className="mt-1 text-sm text-muted-foreground">Chọn ô màu xanh để bao sân hoặc mở kèo Social.</p></div><div className="flex gap-2 overflow-x-auto">{[{value:'2026-10-15',label:'Hôm nay, 15/10/2026',short:'Hôm nay'},{value:'2026-10-16',label:'Ngày mai, 16/10/2026',short:'Ngày mai'},{value:'2026-10-17',label:'Thứ Bảy, 17/10/2026',short:'Thứ Bảy'}].map((item) => <button key={item.value} type="button" onClick={() => setDate({ value: item.value, label: item.label })} className={cn('min-w-24 rounded-xl border px-3 py-2 text-xs font-bold', date.value === item.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border')}>{item.short}</button>)}</div></div>
+      <section className="rounded-[2rem] border border-border/70 bg-card p-4 shadow-sm sm:p-7">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">SCR_VENUE_02 · 10-Slot Matrix</p><h2 className="mt-1 text-2xl font-black">Lịch sân 90 phút</h2><p className="mt-1 text-sm text-muted-foreground">10 slot liên tục từ 06:00–21:00. Player chỉ có thể bao sân; kèo Social do Field Manager tạo.</p></div>
+          <div className="flex gap-2 overflow-x-auto">{dates.map((item) => <button key={item.value} type="button" onClick={() => setDate(item)} className={cn('min-w-24 rounded-xl border px-3 py-2 text-xs font-bold', date.value === item.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border')}>{item.short}</button>)}</div>
+        </div>
 
-        <div className="mt-6 overflow-x-auto"><div className="min-w-[860px]"><div className="grid gap-2" style={{ gridTemplateColumns: `150px repeat(${venue.courts.length}, minmax(280px, 1fr))` }}><div className="rounded-xl bg-muted/50 p-3 text-xs font-black">KHUNG GIỜ</div>{venue.courts.map((court) => <div key={court.id} className="rounded-xl bg-muted/50 p-3 text-center"><b className="text-sm">{court.name}</b><span className="ml-2 text-[10px] text-muted-foreground">{court.type}</span></div>)}{[1,2,3,4,5,6].flatMap((slotNumber) => { const firstSlot = venue.courts[0].slots.find((slot) => slot.slotNumber === slotNumber)!; return [<div key={`time-${slotNumber}`} className={cn('flex flex-col justify-center rounded-xl border p-3', slotNumber === 5 ? 'border-amber-500/30 bg-amber-500/10' : 'border-border/60 bg-background')}><b className="text-xs">Slot {slotNumber}</b><span className="mt-1 text-[10px] text-muted-foreground">{firstSlot.timeRange}</span>{slotNumber === 5 && <Badge className="mt-2 w-fit border-0 bg-amber-400 text-[8px] text-amber-950">GIỜ VÀNG</Badge>}</div>, ...venue.courts.map((court) => { const slot = court.slots.find((item) => item.slotNumber === slotNumber)!; const booked = isBooked(court, slot); const available = slot.status === 'AVAILABLE' && !booked; return <button key={`${court.id}-${slotNumber}`} type="button" disabled={!available} onClick={() => { setSelection({ court, slot }); setMode('PRIVATE'); setPayment('WALLET'); setAccepted(false) }} className={cn('min-h-24 rounded-xl border p-3 text-left transition', booked ? statusStyle.PRIVATE : statusStyle[slot.status], available && 'hover:-translate-y-0.5 hover:shadow-md')}><div className="flex items-start justify-between gap-2"><b className="text-xs">{booked ? 'ĐÃ ĐẶT BỞI BẠN' : slot.status === 'AVAILABLE' ? 'TRỐNG · ĐẶT NGAY' : slot.label ?? slot.status}</b>{slot.isPeak && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}</div><p className="mt-2 text-base font-black">{slot.price ? `${slot.price.toLocaleString('vi-VN')}đ` : 'Tạm khóa'}</p>{slot.duprRange && <p className="mt-1 text-[10px]">DUPR {slot.duprRange} · {slot.players}</p>}</button> })] })}</div></div></div>
+        <div className="mt-6 overflow-x-auto"><div className="min-w-[860px]"><div className="grid gap-2" style={{ gridTemplateColumns: `150px repeat(${venue.courts.length}, minmax(280px, 1fr))` }}>
+          <div className="rounded-xl bg-muted/50 p-3 text-xs font-black">KHUNG GIỜ</div>
+          {venue.courts.map((court) => <div key={court.id} className="rounded-xl bg-muted/50 p-3 text-center"><b className="text-sm">{court.name}</b><span className="ml-2 text-[10px] text-muted-foreground">{court.type}</span></div>)}
+          {COURT_SLOT_NUMBERS.flatMap((slotNumber) => {
+            const firstSlot = venue.courts[0].slots.find((slot) => slot.slotNumber === slotNumber)!
+            return [
+              <div key={`time-${slotNumber}`} className={cn('flex flex-col justify-center rounded-xl border p-3', slotNumber >= 9 ? 'border-amber-500/30 bg-amber-500/10' : 'border-border/60 bg-background')}><b className="text-xs">Slot {slotNumber}</b><span className="mt-1 text-[10px] text-muted-foreground">{firstSlot.timeRange}</span>{slotNumber >= 9 && <Badge className="mt-2 w-fit border-0 bg-amber-400 text-[8px] text-amber-950">GIỜ VÀNG</Badge>}</div>,
+              ...venue.courts.map((court) => {
+                const slot = court.slots.find((item) => item.slotNumber === slotNumber)!
+                const booked = isBooked(court, slot)
+                const available = slot.status === 'AVAILABLE' && !booked
+                return <button key={`${court.id}-${slotNumber}`} type="button" disabled={!available} onClick={() => { setSelection({ court, slot }); setPayment('WALLET'); setAccepted(false) }} className={cn('min-h-24 rounded-xl border p-3 text-left transition', booked ? statusStyle.PRIVATE : statusStyle[slot.status], available && 'hover:-translate-y-0.5 hover:shadow-md')}><div className="flex items-start justify-between gap-2"><b className="text-xs">{booked ? 'ĐÃ ĐẶT BỞI BẠN' : slot.status === 'AVAILABLE' ? 'TRỐNG · ĐẶT NGAY' : slot.label ?? slot.status}</b>{slot.isPeak && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}</div><p className="mt-2 text-base font-black">{slot.price ? `${slot.price.toLocaleString('vi-VN')}đ` : 'Tạm khóa'}</p>{slot.duprRange && <p className="mt-1 text-[10px]">DUPR {slot.duprRange} · {slot.players}</p>}</button>
+              }),
+            ]
+          })}
+        </div></div></div>
         <div className="mt-5 flex flex-wrap gap-3 text-[10px] font-bold text-muted-foreground">{[['bg-emerald-500','Còn trống'],['bg-amber-500','Kèo Social'],['bg-blue-500','Lớp HLV'],['bg-slate-500','Đã bao / Tạm khóa']].map(([color,label]) => <span key={label} className="flex items-center gap-1.5"><i className={`h-2.5 w-2.5 rounded-full ${color}`} />{label}</span>)}</div>
       </section>
 
-      {selection && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#082A2D]/65 p-4 backdrop-blur-sm"><div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[1.8rem] border border-border bg-card p-6 shadow-2xl sm:p-7"><div className="flex items-start justify-between"><div><p className="text-xs font-black uppercase tracking-wider text-primary">Đặt slot sân</p><h2 className="mt-1 text-2xl font-black">{selection.court.name} · Slot {selection.slot.slotNumber}</h2><p className="mt-1 text-sm text-muted-foreground">{date.label} · {selection.slot.timeRange}</p></div><Button size="icon" variant="ghost" onClick={() => setSelection(null)}><X className="h-5 w-5" /></Button></div><div className="mt-6 grid gap-3 sm:grid-cols-2"><button type="button" onClick={() => setMode('PRIVATE')} className={cn('rounded-2xl border p-4 text-left', mode === 'PRIVATE' ? 'border-primary bg-secondary/30 ring-1 ring-primary/20' : 'border-border')}><ShieldCheck className="h-5 w-5 text-primary" /><b className="mt-3 block">Bao trọn sân</b><p className="mt-1 text-xs text-muted-foreground">Không gian riêng cho nhóm trong 90 phút.</p><strong className="mt-3 block text-lg">{selection.slot.price.toLocaleString('vi-VN')}đ</strong></button><button type="button" onClick={() => setMode('SOCIAL')} className={cn('rounded-2xl border p-4 text-left', mode === 'SOCIAL' ? 'border-primary bg-secondary/30 ring-1 ring-primary/20' : 'border-border')}><UsersRound className="h-5 w-5 text-primary" /><b className="mt-3 block">Mở kèo Social</b><p className="mt-1 text-xs text-muted-foreground">Chia tiền sân cho 4 người, bạn làm Host.</p><strong className="mt-3 block text-lg">{Math.ceil(selection.slot.price / 4).toLocaleString('vi-VN')}đ / người</strong></button></div><div className="mt-5 space-y-2"><p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Thanh toán mô phỏng</p><button type="button" onClick={() => setPayment('WALLET')} className={cn('flex w-full items-center gap-3 rounded-xl border p-3 text-left', payment === 'WALLET' && 'border-primary bg-primary/5')}><WalletCards className="h-4 w-4 text-primary" /><span className="flex-1 text-sm font-bold">Ví FITLYO · {profile.walletBalance.toLocaleString('vi-VN')}đ</span>{payment === 'WALLET' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button><button type="button" onClick={() => setPayment('VIETQR')} className={cn('flex w-full items-center gap-3 rounded-xl border p-3 text-left', payment === 'VIETQR' && 'border-primary bg-primary/5')}><QrCode className="h-4 w-4 text-primary" /><span className="flex-1 text-sm font-bold">VietQR · Không thu tiền thật</span>{payment === 'VIETQR' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button></div>{payment === 'VIETQR' && <div className="mt-4 rounded-2xl border border-dashed border-primary/25 bg-white p-4 text-center text-[#143F42]"><QrCode className="mx-auto h-16 w-16" /><p className="mt-2 font-mono text-xs font-black">FITLYO-{venue.id.toUpperCase()}-S{selection.slot.slotNumber}</p></div>}<label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-0.5 accent-[#143F42]" /><span>Tôi đồng ý với chính sách đặt sân, hoàn cọc và quy định sử dụng cụm sân.</span></label><div className="mt-5 rounded-2xl bg-muted/45 p-4"><div className="flex items-center justify-between text-sm"><span>Tổng thanh toán</span><b className="text-xl">{amount.toLocaleString('vi-VN')}đ</b></div></div><Button disabled={!accepted} onClick={handleBooking} className="mt-5 h-12 w-full gap-2 rounded-xl bg-accent font-black text-accent-foreground hover:bg-accent/90"><Sparkles className="h-4 w-4" />{mode === 'PRIVATE' ? 'Xác nhận bao sân' : 'Mở kèo & đăng bảng tin'}</Button></div></div>}
+      {selection && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#082A2D]/65 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[1.8rem] border border-border bg-card p-6 shadow-2xl sm:p-7">
+          <div className="flex items-start justify-between"><div><p className="text-xs font-black uppercase tracking-wider text-primary">Đặt slot sân</p><h2 className="mt-1 text-2xl font-black">{selection.court.name} · Slot {selection.slot.slotNumber}</h2><p className="mt-1 text-sm text-muted-foreground">{date.label} · {selection.slot.timeRange}</p></div><Button size="icon" variant="ghost" onClick={() => setSelection(null)}><X className="h-5 w-5" /></Button></div>
+          <div className="mt-6 rounded-2xl border border-primary bg-secondary/30 p-4 ring-1 ring-primary/20"><ShieldCheck className="h-5 w-5 text-primary" /><b className="mt-3 block">Bao trọn sân</b><p className="mt-1 text-xs text-muted-foreground">Không gian riêng cho nhóm trong 90 phút. Player không có quyền tạo kèo Social.</p><strong className="mt-3 block text-lg">{selection.slot.price.toLocaleString('vi-VN')}đ</strong></div>
+          <div className="mt-5 space-y-2"><p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Thanh toán mô phỏng</p><button type="button" onClick={() => setPayment('WALLET')} className={cn('flex w-full items-center gap-3 rounded-xl border p-3 text-left', payment === 'WALLET' && 'border-primary bg-primary/5')}><WalletCards className="h-4 w-4 text-primary" /><span className="flex-1 text-sm font-bold">Ví FITLYO · {profile.walletBalance.toLocaleString('vi-VN')}đ</span>{payment === 'WALLET' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button><button type="button" onClick={() => setPayment('VIETQR')} className={cn('flex w-full items-center gap-3 rounded-xl border p-3 text-left', payment === 'VIETQR' && 'border-primary bg-primary/5')}><QrCode className="h-4 w-4 text-primary" /><span className="flex-1 text-sm font-bold">VietQR · Không thu tiền thật</span>{payment === 'VIETQR' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button></div>
+          {payment === 'VIETQR' && <div className="mt-4 rounded-2xl border border-dashed border-primary/25 bg-white p-4 text-center text-[#143F42]"><QrCode className="mx-auto h-16 w-16" /><p className="mt-2 font-mono text-xs font-black">FITLYO-{venue.id.toUpperCase()}-S{selection.slot.slotNumber}</p></div>}
+          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-0.5 accent-[#143F42]" /><span>Tôi đồng ý với chính sách đặt sân, hoàn cọc và quy định sử dụng cụm sân.</span></label>
+          <div className="mt-5 rounded-2xl bg-muted/45 p-4"><div className="flex items-center justify-between text-sm"><span>Tổng thanh toán</span><b className="text-xl">{selection.slot.price.toLocaleString('vi-VN')}đ</b></div></div>
+          <Button disabled={!accepted} onClick={handleBooking} className="mt-5 h-12 w-full gap-2 rounded-xl bg-accent font-black text-accent-foreground hover:bg-accent/90"><Sparkles className="h-4 w-4" />Xác nhận bao sân</Button>
+        </div>
+      </div>}
     </div>
   )
 }

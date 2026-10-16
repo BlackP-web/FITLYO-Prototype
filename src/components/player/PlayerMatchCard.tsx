@@ -57,7 +57,7 @@ export function PlayerMatchCard({ match, featured = false }: PlayerMatchCardProp
 
         <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold">
           <span className="rounded-full bg-secondary/55 px-3 py-1.5 text-primary">DUPR {match.duprMin}–{match.duprMax}</span>
-          <span className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-foreground"><UsersRound className="h-3.5 w-3.5" /> {remaining ? `Còn ${remaining} chỗ` : 'Đã đủ người'}</span>
+          <span className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-foreground"><UsersRound className="h-3.5 w-3.5" /> {match.participants.length}/{match.maxPlayers} Player · {remaining ? `Còn ${remaining} chỗ` : 'Đã đủ người'}</span>
           {match.isPeak && <span className="rounded-full bg-accent/65 px-3 py-1.5 text-accent-foreground">Cần duyệt</span>}
         </div>
 

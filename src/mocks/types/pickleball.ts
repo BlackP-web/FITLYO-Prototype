@@ -24,7 +24,7 @@ export interface MatchRoom {
   surfaceType: 'Trong nhà' | 'Ngoài trời' | 'Mái che'
   address: string
   distanceKm: number
-  slotNumber: number // 1 to 6
+  slotNumber: number // 1 to 10
   timeRange: string
   dateStr: string
   format: MatchFormat
@@ -50,7 +50,7 @@ export type SlotStatus =
   | 'MAINTENANCE'
 
 export interface CourtSlot {
-  slotNumber: number // 1 to 6
+  slotNumber: number // 1 to 10
   timeRange: string
   status: SlotStatus
   price: number
@@ -61,6 +61,12 @@ export interface CourtSlot {
   playersCount?: string
   bookedNote?: string
   bookedContact?: string
+  bookedByName?: string
+  bookedPhone?: string
+  bookingId?: string
+  bookedAt?: string
+  bookingStatus?: string
+  maintenanceReason?: string
   walkInBooking?: WalkInBooking
 }
 

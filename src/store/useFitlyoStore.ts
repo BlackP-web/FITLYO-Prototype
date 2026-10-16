@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { coachMale, communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
+import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
+import { usePlayerStore } from '@/store/usePlayerStore'
 import type {
   UserAccount,
   MatchRoom,
@@ -8,6 +10,7 @@ import type {
   CoachCourse,
   CoachAccount,
   CoachVenueAffiliation,
+  CoachAffiliationNotification,
   CoachWalletTransaction,
   CoachWalletSummary,
   StudentProgress,
@@ -64,6 +67,7 @@ interface FitlyoState {
   coachCourses: CoachCourse[]
   coaches: CoachItem[]
   coachAffiliations: CoachVenueAffiliation[]
+  coachAffiliationNotifications: CoachAffiliationNotification[]
   coachWalletTransactions: CoachWalletTransaction[]
   coachWalletSummary: CoachWalletSummary
 
@@ -101,6 +105,7 @@ interface FitlyoState {
     duprMin: number
     duprMax: number
     format: 'doubles' | 'singles'
+    maxPlayers: number
     fee: number
     amenities: string[]
     note: string
@@ -131,6 +136,15 @@ interface FitlyoState {
   createCoachCourse: (course: Omit<CoachCourse, 'id' | 'coachId' | 'coachName' | 'currentStudents' | 'completedSessions' | 'students'>) => boolean
   updateCoachCourse: (courseId: string, changes: Partial<CoachCourse>) => boolean
   requestVenueAffiliation: (venueId: string) => boolean
+  lookupCoachForAffiliation: (venueId: string, coachUserId: string) => {
+    success: boolean
+    message: string
+    coach?: CoachItem
+  }
+  directAddCoachAffiliation: (venueId: string, coachUserId: string) => { success: boolean; message: string }
+  approveCoachAffiliation: (affiliationId: string) => boolean
+  rejectCoachAffiliation: (affiliationId: string, reason: string) => boolean
+  unlinkCoachAffiliation: (affiliationId: string, initiatedBy: 'coach' | 'fm') => boolean
   updateCoachProfile: (changes: Partial<CoachAccount>) => boolean
   requestCoachWithdrawal: (amount: number) => boolean
   approveAuditApplication: (id: string) => void
@@ -161,6 +175,8 @@ const applyColorMode = (mode: ColorMode) => {
 const initialColorMode = getInitialColorMode()
 applyColorMode(initialColorMode)
 
+const socialMatchCapacities = [4, 6, 8, 10, 12] as const
+
 const initialUser: UserAccount = {
   id: 'usr_me',
   name: 'Nguyễn An',
@@ -186,8 +202,8 @@ const initialMatches: MatchRoom[] = [
     surfaceType: 'Trong nhà',
     address: '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
     distanceKm: 1.4,
-    slotNumber: 5,
-    timeRange: '18:30 - 20:00',
+    slotNumber: 9,
+    timeRange: '18:00 - 19:30',
     dateStr: 'Hôm nay, 13/10/2026',
     format: 'doubles',
     targetDuprMin: 2.5,
@@ -238,8 +254,8 @@ const initialMatches: MatchRoom[] = [
     surfaceType: 'Ngoài trời',
     address: 'Khu đô thị An Phú - An Khánh, TP. Thủ Đức',
     distanceKm: 3.2,
-    slotNumber: 4,
-    timeRange: '17:00 - 18:30',
+    slotNumber: 8,
+    timeRange: '16:30 - 18:00',
     dateStr: 'Ngày mai, 14/10/2026',
     format: 'doubles',
     targetDuprMin: 3.5,
@@ -279,8 +295,8 @@ const initialMatches: MatchRoom[] = [
     surfaceType: 'Trong nhà',
     address: '28 Thảo Điền, P. Thảo Điền, TP. Thủ Đức',
     distanceKm: 4.8,
-    slotNumber: 5,
-    timeRange: '18:30 - 20:00',
+    slotNumber: 9,
+    timeRange: '18:00 - 19:30',
     dateStr: 'Hôm nay, 13/10/2026',
     format: 'doubles',
     targetDuprMin: 3.0,
@@ -325,45 +341,47 @@ const initialMatches: MatchRoom[] = [
   },
 ]
 
+const makeCourtSlots = (
+  basePrice: number,
+  overrides: Record<number, Partial<CourtInventory['slots'][number]>> = {},
+): CourtInventory['slots'] => COURT_SLOT_TIMES.map((slot) => ({
+  slotNumber: slot.slotNumber,
+  timeRange: slot.timeRange,
+  status: 'AVAILABLE' as const,
+  price: basePrice + (slot.slotNumber >= 9 ? 40000 : slot.slotNumber >= 7 ? 20000 : 0),
+  isPeak: slot.slotNumber >= 9,
+  ...overrides[slot.slotNumber],
+}))
+
 const initialCourts: CourtInventory[] = [
   {
     id: 'court_1',
     name: 'SÂN 1 (Trong nhà)',
     courtType: 'indoor',
-    slots: [
-      { slotNumber: 1, timeRange: '06:00 - 07:30', status: 'AVAILABLE', price: 150000 },
-      { slotNumber: 2, timeRange: '07:30 - 09:00', status: 'COACHING', price: 180000, bookedNote: 'HLV Tuấn Kiệt (4 HV)', bookedContact: '0908.112.233' },
-      { slotNumber: 3, timeRange: '15:30 - 17:00', status: 'MATCH_PUBLISHED', price: 180000, matchTitle: 'Kèo Social Sơ cấp', duprRange: 'DUPR 2.0-2.5', playersCount: '3/4' },
-      { slotNumber: 4, timeRange: '17:00 - 18:30', status: 'PRIVATE_BOOKED', price: 200000, bookedNote: 'Khách bao riêng tại quầy', bookedContact: 'Anh Thành - 0918.334.455' },
-      { slotNumber: 5, timeRange: '18:30 - 20:00', status: 'MATCH_PUBLISHED', price: 220000, isPeak: true, matchTitle: 'Kèo Đôi Nam Nữ Hot', duprRange: 'DUPR 3.5-4.0', playersCount: 'FULL' },
-      { slotNumber: 6, timeRange: '20:00 - 21:30', status: 'AVAILABLE', price: 160000 },
-    ],
+    slots: makeCourtSlots(150000, {
+      2: { status: 'COACHING', bookedNote: 'Lớp Coach · 4 học viên', bookedByName: 'HLV Tuấn Kiệt', bookedPhone: '0908.112.233', bookingStatus: 'Đã xác nhận' },
+      7: { status: 'MATCH_PUBLISHED', matchTitle: 'Kèo Social Sơ cấp', duprRange: 'DUPR 2.0-2.5', playersCount: '3/4', bookingStatus: 'Đang mở' },
+      8: { status: 'PRIVATE_BOOKED', bookedNote: 'Khách bao riêng tại quầy', bookedByName: 'Anh Thành', bookedPhone: '0918.334.455', bookingStatus: 'Đã xác nhận' },
+      9: { status: 'MATCH_PUBLISHED', matchTitle: 'Kèo Đôi Nam Nữ Hot', duprRange: 'DUPR 3.5-4.0', playersCount: '4/4', bookingStatus: 'Đã đủ người' },
+    }),
   },
   {
     id: 'court_2',
     name: 'SÂN 2 (Trong nhà)',
     courtType: 'indoor',
-    slots: [
-      { slotNumber: 1, timeRange: '06:00 - 07:30', status: 'AVAILABLE', price: 150000 },
-      { slotNumber: 2, timeRange: '07:30 - 09:00', status: 'AVAILABLE', price: 180000 },
-      { slotNumber: 3, timeRange: '15:30 - 17:00', status: 'AVAILABLE', price: 180000 },
-      { slotNumber: 4, timeRange: '17:00 - 18:30', status: 'MATCH_PUBLISHED', price: 200000, matchTitle: 'Kèo Phong Trào', duprRange: 'DUPR 3.0-3.5', playersCount: 'FULL' },
-      { slotNumber: 5, timeRange: '18:30 - 20:00', status: 'MATCH_PUBLISHED', price: 220000, isPeak: true, matchTitle: 'Kèo Giờ Vàng Giao Lưu', duprRange: 'DUPR 2.5-3.0', playersCount: 'FULL' },
-      { slotNumber: 6, timeRange: '20:00 - 21:30', status: 'AVAILABLE', price: 160000 },
-    ],
+    slots: makeCourtSlots(150000, {
+      8: { status: 'MATCH_PUBLISHED', matchTitle: 'Kèo Phong Trào', duprRange: 'DUPR 3.0-3.5', playersCount: '4/4', bookingStatus: 'Đã đủ người' },
+      9: { status: 'MATCH_PUBLISHED', matchTitle: 'Kèo Giờ Vàng Giao Lưu', duprRange: 'DUPR 2.5-3.0', playersCount: '4/4', bookingStatus: 'Đã đủ người' },
+    }),
   },
   {
     id: 'court_3',
     name: 'SÂN 3 (Ngoài trời)',
     courtType: 'outdoor',
-    slots: [
-      { slotNumber: 1, timeRange: '06:00 - 07:30', status: 'MAINTENANCE', price: 0, bookedNote: 'Bảo trì lưới & vệ sinh' },
-      { slotNumber: 2, timeRange: '07:30 - 09:00', status: 'AVAILABLE', price: 140000 },
-      { slotNumber: 3, timeRange: '15:30 - 17:00', status: 'AVAILABLE', price: 140000 },
-      { slotNumber: 4, timeRange: '17:00 - 18:30', status: 'AVAILABLE', price: 160000 },
-      { slotNumber: 5, timeRange: '18:30 - 20:00', status: 'PRIVATE_BOOKED', price: 180000, isPeak: true, bookedNote: 'Khách cọc qua App', bookedContact: 'Chị Lan - 0933.778.899' },
-      { slotNumber: 6, timeRange: '20:00 - 21:30', status: 'AVAILABLE', price: 140000 },
-    ],
+    slots: makeCourtSlots(140000, {
+      1: { status: 'MAINTENANCE', price: 0, bookedNote: 'Bảo trì lưới & vệ sinh', maintenanceReason: 'Bảo trì lưới & vệ sinh' },
+      9: { status: 'PRIVATE_BOOKED', bookedNote: 'Khách cọc qua App', bookedByName: 'Chị Lan', bookedPhone: '0933.778.899', bookingStatus: 'Đã xác nhận' },
+    }),
   },
 ]
 
@@ -398,8 +416,8 @@ const initialCheckInTickets: CheckInTicket[] = [
     code: 'PKB-1310-8849',
     venueName: 'D-Sports Pickleball Thủ Đức',
     courtName: 'Sân 3',
-    slotNumber: 5,
-    timeRange: '18:30 - 20:00',
+    slotNumber: 9,
+    timeRange: '18:00 - 19:30',
     dateStr: 'Hôm nay, 13/10/2026',
     matchLabel: 'Đôi nam nữ',
     duprRange: 'DUPR 2.5 - 3.0',
@@ -411,8 +429,8 @@ const initialCheckInTickets: CheckInTicket[] = [
     code: 'PKB-1310-7721',
     venueName: 'D-Sports Pickleball Thủ Đức',
     courtName: 'Sân 1',
-    slotNumber: 5,
-    timeRange: '18:30 - 20:00',
+    slotNumber: 9,
+    timeRange: '18:00 - 19:30',
     dateStr: 'Hôm nay, 13/10/2026',
     matchLabel: 'Đôi nam phong trào',
     duprRange: 'DUPR 3.5 - 4.0',
@@ -426,8 +444,8 @@ const initialCheckInTickets: CheckInTicket[] = [
     code: 'PKB-1310-4404',
     venueName: 'Thủ Thiêm Sports Hub',
     courtName: 'Sân 2',
-    slotNumber: 4,
-    timeRange: '17:00 - 18:30',
+    slotNumber: 8,
+    timeRange: '16:30 - 18:00',
     dateStr: 'Hôm nay, 13/10/2026',
     matchLabel: 'Đôi nam nữ',
     duprRange: 'DUPR 3.0 - 3.5',
@@ -474,7 +492,7 @@ const initialCoachCourses: CoachCourse[] = [
     coachId: 'coach_dung',
     coachName: 'HLV Lê Hoàng Dũng',
     duration: '1 tháng (8 buổi)',
-    frequency: '2 buổi/tuần (T4 - T6, Slot 5)',
+    frequency: '2 buổi/tuần (T4 - T6, Slot 9)',
     venue: 'D-Pickleball Thảo Điền',
     fee: 2400000,
     currentStudents: 4,
@@ -485,8 +503,8 @@ const initialCoachCourses: CoachCourse[] = [
     courseType: 'GROUP_4',
     duprInput: '2.50 - 3.00',
     duprOutput: '3.50+',
-    slotNumber: 5,
-    timeRange: '18:30 - 20:00',
+    slotNumber: 9,
+    timeRange: '18:00 - 19:30',
     scheduleDays: ['Thứ Tư', 'Thứ Sáu'],
     description: 'Lộ trình tăng tốc kỹ thuật dinking, third-shot drop và chiến thuật đánh đôi.',
     students: [
@@ -527,7 +545,7 @@ const initialCoachCourses: CoachCourse[] = [
     coachId: 'coach_dung',
     coachName: 'HLV Lê Hoàng Dũng',
     duration: '1 tháng (8 buổi)',
-    frequency: '2 buổi/tuần (T3 - T5, Slot 4)',
+    frequency: '2 buổi/tuần (T3 - T5, Slot 7)',
     venue: 'D-Pickleball Thảo Điền',
     fee: 2200000,
     currentStudents: 2,
@@ -538,8 +556,8 @@ const initialCoachCourses: CoachCourse[] = [
     courseType: 'GROUP_4',
     duprInput: '2.80 - 3.20',
     duprOutput: '3.50+',
-    slotNumber: 4,
-    timeRange: '15:30 - 17:00',
+    slotNumber: 7,
+    timeRange: '15:00 - 16:30',
     scheduleDays: ['Thứ Ba', 'Thứ Năm'],
     description: 'Đọc tình huống, di chuyển theo cặp và chuyển trạng thái tấn công/phòng thủ.',
     students: [
@@ -575,28 +593,32 @@ const initialCoachAccount: CoachAccount = {
 const initialCoachAffiliations: CoachVenueAffiliation[] = [
   {
     id: 'AFF-001',
-    venueId: 'coach_venue_thaodien',
+    venueId: 'ven_1',
     coachId: 'coach_dung',
-    venueName: 'D-Pickleball Thảo Điền',
-    address: '28 Thảo Điền, P. Thảo Điền, TP. Thủ Đức',
-    distanceKm: 2.1,
-    status: 'APPROVED',
-    requestedAt: '02/09/2026',
-    approvedAt: '04/09/2026',
+    venueName: 'Cụm sân D-Sports Pickleball Thủ Đức',
+    address: '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
+    distanceKm: 4.2,
+    linkType: 'FM_DIRECT_ADD',
+    status: 'ACTIVE',
+    requestedAt: '2026-09-02T08:30:00.000Z',
+    linkedAt: '2026-09-02T08:30:00.000Z',
+    createdBy: 'fm_dsports',
     discountPercent: 15,
     activeCourses: 2,
     availableSlots: [1, 2, 4, 5, 6],
   },
   {
     id: 'AFF-002',
-    venueId: 'coach_venue_anphu',
+    venueId: 'ven_3',
     coachId: 'coach_dung',
-    venueName: 'Saigon Rackets An Phú',
-    address: '36 Song Hành, P. An Phú, TP. Thủ Đức',
-    distanceKm: 3.4,
-    status: 'APPROVED',
-    requestedAt: '12/09/2026',
-    approvedAt: '15/09/2026',
+    venueName: 'D-Pickleball Thảo Điền',
+    address: '28 Thảo Điền, P. Thảo Điền, TP. Thủ Đức',
+    distanceKm: 2.1,
+    linkType: 'COACH_REQUEST',
+    status: 'ACTIVE',
+    requestedAt: '2026-09-12T09:00:00.000Z',
+    linkedAt: '2026-09-15T04:00:00.000Z',
+    createdBy: 'coach_dung',
     discountPercent: 10,
     activeCourses: 1,
     availableSlots: [1, 2, 3, 4],
@@ -608,12 +630,110 @@ const initialCoachAffiliations: CoachVenueAffiliation[] = [
     venueName: 'Thủ Thiêm Sports Hub',
     address: 'Khu đô thị An Phú - An Khánh, TP. Thủ Đức',
     distanceKm: 4.8,
+    linkType: 'COACH_REQUEST',
     status: 'PENDING',
-    requestedAt: '13/10/2026',
+    requestedAt: '2026-10-13T03:30:00.000Z',
+    createdBy: 'coach_dung',
     activeCourses: 0,
     availableSlots: [2, 4, 6],
   },
+  {
+    id: 'AFF-004',
+    venueId: 'ven_1',
+    coachId: 'coach_long',
+    venueName: 'Cụm sân D-Sports Pickleball Thủ Đức',
+    address: '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
+    distanceKm: 3.6,
+    linkType: 'COACH_REQUEST',
+    status: 'PENDING',
+    requestedAt: '2026-10-16T02:15:00.000Z',
+    createdBy: 'coach_long',
+    activeCourses: 0,
+    availableSlots: [2, 5, 8],
+  },
+  {
+    id: 'AFF-005',
+    venueId: 'ven_1',
+    coachId: 'coach_minhanh',
+    venueName: 'Cụm sân D-Sports Pickleball Thủ Đức',
+    address: '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
+    distanceKm: 7.4,
+    linkType: 'COACH_REQUEST',
+    status: 'INACTIVE',
+    requestedAt: '2026-08-18T07:00:00.000Z',
+    linkedAt: '2026-08-19T03:20:00.000Z',
+    createdBy: 'coach_minhanh',
+    activeCourses: 0,
+    availableSlots: [1, 4, 7],
+  },
 ]
+
+const initialCoachAffiliationNotifications: CoachAffiliationNotification[] = [
+  {
+    id: 'AFF-NOTICE-001',
+    recipientId: 'coach_dung',
+    message: 'Cụm sân D-Sports Pickleball Thủ Đức đã thêm bạn vào danh sách HLV liên kết.',
+    createdAt: '2026-10-16T08:30:00.000Z',
+    tone: 'success',
+  },
+  {
+    id: 'AFF-NOTICE-002',
+    recipientId: 'fm:ven_1',
+    message: 'HLV Nguyễn Hoàng Long vừa gửi yêu cầu liên kết với cụm sân.',
+    createdAt: '2026-10-16T02:15:00.000Z',
+    tone: 'info',
+  },
+]
+
+const coachAffiliationsStorageKey = 'fitlyo-coach-venue-affiliations-v1'
+const coachAffiliationNotificationsStorageKey = 'fitlyo-coach-affiliation-notifications-v1'
+
+const readCoachAffiliations = (): CoachVenueAffiliation[] => {
+  if (typeof window === 'undefined') return initialCoachAffiliations
+
+  try {
+    const raw = window.localStorage.getItem(coachAffiliationsStorageKey)
+    if (!raw) return initialCoachAffiliations
+    const stored = JSON.parse(raw) as Array<Omit<Partial<CoachVenueAffiliation>, 'status'> & { status?: string; approvedAt?: string }>
+    if (!Array.isArray(stored)) return initialCoachAffiliations
+
+    return stored.map((item) => ({
+      ...item,
+      linkType: item.linkType ?? 'COACH_REQUEST',
+      status: item.status === 'APPROVED' ? 'ACTIVE' : item.status,
+      linkedAt: item.linkedAt ?? item.approvedAt,
+      createdBy: item.createdBy ?? item.coachId ?? 'system',
+      activeCourses: item.activeCourses ?? 0,
+      availableSlots: item.availableSlots ?? [],
+    })) as CoachVenueAffiliation[]
+  } catch {
+    return initialCoachAffiliations
+  }
+}
+
+const readCoachAffiliationNotifications = (): CoachAffiliationNotification[] => {
+  if (typeof window === 'undefined') return initialCoachAffiliationNotifications
+  try {
+    const raw = window.localStorage.getItem(coachAffiliationNotificationsStorageKey)
+    if (!raw) return initialCoachAffiliationNotifications
+    const stored = JSON.parse(raw) as CoachAffiliationNotification[]
+    return Array.isArray(stored) ? stored : initialCoachAffiliationNotifications
+  } catch {
+    return initialCoachAffiliationNotifications
+  }
+}
+
+const persistCoachAffiliations = (affiliations: CoachVenueAffiliation[]) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(coachAffiliationsStorageKey, JSON.stringify(affiliations))
+  }
+}
+
+const persistCoachAffiliationNotifications = (notifications: CoachAffiliationNotification[]) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(coachAffiliationNotificationsStorageKey, JSON.stringify(notifications))
+  }
+}
 
 const initialCoachWalletTransactions: CoachWalletTransaction[] = [
   { id: 'TX-8841', coachId: 'coach_dung', date: '14/10/2026', description: 'Giải ngân buổi 7/8', courseName: 'Boot Camp Bứt Phá DUPR 3.5', amount: 1080000, type: 'RELEASE', status: 'COMPLETED' },
@@ -633,8 +753,10 @@ const initialCoachWalletSummary: CoachWalletSummary = {
 const initialCoaches: CoachItem[] = [
   {
     id: 'coach_dung',
+    userId: 'COACH-DUNG-01',
     name: 'HLV LÊ HOÀNG DŨNG',
     avatarUrl: initialCoachAccount.avatarUrl,
+    phone: '0909 485 285',
     duprRating: 4.85,
     isCertified: true,
     certTitle: 'Certified Coach (IPTPA Level 2)',
@@ -651,8 +773,10 @@ const initialCoaches: CoachItem[] = [
   },
   {
     id: 'coach_long',
+    userId: 'COACH-LONG-01',
     name: 'HLV NGUYỄN HOÀNG LONG',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+    phone: '0918 776 554',
     duprRating: 4.7,
     isCertified: true,
     certTitle: 'Certified Coach (PPR Level 2)',
@@ -669,11 +793,13 @@ const initialCoaches: CoachItem[] = [
   },
   {
     id: 'coach_kiet',
-    name: 'HLV ĐẶNG TUẤN KIỆT',
+    userId: 'COACH_VALID_99',
+    name: 'HLV TRẦN TUẤN KIỆT',
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
-    duprRating: 4.62,
+    phone: '0912 456 789',
+    duprRating: 4.85,
     isCertified: true,
-    certTitle: 'Certified Coach (IPTPA Level 2)',
+    certTitle: 'PPR Certified Level 2',
     rating: 4.95,
     reviewCount: 62,
     experienceYears: 8,
@@ -687,8 +813,10 @@ const initialCoaches: CoachItem[] = [
   },
   {
     id: 'coach_minhanh',
+    userId: 'COACH-MINHANH-02',
     name: 'HLV TRẦN MINH ANH',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    phone: '0938 214 602',
     duprRating: 3.88,
     isCertified: true,
     certTitle: 'Certified Coach (PPR Level 1)',
@@ -752,7 +880,7 @@ const initialAuditApps: AuditApplication[] = [
       { id: 'doc_7', name: 'GiayPhepHoatDongTheThao.pdf', type: 'pdf', fileSize: '1.5 MB' },
     ],
     status: 'APPROVED',
-    inspectorNotes: 'Cụm sân đạt chuẩn, đã ký cam kết vận hành 6 slot/ngày với sàn FITLYO.',
+    inspectorNotes: 'Cụm sân đạt chuẩn, đã ký cam kết vận hành 10 slot/ngày với sàn FITLYO.',
     submittedDate: '01/10/2026',
   },
 ]
@@ -806,7 +934,7 @@ const initialVenues: VenueItem[] = [
   },
   {
     id: 'ven_3',
-    name: 'Thảo Điền Pickleball Club',
+    name: 'D-Pickleball Thảo Điền',
     address: '28 Thảo Điền, P. Thảo Điền, TP. Thủ Đức',
     area: 'Thảo Điền, Thủ Đức',
     totalCourts: 5,
@@ -872,7 +1000,8 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   coachAccount: initialCoachAccount,
   coachCourses: initialCoachCourses,
   coaches: initialCoaches,
-  coachAffiliations: initialCoachAffiliations,
+  coachAffiliations: readCoachAffiliations(),
+  coachAffiliationNotifications: readCoachAffiliationNotifications(),
   coachWalletTransactions: initialCoachWalletTransactions,
   coachWalletSummary: initialCoachWalletSummary,
 
@@ -1015,7 +1144,19 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
 
   publishSlotAsMatch: (data) => {
     const { courtInventory, matches } = get()
-    const maxPlayers = data.format === 'doubles' ? 4 : 2
+    if (!socialMatchCapacities.includes(data.maxPlayers as (typeof socialMatchCapacities)[number])) {
+      get().showToast('Số lượng Player chỉ được chọn 4, 6, 8, 10 hoặc 12.', 'error')
+      return
+    }
+    const targetSlot = courtInventory
+      .find((court) => court.id === data.courtId)
+      ?.slots.find((slot) => slot.slotNumber === data.slotNumber)
+    if (!targetSlot || targetSlot.status !== 'AVAILABLE') {
+      get().showToast('Slot không còn trống để công bố kèo Social.', 'error')
+      return
+    }
+    const maxPlayers = data.maxPlayers
+    const newMatchId = `MM-${Math.floor(9000 + Math.random() * 900)}`
 
     // Update court slot status to MATCH_PUBLISHED
     const updatedCourts = courtInventory.map((court) => {
@@ -1028,6 +1169,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
                 ...s,
                 status: 'MATCH_PUBLISHED' as const,
                 matchTitle: `Kèo Social DUPR ${data.duprMin}-${data.duprMax}`,
+                matchRoomId: newMatchId,
                 duprRange: `DUPR ${data.duprMin}-${data.duprMax}`,
                 playersCount: `0/${maxPlayers}`,
               }
@@ -1041,18 +1183,10 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
 
     // Create a new match room in feed
     const targetCourt = courtInventory.find((c) => c.id === data.courtId)
-    const slotTimes = [
-      '',
-      '06:00 - 07:30',
-      '07:30 - 09:00',
-      '15:30 - 17:00',
-      '17:00 - 18:30',
-      '18:30 - 20:00',
-      '20:00 - 21:30',
-    ]
+    const timeRange = COURT_SLOT_TIMES.find((slot) => slot.slotNumber === data.slotNumber)?.timeRange
 
     const newMatch: MatchRoom = {
-      id: `MM-${Math.floor(9000 + Math.random() * 900)}`,
+      id: newMatchId,
       title: `⚡ KÈO SOCIAL CÔNG BỐ MỚI (${data.format === 'doubles' ? 'ĐÔI' : 'ĐƠN'})`,
       courtId: data.courtId,
       courtName: 'Cụm sân D-Sports Pickleball',
@@ -1061,7 +1195,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       address: '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
       distanceKm: 1.2,
       slotNumber: data.slotNumber,
-      timeRange: slotTimes[data.slotNumber] || '18:30 - 20:00',
+      timeRange: timeRange ?? 'Chưa có dữ liệu',
       dateStr: 'Hôm nay, 13/10/2026',
       format: data.format,
       targetDuprMin: data.duprMin,
@@ -1074,6 +1208,34 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       note: data.note,
       participants: [],
     }
+
+    const [day, month, year] = get().selectedDate.split('/')
+    usePlayerStore.getState().addFieldManagerMatch({
+      id: newMatch.id,
+      title: newMatch.title,
+      label: 'KÈO DO FIELD MANAGER TẠO',
+      venueId: 'venue-dsports-thu-duc',
+      venueName: newMatch.courtName,
+      courtName: newMatch.courtSubName,
+      address: newMatch.address,
+      area: 'Linh Chiểu',
+      distanceKm: newMatch.distanceKm,
+      imageUrl: venueIndoor,
+      date: `${year}-${month?.padStart(2, '0')}-${day?.padStart(2, '0')}`,
+      dateLabel: `Ngày ${get().selectedDate}`,
+      slotNumber: newMatch.slotNumber,
+      timeRange: newMatch.timeRange,
+      format: data.format === 'doubles' ? 'Đôi nam nữ' : 'Giao lưu tự do',
+      duprMin: newMatch.targetDuprMin,
+      duprMax: newMatch.targetDuprMax,
+      deposit: newMatch.depositFee,
+      maxPlayers: newMatch.maxPlayers,
+      status: 'OPEN',
+      participants: [],
+      amenities: newMatch.amenities,
+      note: newMatch.note ?? '',
+      isPeak: data.slotNumber >= 9,
+    })
 
     set({
       courtInventory: updatedCourts,
@@ -1100,6 +1262,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
                   status: 'PRIVATE_BOOKED' as const,
                   bookedNote: 'Khách bao riêng',
                   bookedContact: contact || 'Khách vãng lai',
+                  bookingStatus: 'Đã xác nhận',
                 }
               : s
           ),
@@ -1155,6 +1318,14 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
                         ? 'Khách vãng lai · Đã thu đủ'
                         : 'Khách vãng lai · Còn nợ',
                     bookedContact: `${booking.customerName} · ${booking.phone}`,
+                    bookedByName: booking.customerName,
+                    bookedPhone: booking.phone,
+                    bookingId: booking.id,
+                    bookedAt: booking.createdAt,
+                    bookingStatus:
+                      booking.paidAmount >= booking.courtFee + booking.extraFee
+                        ? 'Đã thanh toán'
+                        : 'Còn công nợ',
                     walkInBooking: booking,
                   }
                 : slot,
@@ -1228,7 +1399,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
           ...court,
           slots: court.slots.map((s) =>
             s.slotNumber === slotNumber
-              ? { ...s, status: 'MAINTENANCE' as const, bookedNote: 'Bảo trì sân' }
+              ? { ...s, status: 'MAINTENANCE' as const, bookedNote: 'Bảo trì sân', maintenanceReason: 'Bảo trì sân' }
               : s
           ),
         }
@@ -1256,6 +1427,12 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
                 playersCount: undefined,
                 bookedNote: undefined,
                 bookedContact: undefined,
+                bookedByName: undefined,
+                bookedPhone: undefined,
+                bookingId: undefined,
+                bookedAt: undefined,
+                bookingStatus: undefined,
+                maintenanceReason: undefined,
                 walkInBooking: undefined,
               }
             : slot,
@@ -1351,9 +1528,17 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   },
 
   requestVenueAffiliation: (venueId) => {
-    const { coachAccount, coachAffiliations, venues } = get()
-    if (coachAffiliations.some((item) => item.venueId === venueId)) {
-      get().showToast('Cụm sân này đã có trong danh sách liên kết.', 'info')
+    const { coachAccount, coachAffiliations, coachAffiliationNotifications, venues } = get()
+    const existing = coachAffiliations.find(
+      (item) => item.venueId === venueId && item.coachId === coachAccount.id,
+    )
+    if (existing && (existing.status === 'ACTIVE' || existing.status === 'PENDING')) {
+      get().showToast(
+        existing.status === 'ACTIVE'
+          ? 'Bạn đã liên kết với cụm sân này.'
+          : 'Yêu cầu liên kết đang chờ Field Manager duyệt.',
+        'info',
+      )
       return false
     }
     const venue = venues.find((item) => item.id === venueId)
@@ -1362,20 +1547,241 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       return false
     }
 
-    const request: CoachVenueAffiliation = {
-      id: `AFF-${Date.now().toString().slice(-5)}`,
-      venueId: venue.id,
-      coachId: coachAccount.id,
-      venueName: venue.name,
-      address: venue.address,
-      distanceKm: 5.2,
-      status: 'PENDING',
-      requestedAt: new Date().toLocaleDateString('vi-VN'),
-      activeCourses: 0,
-      availableSlots: [1, 3, 6],
+    const requestedAt = new Date().toISOString()
+    const request: CoachVenueAffiliation = existing
+      ? {
+          ...existing,
+          linkType: 'COACH_REQUEST',
+          status: 'PENDING',
+          rejectedReason: undefined,
+          requestedAt,
+          linkedAt: undefined,
+          createdBy: coachAccount.id,
+        }
+      : {
+          id: `AFF-${Date.now().toString().slice(-5)}`,
+          venueId: venue.id,
+          coachId: coachAccount.id,
+          venueName: venue.name,
+          address: venue.address,
+          distanceKm: 5.2,
+          linkType: 'COACH_REQUEST',
+          status: 'PENDING',
+          requestedAt,
+          createdBy: coachAccount.id,
+          activeCourses: 0,
+          availableSlots: [1, 3, 6],
+        }
+    const nextAffiliations = existing
+      ? coachAffiliations.map((item) => item.id === existing.id ? request : item)
+      : [...coachAffiliations, request]
+    const nextNotifications: CoachAffiliationNotification[] = [
+      {
+        id: `AFF-NOTICE-${Date.now()}`,
+        recipientId: `fm:${venue.id}`,
+        message: `${coachAccount.name} vừa gửi yêu cầu liên kết với cụm sân.`,
+        createdAt: requestedAt,
+        tone: 'info' as const,
+      },
+      ...coachAffiliationNotifications,
+    ].slice(0, 50)
+    persistCoachAffiliations(nextAffiliations)
+    persistCoachAffiliationNotifications(nextNotifications)
+    set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
+    get().showToast('Đã gửi yêu cầu liên kết đến ban quản lý sân', 'success')
+    return true
+  },
+
+  lookupCoachForAffiliation: (venueId, coachUserId) => {
+    const normalized = coachUserId.trim().toUpperCase()
+    if (!normalized) return { success: false, message: 'Vui lòng nhập UserID hoặc mã HLV.' }
+    if (!get().venues.some((venue) => venue.id === venueId)) {
+      return { success: false, message: 'Không tìm thấy cụm sân đang quản lý.' }
     }
-    set({ coachAffiliations: [...coachAffiliations, request] })
-    get().showToast(`Đã gửi yêu cầu liên kết đến ${venue.name}.`, 'success')
+
+    if (['PLAYER_01', 'PLAYER_NGUYEN_AN', 'PLAYER@FITLYO.VN'].includes(normalized)) {
+      return { success: false, message: 'Tài khoản này là Người chơi, không phải Huấn luyện viên' }
+    }
+    if (['FM_DSPORTS', 'OWNER@FITLYO.VN', 'FM-01'].includes(normalized)) {
+      return { success: false, message: 'Tài khoản này là Quản lý cụm sân, không thể thêm làm Huấn luyện viên' }
+    }
+
+    const aliasCoachId = normalized === 'COACH_LINKED' ? 'coach_dung' : undefined
+    const coach = get().coaches.find((item) => (
+      item.id.toUpperCase() === normalized
+      || item.userId.toUpperCase() === normalized
+      || item.id === aliasCoachId
+    ))
+    if (!coach || normalized === 'NOT_FOUND_ID') {
+      return { success: false, message: 'Không tìm thấy tài khoản với UserID này' }
+    }
+    if (coach.accountStatus === 'SUSPENDED') {
+      return { success: false, message: 'Tài khoản Coach đang bị tạm khóa và không thể mở lớp mới.' }
+    }
+
+    const existing = get().coachAffiliations.find(
+      (item) => item.venueId === venueId && item.coachId === coach.id,
+    )
+    if (existing?.status === 'ACTIVE') {
+      return { success: false, message: 'Huấn luyện viên này đã được liên kết với sân từ trước' }
+    }
+
+    return {
+      success: true,
+      message: existing?.status === 'PENDING'
+        ? 'Coach đang có yêu cầu chờ duyệt. Xác nhận sẽ kích hoạt liên kết ngay.'
+        : 'Đã tìm thấy hồ sơ Coach hợp lệ.',
+      coach,
+    }
+  },
+
+  directAddCoachAffiliation: (venueId, coachUserId) => {
+    const lookup = get().lookupCoachForAffiliation(venueId, coachUserId)
+    if (!lookup.success || !lookup.coach) {
+      get().showToast(lookup.message, 'error')
+      return { success: false, message: lookup.message }
+    }
+
+    const { coachAffiliations, coachAffiliationNotifications, venues } = get()
+    const venue = venues.find((item) => item.id === venueId)
+    if (!venue) return { success: false, message: 'Không tìm thấy cụm sân đang quản lý.' }
+    const existing = coachAffiliations.find(
+      (item) => item.venueId === venueId && item.coachId === lookup.coach?.id,
+    )
+    const linkedAt = new Date().toISOString()
+    const activeAffiliation: CoachVenueAffiliation = existing
+      ? {
+          ...existing,
+          linkType: 'FM_DIRECT_ADD',
+          status: 'ACTIVE',
+          rejectedReason: undefined,
+          linkedAt,
+          createdBy: 'fm_dsports',
+        }
+      : {
+          id: `AFF-${Date.now().toString().slice(-5)}`,
+          venueId,
+          coachId: lookup.coach.id,
+          venueName: venue.name,
+          address: venue.address,
+          distanceKm: 0,
+          linkType: 'FM_DIRECT_ADD',
+          status: 'ACTIVE',
+          requestedAt: linkedAt,
+          linkedAt,
+          createdBy: 'fm_dsports',
+          activeCourses: 0,
+          availableSlots: [1, 2, 4, 6, 8],
+        }
+    const nextAffiliations = existing
+      ? coachAffiliations.map((item) => item.id === existing.id ? activeAffiliation : item)
+      : [activeAffiliation, ...coachAffiliations]
+    const message = `Cụm sân ${venue.name} đã thêm bạn vào danh sách HLV liên kết`
+    const nextNotifications: CoachAffiliationNotification[] = [
+      {
+        id: `AFF-NOTICE-${Date.now()}`,
+        recipientId: lookup.coach.id,
+        message,
+        createdAt: linkedAt,
+        tone: 'success' as const,
+      },
+      ...coachAffiliationNotifications,
+    ].slice(0, 50)
+    persistCoachAffiliations(nextAffiliations)
+    persistCoachAffiliationNotifications(nextNotifications)
+    set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
+    get().showToast(`Đã liên kết ${lookup.coach.name} với cụm sân.`, 'success')
+    return { success: true, message }
+  },
+
+  approveCoachAffiliation: (affiliationId) => {
+    const { coachAffiliations, coachAffiliationNotifications } = get()
+    const target = coachAffiliations.find((item) => item.id === affiliationId)
+    if (!target || target.status !== 'PENDING') {
+      get().showToast('Yêu cầu này không còn ở trạng thái chờ duyệt.', 'error')
+      return false
+    }
+    const linkedAt = new Date().toISOString()
+    const nextAffiliations = coachAffiliations.map((item) => item.id === affiliationId
+      ? { ...item, status: 'ACTIVE' as const, linkedAt, rejectedReason: undefined }
+      : item)
+    const nextNotifications: CoachAffiliationNotification[] = [
+      {
+        id: `AFF-NOTICE-${Date.now()}`,
+        recipientId: target.coachId,
+        message: 'Cụm sân đã phê duyệt yêu cầu liên kết của bạn',
+        createdAt: linkedAt,
+        tone: 'success' as const,
+      },
+      ...coachAffiliationNotifications,
+    ].slice(0, 50)
+    persistCoachAffiliations(nextAffiliations)
+    persistCoachAffiliationNotifications(nextNotifications)
+    set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
+    get().showToast('Đã chấp thuận yêu cầu. Coach đã được chuyển sang danh sách liên kết.', 'success')
+    return true
+  },
+
+  rejectCoachAffiliation: (affiliationId, reason) => {
+    const trimmedReason = reason.trim()
+    if (!trimmedReason) {
+      get().showToast('Vui lòng nhập lý do từ chối.', 'error')
+      return false
+    }
+    const { coachAffiliations, coachAffiliationNotifications } = get()
+    const target = coachAffiliations.find((item) => item.id === affiliationId)
+    if (!target || target.status !== 'PENDING') {
+      get().showToast('Yêu cầu này không còn ở trạng thái chờ duyệt.', 'error')
+      return false
+    }
+    const createdAt = new Date().toISOString()
+    const nextAffiliations = coachAffiliations.map((item) => item.id === affiliationId
+      ? { ...item, status: 'REJECTED' as const, rejectedReason: trimmedReason, linkedAt: undefined }
+      : item)
+    const nextNotifications: CoachAffiliationNotification[] = [
+      {
+        id: `AFF-NOTICE-${Date.now()}`,
+        recipientId: target.coachId,
+        message: `Yêu cầu liên kết với ${target.venueName} đã bị từ chối: ${trimmedReason}`,
+        createdAt,
+        tone: 'error' as const,
+      },
+      ...coachAffiliationNotifications,
+    ].slice(0, 50)
+    persistCoachAffiliations(nextAffiliations)
+    persistCoachAffiliationNotifications(nextNotifications)
+    set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
+    get().showToast('Đã từ chối yêu cầu và gửi lý do cho Coach.', 'info')
+    return true
+  },
+
+  unlinkCoachAffiliation: (affiliationId, initiatedBy) => {
+    const { coachAffiliations, coachAffiliationNotifications } = get()
+    const target = coachAffiliations.find((item) => item.id === affiliationId)
+    if (!target || target.status !== 'ACTIVE') {
+      get().showToast('Liên kết này không còn hoạt động.', 'error')
+      return false
+    }
+    const createdAt = new Date().toISOString()
+    const nextAffiliations = coachAffiliations.map((item) => item.id === affiliationId
+      ? { ...item, status: 'INACTIVE' as const }
+      : item)
+    const nextNotifications: CoachAffiliationNotification[] = [
+      {
+        id: `AFF-NOTICE-${Date.now()}`,
+        recipientId: initiatedBy === 'coach' ? `fm:${target.venueId}` : target.coachId,
+        message: initiatedBy === 'coach'
+          ? `Coach đã hủy liên kết với ${target.venueName}.`
+          : `${target.venueName} đã ngắt liên kết Coach. Các buổi đã đặt cọc vẫn được giữ nguyên.`,
+        createdAt,
+        tone: 'info' as const,
+      },
+      ...coachAffiliationNotifications,
+    ].slice(0, 50)
+    persistCoachAffiliations(nextAffiliations)
+    persistCoachAffiliationNotifications(nextNotifications)
+    set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
+    get().showToast('Đã hủy liên kết. Các buổi đã đặt cọc vẫn được giữ nguyên.', 'success')
     return true
   },
 

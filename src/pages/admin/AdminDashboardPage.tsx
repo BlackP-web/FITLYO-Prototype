@@ -10,7 +10,8 @@ const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN').format(
 
 const occupancy = [
   { slot: 'Slot 1', value: 52 }, { slot: 'Slot 2', value: 68 }, { slot: 'Slot 3', value: 41 },
-  { slot: 'Slot 4', value: 64 }, { slot: 'Slot 5 · Vàng', value: 98 }, { slot: 'Slot 6', value: 79 },
+  { slot: 'Slot 4', value: 44 }, { slot: 'Slot 5', value: 48 }, { slot: 'Slot 6', value: 55 },
+  { slot: 'Slot 7', value: 64 }, { slot: 'Slot 8', value: 76 }, { slot: 'Slot 9 · Vàng', value: 98 }, { slot: 'Slot 10', value: 79 },
 ]
 
 const weeklyMatches = [64, 78, 72, 96, 108, 124, 112]
@@ -59,7 +60,7 @@ export function AdminDashboardPage() {
           <div className="mt-8 flex h-56 items-end gap-3 border-b border-l border-border px-4 pb-3 sm:gap-5">
             {weeklyMatches.map((value, index) => <div key={value + index} className="flex h-full flex-1 flex-col justify-end gap-2"><div className="relative rounded-t-xl bg-primary/85 transition hover:bg-primary" style={{ height: `${(value / 130) * 100}%` }}><span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold">{value}</span></div><span className="text-center text-[10px] text-muted-foreground">{weekdayLabels[index]}</span></div>)}
           </div>
-          <div className="mt-5"><div className="flex items-center justify-between"><p className="text-sm font-black">Tỷ lệ lấp đầy 6 slot</p><span className="text-xs text-muted-foreground">Trung bình 67%</span></div><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{occupancy.map((item) => <div key={item.slot} className="rounded-xl bg-muted/55 p-3"><div className="flex justify-between text-xs"><span className="font-semibold">{item.slot}</span><strong className={item.value >= 90 ? 'text-orange-600 dark:text-orange-300' : 'text-primary'}>{item.value}%</strong></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-background"><div className={item.value >= 90 ? 'h-full rounded-full bg-orange-500' : 'h-full rounded-full bg-primary'} style={{ width: `${item.value}%` }} /></div></div>)}</div></div>
+          <div className="mt-5"><div className="flex items-center justify-between"><p className="text-sm font-black">Tỷ lệ lấp đầy 10 slot</p><span className="text-xs text-muted-foreground">Trung bình 63%</span></div><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{occupancy.map((item) => <div key={item.slot} className="rounded-xl bg-muted/55 p-3"><div className="flex justify-between text-xs"><span className="font-semibold">{item.slot}</span><strong className={item.value >= 90 ? 'text-orange-600 dark:text-orange-300' : 'text-primary'}>{item.value}%</strong></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-background"><div className={item.value >= 90 ? 'h-full rounded-full bg-orange-500' : 'h-full rounded-full bg-primary'} style={{ width: `${item.value}%` }} /></div></div>)}</div></div>
         </article>
 
         <div className="space-y-4">

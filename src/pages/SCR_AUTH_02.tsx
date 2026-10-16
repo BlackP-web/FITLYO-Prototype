@@ -299,7 +299,7 @@ export function SCR_AUTH_02() {
                   <strong>1. Quy định thành viên:</strong> Người chơi cam kết cung cấp đúng thông tin cá nhân và số điện thoại liên lạc chính xác khi tham gia ghép kèo trên hệ thống FITLYO.
                 </p>
                 <p>
-                  <strong>2. Chuẩn hóa Slot 90 phút:</strong> Mọi trận đấu giao hữu và giải đấu trên FITLYO đều tuân theo ma trận 6 khung giờ cố định từ 12:30 đến 21:30 hàng ngày.
+                  <strong>2. Chuẩn hóa Slot 90 phút:</strong> Mọi trận đấu giao hữu và giải đấu trên FITLYO đều tuân theo 10 khung giờ liên tục từ 06:00 đến 21:00 hàng ngày.
                 </p>
                 <p>
                   <strong>3. Tinh thần Fair-play DUPR:</strong> Người chơi cam kết thi đấu trung thực, tôn trọng kết quả trận đấu để hệ thống tính điểm DUPR chuẩn xác.

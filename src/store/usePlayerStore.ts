@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
+import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 import type {
   PlayerMatch,
   PlayerProfile,
@@ -26,22 +27,9 @@ interface PlayerState {
   venues: PlayerVenue[]
   reviewedMatchIds: string[]
   bookedSlotKeys: string[]
+  addFieldManagerMatch: (match: PlayerMatch) => void
   updateProfile: (changes: Partial<Pick<PlayerProfile, 'name' | 'username' | 'phone' | 'city' | 'avatarUrl'>>) => void
   joinMatch: (matchId: string, method?: 'WALLET' | 'VIETQR') => ActionResult
-  createMatch: (input: {
-    title: string
-    venueId: string
-    courtName: string
-    date: string
-    dateLabel: string
-    slotNumber: number
-    timeRange: string
-    format: PlayerMatch['format']
-    duprMin: number
-    duprMax: number
-    deposit: number
-    paymentMethod?: 'WALLET' | 'VIETQR'
-  }) => ActionResult
   cancelTicket: (ticketCode: string) => ActionResult
   completeMatch: (ticketCode: string) => ActionResult
   checkInTicket: (ticketCode: string) => ActionResult
@@ -53,7 +41,6 @@ interface PlayerState {
     slotNumber: number
     date: string
     dateLabel: string
-    mode: 'PRIVATE' | 'SOCIAL'
     paymentMethod?: 'WALLET' | 'VIETQR'
   }) => ActionResult
   recordCoachBooking: (input: {
@@ -89,7 +76,6 @@ const initialProfile: PlayerProfile = {
   wins: 19,
   losses: 9,
   walletBalance: 1_200_000,
-  coins: 450,
   isVip: false,
   skills: {
     serve: 8.5,
@@ -147,14 +133,14 @@ const venueImages = {
   ],
 }
 
-const makeSlots = (offset = 0): PlayerVenue['courts'][number]['slots'] => [
-  { slotNumber: 1, timeRange: '06:00 - 07:30', price: 140000 + offset, status: 'AVAILABLE' },
-  { slotNumber: 2, timeRange: '07:30 - 09:00', price: 140000 + offset, status: 'PRIVATE', label: 'Đã bao sân' },
-  { slotNumber: 3, timeRange: '09:00 - 10:30', price: 100000 + offset, status: 'COACHING', label: 'Lớp HLV Dũng' },
-  { slotNumber: 4, timeRange: '15:30 - 17:00', price: 100000 + offset, status: 'AVAILABLE' },
-  { slotNumber: 5, timeRange: '18:30 - 20:00', price: 220000 + offset, status: 'SOCIAL', label: 'Kèo Social', duprRange: '3.0 - 3.5', players: '3/4', isPeak: true },
-  { slotNumber: 6, timeRange: '20:00 - 21:30', price: 160000 + offset, status: 'AVAILABLE' },
-]
+const makeSlots = (offset = 0): PlayerVenue['courts'][number]['slots'] => COURT_SLOT_TIMES.map((slot) => {
+  const isPeak = slot.slotNumber >= 9
+  const price = (isPeak ? 220000 : slot.slotNumber <= 2 ? 140000 : 100000) + offset
+  if (slot.slotNumber === 2) return { ...slot, price, status: 'PRIVATE', label: 'Đã bao sân' }
+  if (slot.slotNumber === 3) return { ...slot, price, status: 'COACHING', label: 'Lớp HLV Dũng' }
+  if (slot.slotNumber === 9) return { ...slot, price, status: 'SOCIAL', label: 'Kèo Social', duprRange: '3.0 - 3.5', players: '3/4', isPeak }
+  return { ...slot, price, status: 'AVAILABLE', isPeak }
+})
 
 const initialVenues: PlayerVenue[] = [
   {
@@ -165,7 +151,7 @@ const initialVenues: PlayerVenue[] = [
     distanceKm: 1.2,
     rating: 4.9,
     reviewCount: 128,
-    openingHours: '06:00 - 22:00 hàng ngày',
+    openingHours: '06:00 - 21:00 hàng ngày',
     hotline: '0909 888 777',
     description: 'Cụm sân trong nhà máy lạnh, thảm đệm giảm chấn và hệ đèn LED chống lóa đạt chuẩn thi đấu.',
     images: venueImages.thaoDien,
@@ -183,7 +169,7 @@ const initialVenues: PlayerVenue[] = [
     distanceKm: 3.8,
     rating: 4.8,
     reviewCount: 94,
-    openingHours: '05:30 - 22:00 hàng ngày',
+    openingHours: '06:00 - 21:00 hàng ngày',
     hotline: '0903 112 119',
     description: 'Không gian thoáng, mặt sân mới và khu khởi động riêng phù hợp lớp học lẫn giao lưu cộng đồng.',
     images: venueImages.hiepPhu,
@@ -201,7 +187,7 @@ const initialVenues: PlayerVenue[] = [
     distanceKm: 5.1,
     rating: 4.7,
     reviewCount: 76,
-    openingHours: '06:00 - 21:30 hàng ngày',
+    openingHours: '06:00 - 21:00 hàng ngày',
     hotline: '0938 770 226',
     description: 'Cụm sân cộng đồng với giá dễ tiếp cận, có khu vực nghỉ và trang thiết bị cho người mới.',
     images: venueImages.anPhu,
@@ -236,8 +222,8 @@ const initialMatches: PlayerMatch[] = [
     imageUrl: venueImages.thaoDien[0],
     date: '2026-10-15',
     dateLabel: 'Hôm nay, 15/10/2026',
-    slotNumber: 5,
-    timeRange: '18:30 - 20:00',
+    slotNumber: 9,
+    timeRange: '18:00 - 19:30',
     format: 'Đôi nam nữ',
     duprMin: 3,
     duprMax: 3.6,
@@ -287,8 +273,8 @@ const initialMatches: PlayerMatch[] = [
     imageUrl: venueImages.anPhu[0],
     date: '2026-10-17',
     dateLabel: 'Thứ Bảy, 17/10/2026',
-    slotNumber: 4,
-    timeRange: '15:30 - 17:00',
+    slotNumber: 7,
+    timeRange: '15:00 - 16:30',
     format: 'Đôi nam',
     duprMin: 3.5,
     duprMax: 4.25,
@@ -312,8 +298,8 @@ const initialMatches: PlayerMatch[] = [
     imageUrl: venueImages.thaoDien[1],
     date: '2026-10-16',
     dateLabel: 'Ngày mai, 16/10/2026',
-    slotNumber: 4,
-    timeRange: '15:30 - 17:00',
+    slotNumber: 7,
+    timeRange: '15:00 - 16:30',
     format: 'Đôi nam nữ',
     duprMin: 3,
     duprMax: 3.75,
@@ -346,7 +332,7 @@ const initialSchedule: PlayerScheduleItem[] = [
     courtName: 'Sân 01',
     date: '2026-10-16',
     dateLabel: 'Ngày mai, Thứ Sáu 16/10',
-    timeRange: '15:30 - 17:00',
+    timeRange: '15:00 - 16:30',
     status: 'UPCOMING',
     amount: 45000,
     ticketCode: 'FTL-M26-8891',
@@ -361,7 +347,7 @@ const initialSchedule: PlayerScheduleItem[] = [
     courtName: 'Sân 01',
     date: '2026-10-17',
     dateLabel: 'Thứ Bảy, 17/10',
-    timeRange: '15:30 - 17:00',
+    timeRange: '15:00 - 16:30',
     status: 'UPCOMING',
     amount: 0,
     coachName: 'HLV Lê Hoàng Dũng',
@@ -376,7 +362,7 @@ const initialSchedule: PlayerScheduleItem[] = [
     courtName: 'Sân 02',
     date: '2026-10-13',
     dateLabel: 'Thứ Ba, 13/10',
-    timeRange: '18:30 - 20:00',
+    timeRange: '18:00 - 19:30',
     status: 'COMPLETED',
     amount: 45000,
     matchId: 'history-match-01',
@@ -389,19 +375,23 @@ const migratePlayerImages = (persistedState: unknown): PlayerState => {
   const state = persistedState as PlayerState
   const imagesByVenueId = new Map(initialVenues.map((venue) => [venue.id, venue.images]))
   const imageByMatchId = new Map(initialMatches.map((match) => [match.id, match.imageUrl]))
+  const scheduleByMatchId = new Map(initialMatches.map((match) => [match.id, { slotNumber: match.slotNumber, timeRange: match.timeRange }]))
+  const timeByScheduleId = new Map(initialSchedule.map((item) => [item.id, item.timeRange]))
 
   return {
     ...state,
-    venues: (state.venues ?? initialVenues).map((venue) => ({
-      ...venue,
-      images: imagesByVenueId.get(venue.id) ?? venue.images,
-    })),
+    venues: initialVenues,
     matches: (state.matches ?? initialMatches).map((match) => ({
       ...match,
+      ...scheduleByMatchId.get(match.id),
       imageUrl:
         imageByMatchId.get(match.id)
         ?? imagesByVenueId.get(match.venueId)?.[0]
         ?? match.imageUrl,
+    })),
+    schedule: (state.schedule ?? initialSchedule).map((item) => ({
+      ...item,
+      timeRange: timeByScheduleId.get(item.id) ?? item.timeRange,
     })),
   }
 }
@@ -418,6 +408,10 @@ export const usePlayerStore = create<PlayerState>()(
       venues: initialVenues,
       reviewedMatchIds: [],
       bookedSlotKeys: [],
+
+      addFieldManagerMatch: (match) => set((state) => ({
+        matches: [match, ...state.matches.filter((item) => item.id !== match.id)],
+      })),
 
       updateProfile: (changes) => set((state) => ({ profile: { ...state.profile, ...changes } })),
 
@@ -471,67 +465,6 @@ export const usePlayerStore = create<PlayerState>()(
           ],
         }))
         return { success: true, message: 'Đã khóa cọc và giữ chỗ thành công.', ticketCode: code }
-      },
-
-      createMatch: (input) => {
-        const state = get()
-        const venue = state.venues.find((item) => item.id === input.venueId)
-        if (!venue) return { success: false, message: 'Không tìm thấy cụm sân.' }
-        const paymentMethod = input.paymentMethod ?? 'WALLET'
-        if (paymentMethod === 'WALLET' && state.profile.walletBalance < input.deposit) {
-          return { success: false, message: 'Số dư ví không đủ để mở kèo.' }
-        }
-        const id = `match-created-${Date.now()}`
-        const newMatch: PlayerMatch = {
-          id,
-          title: input.title,
-          label: 'KÈO DO BẠN TẠO',
-          venueId: venue.id,
-          venueName: venue.name,
-          courtName: input.courtName,
-          address: venue.address,
-          area: venue.area,
-          distanceKm: venue.distanceKm,
-          imageUrl: venue.images[0],
-          date: input.date,
-          dateLabel: input.dateLabel,
-          slotNumber: input.slotNumber,
-          timeRange: input.timeRange,
-          format: input.format,
-          duprMin: input.duprMin,
-          duprMax: input.duprMax,
-          deposit: input.deposit,
-          maxPlayers: 4,
-          status: 'OPEN',
-          participants: [{ ...currentParticipant(state.profile), isHost: true }],
-          amenities: venue.amenities.slice(0, 3),
-          note: 'Kèo mới do Nguyễn Văn An khởi tạo. Chờ thêm người chơi phù hợp DUPR.',
-        }
-        const code = ticketCodeFor(id)
-        set((current) => ({
-          profile: {
-            ...current.profile,
-            walletBalance: paymentMethod === 'WALLET' ? current.profile.walletBalance - input.deposit : current.profile.walletBalance,
-          },
-          matches: [newMatch, ...current.matches],
-          tickets: [...current.tickets, { code, matchId: id, status: 'ACTIVE', createdAt: new Date().toISOString(), locker: 'Cấp khi đủ người' }],
-          schedule: [{
-            id: `schedule-${id}`,
-            kind: 'MATCH',
-            title: `${newMatch.label} · ${newMatch.format}`,
-            subtitle: 'Bạn là Host · Đang chờ ghép thêm 3 người',
-            venueName: newMatch.venueName,
-            courtName: newMatch.courtName,
-            date: newMatch.date,
-            dateLabel: newMatch.dateLabel,
-            timeRange: newMatch.timeRange,
-            status: 'UPCOMING',
-            amount: newMatch.deposit,
-            ticketCode: code,
-            matchId: id,
-          }, ...current.schedule],
-        }))
-        return { success: true, message: 'Kèo mới đã được mở và đăng lên bảng tin.', matchId: id, ticketCode: code }
       },
 
       cancelTicket: (ticketCode) => {
@@ -593,12 +526,11 @@ export const usePlayerStore = create<PlayerState>()(
             reputation: Math.min(100, current.profile.reputation + 2),
             matchesPlayed: current.profile.matchesPlayed + 1,
             wins: current.profile.wins + 1,
-            coins: current.profile.coins + 50,
           },
           reviewedMatchIds: [...current.reviewedMatchIds, matchId],
-          schedule: current.schedule.map((item) => item.matchId === matchId ? { ...item, subtitle: 'Đã đánh giá · +0.05 DUPR · +50 FITLYO Coins' } : item),
+          schedule: current.schedule.map((item) => item.matchId === matchId ? { ...item, subtitle: 'Đã đánh giá · +0.05 DUPR · +2 điểm uy tín' } : item),
         }))
-        return { success: true, message: 'Đánh giá đã gửi. Bạn nhận +0.05 DUPR và 50 FITLYO Coins.' }
+        return { success: true, message: 'Đánh giá đã gửi. DUPR và điểm uy tín đã được cập nhật.' }
       },
 
       purchaseVip: (plan, method) => {
@@ -629,28 +561,9 @@ export const usePlayerStore = create<PlayerState>()(
         const slotKey = `${input.date}:${input.venueId}:${input.courtId}:${input.slotNumber}`
         if (state.bookedSlotKeys.includes(slotKey)) return { success: false, message: 'Bạn đã đặt slot này.' }
         if (slot.status !== 'AVAILABLE') return { success: false, message: 'Slot này hiện không nhận đặt mới.' }
-        const amount = input.mode === 'PRIVATE' ? slot.price : Math.ceil(slot.price / 4)
+        const amount = slot.price
         const paymentMethod = input.paymentMethod ?? 'WALLET'
         if (paymentMethod === 'WALLET' && state.profile.walletBalance < amount) return { success: false, message: 'Số dư Ví FITLYO không đủ.' }
-
-        if (input.mode === 'SOCIAL') {
-          const createResult = get().createMatch({
-            title: 'Kèo Social từ slot sân',
-            venueId: venue.id,
-            courtName: `${court.name} · ${court.type}`,
-            date: input.date,
-            dateLabel: input.dateLabel,
-            slotNumber: slot.slotNumber,
-            timeRange: slot.timeRange,
-            format: 'Đôi nam nữ',
-            duprMin: Math.max(1, state.profile.dupr - 0.5),
-            duprMax: Math.min(6, state.profile.dupr + 0.5),
-            deposit: amount,
-            paymentMethod,
-          })
-          if (createResult.success) set((current) => ({ bookedSlotKeys: [...current.bookedSlotKeys, slotKey] }))
-          return createResult
-        }
 
         const ticketCode = `FTL-C${input.slotNumber}-${String(Date.now()).slice(-5)}`
         set((current) => ({
@@ -748,7 +661,7 @@ export const usePlayerStore = create<PlayerState>()(
     {
       name: playerStorageKey,
       storage: createJSONStorage(() => window.localStorage),
-      version: 1,
+      version: 2,
       migrate: migratePlayerImages,
     },
   ),

@@ -24,7 +24,7 @@ export interface MatchRoom {
   surfaceType: 'Trong nhà' | 'Ngoài trời' | 'Mái che'
   address: string
   distanceKm: number
-  slotNumber: number // 1 to 6
+  slotNumber: number // 1 to 10
   timeRange: string
   dateStr: string
   format: MatchFormat
@@ -50,7 +50,7 @@ export type SlotStatus =
   | 'MAINTENANCE'
 
 export interface CourtSlot {
-  slotNumber: number // 1 to 6
+  slotNumber: number // 1 to 10
   timeRange: string
   status: SlotStatus
   price: number
@@ -61,6 +61,12 @@ export interface CourtSlot {
   playersCount?: string
   bookedNote?: string
   bookedContact?: string
+  bookedByName?: string
+  bookedPhone?: string
+  bookingId?: string
+  bookedAt?: string
+  bookingStatus?: string
+  maintenanceReason?: string
   walkInBooking?: WalkInBooking
 }
 
@@ -121,8 +127,10 @@ export interface CourtInventory {
 
 export interface CoachItem {
   id: string
+  userId: string
   name: string
   avatarUrl: string
+  phone: string
   duprRating: number
   isCertified: boolean
   certTitle: string
@@ -136,6 +144,7 @@ export interface CoachItem {
   specialties: string[]
   featuredCourse?: string
   isVipExclusive?: boolean
+  accountStatus?: 'ACTIVE' | 'SUSPENDED'
 }
 
 export interface StudentProgress {
@@ -205,12 +214,23 @@ export interface CoachVenueAffiliation {
   venueName: string
   address: string
   distanceKm: number
-  status: 'APPROVED' | 'PENDING' | 'REJECTED'
+  linkType: 'COACH_REQUEST' | 'FM_DIRECT_ADD'
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'INACTIVE'
+  rejectedReason?: string
   requestedAt: string
-  approvedAt?: string
+  linkedAt?: string
+  createdBy: string
   discountPercent?: number
   activeCourses: number
   availableSlots: number[]
+}
+
+export interface CoachAffiliationNotification {
+  id: string
+  recipientId: string
+  message: string
+  createdAt: string
+  tone: 'success' | 'info' | 'error'
 }
 
 export interface CoachWalletTransaction {

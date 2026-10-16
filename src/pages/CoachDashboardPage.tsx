@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { useCoachBookingStore } from '@/store/useCoachBookingStore'
+import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', {
   style: 'currency',
@@ -35,14 +36,7 @@ const weekDays = [
   { label: 'Chủ Nhật', date: '18/10', dateKey: '2026-10-18' },
 ]
 
-const slots = [
-  { number: 1, time: '06:00 - 07:30' },
-  { number: 2, time: '07:30 - 09:00' },
-  { number: 3, time: '09:00 - 10:30' },
-  { number: 4, time: '15:30 - 17:00' },
-  { number: 5, time: '18:30 - 20:00' },
-  { number: 6, time: '20:00 - 21:30' },
-]
+const slots = COURT_SLOT_TIMES.map((slot) => ({ number: slot.slotNumber, time: slot.timeRange }))
 
 export function CoachDashboardPage() {
   const navigate = useNavigate()
@@ -75,8 +69,8 @@ export function CoachDashboardPage() {
       }
     }
     if (selectedDay === 2 && slotNumber === 2) return ownCourses.find((course) => course.id === 'COURSE-DUNG-02')
-    if (selectedDay === 2 && slotNumber === 4) return ownCourses.find((course) => course.id === 'COURSE-DUNG-03')
-    if (selectedDay === 2 && slotNumber === 5) return ownCourses.find((course) => course.id === 'COURSE-DUNG-01')
+    if (selectedDay === 2 && slotNumber === 7) return ownCourses.find((course) => course.id === 'COURSE-DUNG-03')
+    if (selectedDay === 2 && slotNumber === 9) return ownCourses.find((course) => course.id === 'COURSE-DUNG-01')
     if (selectedDay === 3 && slotNumber === 1) return { ...ownCourses[2], title: 'Lớp Cơ Bản Newbie 2.0', venue: 'D-Pickleball Thảo Điền' }
     if (selectedDay === 3 && slotNumber === 4) return ownCourses.find((course) => course.id === 'COURSE-DUNG-03')
     if (selectedDay === 3 && slotNumber === 5) return { ...ownCourses[1], title: 'PT VIP - Trần Bảo' }
@@ -115,7 +109,7 @@ export function CoachDashboardPage() {
           { label: 'Buổi dạy tháng 10', value: '18 buổi', note: '+3 so với tháng trước', icon: CalendarDays, color: 'text-primary bg-secondary/55 dark:bg-secondary/15' },
           { label: 'Học viên đang học', value: `${studentCount + 17} học viên`, note: `${ownCourses.length} khóa đang quản lý`, icon: Users, color: 'text-violet-700 bg-violet-50 dark:bg-violet-500/10 dark:text-violet-300' },
           { label: 'Ký quỹ đang giữ', value: formatCurrency(coachWalletSummary.escrowBalance), note: 'Giải ngân theo tiến độ', icon: CircleDollarSign, color: 'text-teal-700 bg-teal-50 dark:bg-teal-500/10 dark:text-teal-300' },
-          { label: 'Cụm sân đã duyệt', value: `${coachAffiliations.filter((item) => item.status === 'APPROVED').length} đối tác`, note: '1 yêu cầu đang chờ', icon: MapPin, color: 'text-amber-700 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-300' },
+          { label: 'Cụm sân đã liên kết', value: `${coachAffiliations.filter((item) => item.coachId === coachAccount.id && item.status === 'ACTIVE').length} đối tác`, note: `${coachAffiliations.filter((item) => item.coachId === coachAccount.id && item.status === 'PENDING').length} yêu cầu đang chờ`, icon: MapPin, color: 'text-amber-700 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-300' },
         ].map((item) => {
           const Icon = item.icon
           return (

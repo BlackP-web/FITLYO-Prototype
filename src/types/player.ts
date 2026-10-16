@@ -20,7 +20,6 @@ export interface PlayerProfile {
   wins: number
   losses: number
   walletBalance: number
-  coins: number
   isVip: boolean
   vipExpiresAt?: string
   skills: {

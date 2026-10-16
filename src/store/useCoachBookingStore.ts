@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { usePlayerStore } from '@/store/usePlayerStore'
+import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 import type { CoachItem } from '@/types/pickleball'
 import type {
   CoachBooking,
@@ -12,25 +13,18 @@ import type {
   CoachPaymentMethod,
 } from '@/types/coachBooking'
 
-const slotTimes: Record<number, string> = {
-  1: '06:00 - 07:30',
-  2: '07:30 - 09:00',
-  3: '09:00 - 10:30',
-  4: '15:30 - 17:00',
-  5: '18:30 - 20:00',
-  6: '20:00 - 21:30',
-}
+const slotTimes = Object.fromEntries(COURT_SLOT_TIMES.map((slot) => [slot.slotNumber, slot.timeRange])) as Record<number, string>
 
 const coachPatterns: Record<string, { weekdays: number[]; slots: number[]; venueName: string; courtName: string }> = {
-  coach_dung: { weekdays: [2, 4, 6], slots: [1, 4, 5], venueName: 'D-Pickleball Thảo Điền', courtName: 'Sân Coach 01' },
-  coach_long: { weekdays: [1, 3, 5], slots: [2, 4, 6], venueName: 'Thảo Điền Pickleball Club', courtName: 'Sân 02' },
-  coach_kiet: { weekdays: [2, 4, 6], slots: [1, 3, 5], venueName: 'D-Sports Thủ Đức', courtName: 'Sân 03' },
-  coach_minhanh: { weekdays: [0, 1, 3, 5], slots: [1, 4, 6], venueName: 'Vinhomes Grand Park', courtName: 'Sân 01' },
+  coach_dung: { weekdays: [2, 4, 6], slots: [1, 7, 9], venueName: 'D-Pickleball Thảo Điền', courtName: 'Sân Coach 01' },
+  coach_long: { weekdays: [1, 3, 5], slots: [2, 7, 10], venueName: 'Thảo Điền Pickleball Club', courtName: 'Sân 02' },
+  coach_kiet: { weekdays: [2, 4, 6], slots: [1, 3, 9], venueName: 'D-Sports Thủ Đức', courtName: 'Sân 03' },
+  coach_minhanh: { weekdays: [0, 1, 3, 5], slots: [1, 7, 10], venueName: 'Vinhomes Grand Park', courtName: 'Sân 01' },
 }
 
 const externalReservations = [
-  { id: 'external-booking-01', coachId: 'coach_dung', playerName: 'Trần Bảo', date: '2026-10-20', slotNumber: 4 },
-  { id: 'external-booking-02', coachId: 'coach_dung', playerName: 'Ngô Kim Ngân', date: '2026-10-22', slotNumber: 5 },
+  { id: 'external-booking-01', coachId: 'coach_dung', playerName: 'Trần Bảo', date: '2026-10-20', slotNumber: 7 },
+  { id: 'external-booking-02', coachId: 'coach_dung', playerName: 'Ngô Kim Ngân', date: '2026-10-22', slotNumber: 9 },
 ]
 
 const toDateKey = (date: Date) => {

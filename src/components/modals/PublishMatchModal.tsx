@@ -17,6 +17,7 @@ export const PublishMatchModal: React.FC = () => {
   const [duprMin, setDuprMin] = useState<number>(2.5)
   const [duprMax, setDuprMax] = useState<number>(3.0)
   const [format, setFormat] = useState<'doubles' | 'singles'>('doubles')
+  const [capacity, setCapacity] = useState<number>(4)
   const [entryFee, setEntryFee] = useState<number>(50000)
   const [amenities, setAmenities] = useState<string[]>([
     '2 quả bóng thi đấu tiêu chuẩn',
@@ -28,7 +29,6 @@ export const PublishMatchModal: React.FC = () => {
 
   if (!publishingSlotData) return null
 
-  const capacity = format === 'doubles' ? 4 : 2
   const courtCost =
     courtInventory
       .find((court) => court.id === publishingSlotData.courtId)
@@ -64,6 +64,7 @@ export const PublishMatchModal: React.FC = () => {
       duprMin,
       duprMax,
       format,
+      maxPlayers: capacity,
       fee: entryFee,
       amenities,
       note,
@@ -157,7 +158,7 @@ export const PublishMatchModal: React.FC = () => {
             {/* 2. Thể thức */}
             <div>
               <label className="block font-semibold text-foreground mb-1.5">
-                2. Thể thức & Số lượng người chơi:
+                2. Thể thức kèo:
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -171,7 +172,7 @@ export const PublishMatchModal: React.FC = () => {
                 >
                   <div>
                     <p className="text-sm font-bold text-foreground">Đánh Đôi (Doubles)</p>
-                  <p className="text-xs text-muted-foreground">Mở 4 chỗ cho người chơi</p>
+                  <p className="text-xs text-muted-foreground">Thi đấu theo cặp</p>
                   </div>
                   {format === 'doubles' && <Check className="w-4 h-4 text-primary" />}
                 </button>
@@ -187,10 +188,26 @@ export const PublishMatchModal: React.FC = () => {
                 >
                   <div>
                     <p className="text-sm font-bold text-foreground">Đánh Đơn (Singles)</p>
-                  <p className="text-xs text-muted-foreground">Mở 2 chỗ cho người chơi</p>
+                  <p className="text-xs text-muted-foreground">Thi đấu luân phiên</p>
                   </div>
                   {format === 'singles' && <Check className="w-4 h-4 text-primary" />}
                 </button>
+              </div>
+              <div className="mt-4">
+                <span className="text-xs font-semibold text-muted-foreground">Số Player tham gia tối đa</span>
+                <div className="mt-2 grid grid-cols-5 gap-2">
+                  {[4, 6, 8, 10, 12].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setCapacity(value)}
+                      className={`rounded-xl border px-2 py-2.5 text-sm font-black transition ${capacity === value ? 'border-primary bg-primary text-primary-foreground ring-2 ring-primary/20' : 'border-border bg-background hover:border-primary/40'}`}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">Chỉ tính Player tham gia; Field Manager và nhân sự vận hành sân không chiếm chỗ.</p>
               </div>
             </div>
 

@@ -715,7 +715,7 @@ export function LandingPage() {
               <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full border-[24px] border-white/20" />
               <Building2 className="h-8 w-8" />
               <h2 className="mt-8 text-2xl font-black">Bạn đang vận hành cụm sân?</h2>
-              <p className="mt-2 max-w-md text-sm leading-6 opacity-70">Tối ưu công suất 6 slot, check-in QR và doanh thu bằng portal Field Manager.</p>
+              <p className="mt-2 max-w-md text-sm leading-6 opacity-70">Tối ưu công suất 10 slot liên tục, check-in QR và doanh thu bằng portal Field Manager.</p>
               <Button onClick={() => navigate('/login')} className="mt-6">Đăng nhập Field Manager Portal <ArrowRight /></Button>
             </article>
           </div>

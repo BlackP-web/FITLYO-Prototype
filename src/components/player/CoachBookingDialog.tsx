@@ -13,6 +13,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 import { cn } from '@/lib/utils'
 import { useCoachBookingStore } from '@/store/useCoachBookingStore'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
@@ -144,7 +145,7 @@ export function CoachBookingDialog({ coach, onClose }: CoachBookingDialogProps) 
               <div className="rounded-xl border border-primary/20 bg-secondary/20 p-3">
                 <div className="flex items-center justify-between"><p className="text-[10px] font-black uppercase text-primary">Giờ đề xuất</p><button type="button" onClick={() => setCustomMode(false)} className="text-[10px] font-bold text-primary underline">Lịch công bố</button></div>
                 <label className="mt-3 block text-[10px] font-bold">Ngày<input type="date" value={customDate} min={calendar[0]?.date} onChange={(event) => setCustomDate(event.target.value)} className="mt-1 h-9 w-full rounded-lg border bg-background px-2 text-xs" /></label>
-                <label className="mt-2 block text-[10px] font-bold">Khung giờ<select value={customSlot} onChange={(event) => setCustomSlot(Number(event.target.value))} className="mt-1 h-9 w-full rounded-lg border bg-background px-2 text-xs">{Object.entries({ 1: '06:00 - 07:30', 2: '07:30 - 09:00', 3: '09:00 - 10:30', 4: '15:30 - 17:00', 5: '18:30 - 20:00', 6: '20:00 - 21:30' }).map(([slot, time]) => <option key={slot} value={slot}>Slot {slot} · {time}</option>)}</select></label>
+                <label className="mt-2 block text-[10px] font-bold">Khung giờ<select value={customSlot} onChange={(event) => setCustomSlot(Number(event.target.value))} className="mt-1 h-9 w-full rounded-lg border bg-background px-2 text-xs">{COURT_SLOT_TIMES.map((slot) => <option key={slot.slotNumber} value={slot.slotNumber}>Slot {slot.slotNumber} · {slot.timeRange}</option>)}</select></label>
                 <p className="mt-2 flex gap-1.5 text-[9px] leading-4 text-muted-foreground"><Clock3 className="h-3 w-3 shrink-0" />Chưa thu cọc cho đến khi Coach duyệt.</p>
               </div>
             )}

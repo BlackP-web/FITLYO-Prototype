@@ -120,7 +120,7 @@ export const VenuesPage: React.FC = () => {
 
             <div className="p-5 pt-0 flex items-center justify-between border-t border-border/40 mt-3 pt-3">
               <div>
-                <span className="text-[11px] text-muted-foreground block">Mức giá 6 slot:</span>
+                <span className="text-[11px] text-muted-foreground block">Mức giá 10 slot:</span>
                 <span className="font-bold text-xs text-foreground">{venue.priceRange}</span>
               </div>
               <Button
@@ -128,7 +128,7 @@ export const VenuesPage: React.FC = () => {
                 onClick={() => showToast('Luồng đặt sân dành cho Player sẽ được hoàn thiện trong phân hệ Player.', 'info')}
                 className="gap-1.5 text-xs font-semibold"
               >
-                <span>Xem 6 Slot Trống</span>
+                <span>Xem 10 Slot Trong Ngày</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </div>

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 
 export type AdminUserRole = 'PLAYER' | 'VIP_PLAYER' | 'COACH' | 'FIELD_MANAGER' | 'OPERATOR'
 export type AdminUserStatus = 'ACTIVE' | 'SUSPENDED' | 'LOCKED'
@@ -107,15 +108,8 @@ const initialDisputes: AdminDispute[] = [
 ]
 
 export const defaultPlatformConfig: PlatformConfig = {
-  slots: [
-    { number: 1, start: '06:00', end: '07:30', isPeak: false },
-    { number: 2, start: '07:30', end: '09:00', isPeak: false },
-    { number: 3, start: '09:00', end: '10:30', isPeak: false },
-    { number: 4, start: '15:30', end: '17:00', isPeak: false },
-    { number: 5, start: '18:30', end: '20:00', isPeak: true },
-    { number: 6, start: '20:00', end: '21:30', isPeak: false },
-  ],
-  cleanupMinutes: 15,
+  slots: COURT_SLOT_TIMES.map((slot) => ({ number: slot.slotNumber, start: slot.start, end: slot.end, isPeak: slot.slotNumber === 9 })),
+  cleanupMinutes: 0,
   socialCommission: 5,
   coachCommission: 10,
   vipCommission: 0,

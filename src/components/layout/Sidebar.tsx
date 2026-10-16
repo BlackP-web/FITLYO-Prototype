@@ -125,7 +125,7 @@ export function Sidebar() {
                               ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
                               : item.badge === 'QR'
                               ? "bg-blue-500/20 text-blue-700 dark:text-blue-300"
-                              : item.badge === '6 Slot'
+                              : item.badge === '10 Slot'
                               ? "bg-orange-500/20 text-orange-700 dark:text-orange-300"
                               : "bg-primary/20 text-primary"
                           )}

@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import type { CoachCourse } from '@/types/pickleball'
+import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 
 const initialForm = {
   title: 'Boot Camp Pickleball - Bứt Phá DUPR 3.5',
@@ -23,8 +24,8 @@ const initialForm = {
   duprOutput: '3.50+',
   totalSessions: 8,
   venue: 'D-Pickleball Thảo Điền',
-  slotNumber: 5,
-  timeRange: '18:30 - 20:00',
+  slotNumber: 9,
+  timeRange: '18:00 - 19:30',
   fee: 2400000,
   description: 'Lộ trình tập trung vào Dinking, Third-shot Drop và chiến thuật đánh đôi.',
 }
@@ -42,7 +43,7 @@ export function CoachCoursesPage() {
     () => coachCourses.filter((course) => course.coachId === coachAccount.id),
     [coachAccount.id, coachCourses],
   )
-  const approvedVenues = coachAffiliations.filter((item) => item.coachId === coachAccount.id && item.status === 'APPROVED')
+  const approvedVenues = coachAffiliations.filter((item) => item.coachId === coachAccount.id && item.status === 'ACTIVE')
 
   const closeModal = () => {
     setIsOpen(false)
@@ -60,8 +61,8 @@ export function CoachCoursesPage() {
       duprOutput: course.duprOutput ?? '3.50+',
       totalSessions: course.totalSessions,
       venue: course.venue,
-      slotNumber: course.slotNumber ?? 5,
-      timeRange: course.timeRange ?? '18:30 - 20:00',
+      slotNumber: course.slotNumber ?? 9,
+      timeRange: course.timeRange ?? '18:00 - 19:30',
       fee: course.fee,
       description: course.description ?? '',
     })
@@ -187,7 +188,7 @@ export function CoachCoursesPage() {
               <div className="space-y-2"><Label htmlFor="dupr-in">DUPR đầu vào</Label><select id="dupr-in" value={form.duprInput} onChange={(event) => setForm({ ...form, duprInput: event.target.value })} className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option>2.00 - 2.50</option><option>2.50 - 3.00</option><option>3.00 - 3.50</option><option>3.50 - 4.00</option></select></div>
               <div className="space-y-2"><Label htmlFor="dupr-out">DUPR cam kết đầu ra</Label><select id="dupr-out" value={form.duprOutput} onChange={(event) => setForm({ ...form, duprOutput: event.target.value })} className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option>3.00+</option><option>3.50+</option><option>4.00+</option><option>4.50+</option></select></div>
               <div className="space-y-2 sm:col-span-2"><Label htmlFor="course-venue">Cụm sân đã liên kết *</Label><select id="course-venue" value={form.venue} onChange={(event) => setForm({ ...form, venue: event.target.value })} className="h-9 w-full rounded-md border bg-background px-3 text-sm">{approvedVenues.map((venue) => <option key={venue.id}>{venue.venueName}</option>)}</select></div>
-              <div className="space-y-2"><Label htmlFor="course-slot">Khung giờ</Label><select id="course-slot" value={form.slotNumber} onChange={(event) => { const slot = Number(event.target.value); const times: Record<number, string> = { 1: '06:00 - 07:30', 2: '07:30 - 09:00', 3: '09:00 - 10:30', 4: '15:30 - 17:00', 5: '18:30 - 20:00', 6: '20:00 - 21:30' }; setForm({ ...form, slotNumber: slot, timeRange: times[slot] }) }} className="h-9 w-full rounded-md border bg-background px-3 text-sm">{[1, 2, 3, 4, 5, 6].map((slot) => <option key={slot} value={slot}>Slot {slot}{slot === 5 ? ' · Giờ vàng' : ''}</option>)}</select></div>
+              <div className="space-y-2"><Label htmlFor="course-slot">Khung giờ</Label><select id="course-slot" value={form.slotNumber} onChange={(event) => { const slotNumber = Number(event.target.value); const selectedSlot = COURT_SLOT_TIMES.find((slot) => slot.slotNumber === slotNumber); setForm({ ...form, slotNumber, timeRange: selectedSlot?.timeRange ?? '' }) }} className="h-9 w-full rounded-md border bg-background px-3 text-sm">{COURT_SLOT_TIMES.map((slot) => <option key={slot.slotNumber} value={slot.slotNumber}>Slot {slot.slotNumber} · {slot.timeRange}{slot.slotNumber >= 9 ? ' · Giờ vàng' : ''}</option>)}</select></div>
               <div className="space-y-2"><Label htmlFor="course-fee">Học phí / học viên</Label><Input id="course-fee" type="number" min={100000} step={50000} value={form.fee} onChange={(event) => setForm({ ...form, fee: Number(event.target.value) })} /></div>
             </div>
             <div className="space-y-2"><Label htmlFor="course-description">Mô tả mục tiêu & kỹ năng</Label><textarea id="course-description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} rows={3} className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring" /></div>

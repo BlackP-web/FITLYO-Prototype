@@ -35,11 +35,14 @@ export interface PlayerProfile {
 export interface MatchParticipant {
   id: string
   name: string
+  phone?: string
   avatarUrl: string
   dupr: number
   reputation: number
   isHost?: boolean
   isCurrentUser?: boolean
+  paymentStatus?: 'PAID' | 'REFUNDED' | 'FORFEITED'
+  paidAmount?: number
 }
 
 export interface PlayerMatch {

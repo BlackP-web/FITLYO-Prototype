@@ -30,7 +30,7 @@ export const PublishMatchModal: React.FC = () => {
   if (!publishingSlotData) return null
 
   const courtCost =
-    courtInventory
+    publishingSlotData.price ?? courtInventory
       .find((court) => court.id === publishingSlotData.courtId)
       ?.slots.find((slot) => slot.slotNumber === publishingSlotData.slotNumber)?.price ?? 180000
   const estimatedRevenue = entryFee * capacity
@@ -88,7 +88,7 @@ export const PublishMatchModal: React.FC = () => {
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
-                  Cụm sân D-Sports Thủ Đức • {publishingSlotData.courtName}
+                  {publishingSlotData.venueName ?? 'Cụm sân D-Sports Thủ Đức'} • {publishingSlotData.courtName}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-primary" />

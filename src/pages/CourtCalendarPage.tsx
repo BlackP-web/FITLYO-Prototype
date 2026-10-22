@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Banknote, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
-  Flame, Lock, MapPin, PencilLine, RotateCcw, ShieldAlert, Sparkles, TrendingUp,
-  UserRound, UsersRound, Wrench, X,
+  Banknote, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight,
+  Flame, MapPin, PencilLine, RotateCcw, ShieldAlert, TrendingUp,
+  UsersRound, Wrench, X,
 } from 'lucide-react'
 import { PublishMatchModal } from '@/components/modals/PublishMatchModal'
 import { WalkInBookingModal } from '@/components/modals/WalkInBookingModal'
+import { SlotDetailModal } from '@/components/fm/SlotDetailModal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { COURT_SLOT_DURATION_MINUTES, COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
+import { useCrossRoleStore } from '@/store/useCrossRoleStore'
 import type {
   CourtInventory,
   CourtSlot,
@@ -27,8 +29,11 @@ const statusMeta: Record<CourtSlot['status'], { label: string; className: string
   MAINTENANCE: { label: 'Bảo trì', className: 'border-slate-400/40 bg-slate-500/10 text-slate-600 dark:text-slate-300', dot: 'bg-slate-500' },
 }
 
-const venueName = 'Cụm sân D-Sports Pickleball Thủ Đức'
-const venueAddress = '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức'
+const legacyVenue = {
+  id: 'venue-dsports-thu-duc',
+  name: 'Cụm sân D-Sports Pickleball Thủ Đức',
+  address: '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
+}
 const editableStatuses: CourtSlot['status'][] = ['AVAILABLE', 'MAINTENANCE']
 
 const quickStatusOptions: Array<{
@@ -63,10 +68,16 @@ const quickStatusOptions: Array<{
 
 export const CourtCalendarPage = () => {
   const {
-    courtInventory, selectedDate, setSelectedDate, openPublishModal, openWalkInModal,
+    courtInventory: legacyCourtInventory, selectedDate, setSelectedDate, openPublishModal, openWalkInModal,
     setSlotMaintenance, releaseSlot, batchUpdateSlots, restoreCourtInventory, showToast,
   } = useFitlyoStore()
   const playerMatches = usePlayerStore((state) => state.matches)
+  const playerVenues = usePlayerStore((state) => state.venues)
+  const courtBookings = useCrossRoleStore((state) => state.courtBookings)
+  const slotOverrides = useCrossRoleStore((state) => state.slotOverrides)
+  const upsertSlotOverrides = useCrossRoleStore((state) => state.upsertSlotOverrides)
+  const replaceSlotOverrides = useCrossRoleStore((state) => state.replaceSlotOverrides)
+  const [selectedVenueId, setSelectedVenueId] = useState(playerVenues[0]?.id ?? legacyVenue.id)
   const [selectedSlotDetails, setSelectedSlotDetails] = useState<{ courtId: string; courtName: string; slot: CourtSlot } | null>(null)
   const [quickEditMode, setQuickEditMode] = useState(false)
   const [selectedSlotKeys, setSelectedSlotKeys] = useState<string[]>([])
@@ -78,8 +89,51 @@ export const CourtCalendarPage = () => {
   const [walkInPhone, setWalkInPhone] = useState('')
   const [walkInPayment, setWalkInPayment] = useState<WalkInPaymentMethod>('CASH')
   const [quickEditError, setQuickEditError] = useState('')
-  const [undoState, setUndoState] = useState<{ inventory: CourtInventory[]; expiresAt: number } | null>(null)
+  const [undoState, setUndoState] = useState<{ inventory?: CourtInventory[]; overrides?: typeof slotOverrides; expiresAt: number } | null>(null)
   const [undoSeconds, setUndoSeconds] = useState(10)
+
+  const selectedVenue = playerVenues.find((venue) => venue.id === selectedVenueId)
+  const venueName = selectedVenue?.name ?? legacyVenue.name
+  const venueAddress = selectedVenue?.address ?? legacyVenue.address
+  const selectedDateIso = useMemo(() => {
+    const [day, month, year] = selectedDate.split('/')
+    return `${year}-${month?.padStart(2, '0')}-${day?.padStart(2, '0')}`
+  }, [selectedDate])
+  const isLegacyVenue = !selectedVenue
+
+  const courtInventory = useMemo<CourtInventory[]>(() => {
+    if (!selectedVenue) return legacyCourtInventory
+    return selectedVenue.courts.map((court) => ({
+      id: court.id,
+      name: court.name,
+      courtType: court.type.toLowerCase().includes('ngoài') ? 'outdoor' : court.type.toLowerCase().includes('mái') ? 'covered' : 'indoor',
+      slots: court.slots.map((venueSlot) => {
+        const override = slotOverrides.find((item) => item.venueId === selectedVenue.id && item.date === selectedDateIso && item.courtId === court.id && item.slotNumber === venueSlot.slotNumber)
+        const booking = courtBookings.find((item) => item.status === 'CONFIRMED' && item.venueId === selectedVenue.id && item.date === selectedDateIso && item.courtId === court.id && item.slotNumber === venueSlot.slotNumber)
+        const match = playerMatches.find((item) => item.venueId === selectedVenue.id && item.date === selectedDateIso && item.slotNumber === venueSlot.slotNumber && item.courtName.startsWith(court.name) && item.status !== 'CANCELLED')
+        const baseStatus: CourtSlot['status'] = venueSlot.status === 'SOCIAL' ? 'MATCH_PUBLISHED' : venueSlot.status === 'PRIVATE' ? 'PRIVATE_BOOKED' : venueSlot.status === 'COACHING' ? 'COACHING' : venueSlot.status
+        const status: CourtSlot['status'] = booking ? 'PRIVATE_BOOKED' : match ? 'MATCH_PUBLISHED' : override?.status ?? baseStatus
+        return {
+          slotNumber: venueSlot.slotNumber,
+          timeRange: venueSlot.timeRange,
+          price: override?.price ?? venueSlot.price,
+          isPeak: venueSlot.isPeak,
+          status,
+          matchRoomId: match?.id,
+          matchTitle: match?.title,
+          duprRange: match ? `DUPR ${match.duprMin.toFixed(1)}–${match.duprMax.toFixed(1)}` : venueSlot.duprRange,
+          playersCount: match ? `${match.participants.length}/${match.maxPlayers}` : venueSlot.players,
+          bookedByName: booking?.playerName ?? override?.customerName,
+          bookedPhone: booking?.playerPhone ?? override?.customerPhone,
+          bookingId: booking?.bookingCode,
+          bookedAt: booking?.bookedAt,
+          bookingStatus: booking ? 'Đã thanh toán 100%' : undefined,
+          maintenanceReason: override?.maintenanceReason,
+          bookedNote: status === 'COACHING' ? venueSlot.label : undefined,
+        }
+      }),
+    }))
+  }, [selectedVenue, legacyCourtInventory, slotOverrides, courtBookings, playerMatches, selectedDateIso])
 
   const selectedSlots = useMemo(() => {
     const keys = new Set(selectedSlotKeys)
@@ -110,10 +164,8 @@ export const CourtCalendarPage = () => {
 
   const selectedCourt = selectedSlotDetails ? courtInventory.find((court) => court.id === selectedSlotDetails.courtId) : undefined
   const selectedSlot = selectedSlotDetails?.slot
-  const selectedStatus = selectedSlot ? statusMeta[selectedSlot.status] : undefined
-  const booking = selectedSlot?.walkInBooking
-  const customerName = booking?.customerName ?? selectedSlot?.bookedByName
-  const customerPhone = booking?.phone ?? selectedSlot?.bookedPhone
+  const selectedPlayerMatch = selectedSlot?.matchRoomId ? playerMatches.find((match) => match.id === selectedSlot.matchRoomId) : undefined
+  const selectedCourtBooking = selectedSlotDetails ? courtBookings.find((item) => item.status === 'CONFIRMED' && item.venueId === selectedVenueId && item.date === selectedDateIso && item.courtId === selectedSlotDetails.courtId && item.slotNumber === selectedSlotDetails.slot.slotNumber) : undefined
   const playerCountFor = (slot: CourtSlot) => {
     const playerMatch = slot.matchRoomId ? playerMatches.find((match) => match.id === slot.matchRoomId) : undefined
     return playerMatch ? `${playerMatch.participants.length}/${playerMatch.maxPlayers}` : slot.playersCount
@@ -135,12 +187,31 @@ export const CourtCalendarPage = () => {
       courtName: selectedSlotDetails.courtName,
       slotNumber: selectedSlotDetails.slot.slotNumber,
       timeRange: selectedSlotDetails.slot.timeRange,
+      venueId: selectedVenueId,
+      venueName,
+      venueAddress,
+      date: selectedDateIso,
+      price: selectedSlotDetails.slot.price,
+      courtType: selectedCourt?.courtType === 'outdoor' ? 'Ngoài trời' : selectedCourt?.courtType === 'covered' ? 'Có mái che' : 'Trong nhà',
     })
     setSelectedSlotDetails(null)
   }
 
   const handleLockPrivate = () => {
     if (!selectedSlotDetails) return
+    if (!isLegacyVenue) {
+      setSelectedSlotKeys([`${selectedSlotDetails.courtId}:${selectedSlotDetails.slot.slotNumber}`])
+      setQuickEditMode(true)
+      setTargetStatus('PRIVATE_BOOKED')
+      setNewPrice(String(selectedSlotDetails.slot.price))
+      setWalkInName('')
+      setWalkInPhone('')
+      setWalkInPayment('CASH')
+      setQuickEditError('')
+      setIsQuickEditOpen(true)
+      setSelectedSlotDetails(null)
+      return
+    }
     openWalkInModal({
       courtId: selectedSlotDetails.courtId,
       courtName: selectedSlotDetails.courtName,
@@ -152,7 +223,34 @@ export const CourtCalendarPage = () => {
 
   const handleMaintenance = () => {
     if (!selectedSlotDetails) return
-    setSlotMaintenance(selectedSlotDetails.courtId, selectedSlotDetails.slot.slotNumber)
+    if (isLegacyVenue) setSlotMaintenance(selectedSlotDetails.courtId, selectedSlotDetails.slot.slotNumber)
+    else upsertSlotOverrides([{
+      key: `${selectedVenueId}:${selectedDateIso}:${selectedSlotDetails.courtId}:${selectedSlotDetails.slot.slotNumber}`,
+      venueId: selectedVenueId,
+      date: selectedDateIso,
+      courtId: selectedSlotDetails.courtId,
+      slotNumber: selectedSlotDetails.slot.slotNumber,
+      status: 'MAINTENANCE',
+      price: selectedSlotDetails.slot.price,
+      maintenanceReason: 'Bảo trì theo cập nhật của Field Manager',
+      updatedAt: new Date().toISOString(),
+    }])
+    setSelectedSlotDetails(null)
+  }
+
+  const handleRelease = () => {
+    if (!selectedSlotDetails) return
+    if (isLegacyVenue) releaseSlot(selectedSlotDetails.courtId, selectedSlotDetails.slot.slotNumber)
+    else upsertSlotOverrides([{
+      key: `${selectedVenueId}:${selectedDateIso}:${selectedSlotDetails.courtId}:${selectedSlotDetails.slot.slotNumber}`,
+      venueId: selectedVenueId,
+      date: selectedDateIso,
+      courtId: selectedSlotDetails.courtId,
+      slotNumber: selectedSlotDetails.slot.slotNumber,
+      status: 'AVAILABLE',
+      price: selectedSlotDetails.slot.price,
+      updatedAt: new Date().toISOString(),
+    }])
     setSelectedSlotDetails(null)
   }
 
@@ -200,6 +298,41 @@ export const CourtCalendarPage = () => {
 
   const handleBatchUpdate = () => {
     const price = Number(newPrice)
+    if (!Number.isFinite(price) || price < 10000) {
+      setQuickEditError('Vui lòng nhập giá mới từ 10.000đ.')
+      return
+    }
+    if (targetStatus === 'MAINTENANCE' && maintenanceReason.trim().length < 3) {
+      setQuickEditError('Vui lòng nhập lý do bảo trì.')
+      return
+    }
+    if (targetStatus === 'PRIVATE_BOOKED' && (walkInName.trim().length < 2 || !/^0\d{9}$/.test(walkInPhone.replace(/\D/g, '')))) {
+      setQuickEditError('Vui lòng nhập đúng họ tên và số điện thoại 10 số của khách.')
+      return
+    }
+    if (!isLegacyVenue) {
+      const previousOverrides = [...slotOverrides]
+      upsertSlotOverrides(selectedSlots.map(({ courtId, slot }) => ({
+        key: `${selectedVenueId}:${selectedDateIso}:${courtId}:${slot.slotNumber}`,
+        venueId: selectedVenueId,
+        date: selectedDateIso,
+        courtId,
+        slotNumber: slot.slotNumber,
+        status: targetStatus,
+        price,
+        maintenanceReason: targetStatus === 'MAINTENANCE' ? maintenanceReason.trim() : undefined,
+        customerName: targetStatus === 'PRIVATE_BOOKED' ? walkInName.trim() : undefined,
+        customerPhone: targetStatus === 'PRIVATE_BOOKED' ? walkInPhone.replace(/\D/g, '') : undefined,
+        paymentMethod: targetStatus === 'PRIVATE_BOOKED' ? walkInPayment : undefined,
+        updatedAt: new Date().toISOString(),
+      })))
+      setUndoState({ overrides: previousOverrides, expiresAt: Date.now() + 10_000 })
+      setUndoSeconds(10)
+      setIsQuickEditOpen(false)
+      setSelectedSlotKeys([])
+      showToast(`Đã cập nhật ${selectedSlots.length} slot tại ${venueName}.`, 'success')
+      return
+    }
     const result = batchUpdateSlots({
       slots: selectedSlots.map(({ courtId, slot }) => ({ courtId, slotNumber: slot.slotNumber })),
       targetStatus,
@@ -222,7 +355,8 @@ export const CourtCalendarPage = () => {
 
   const handleUndo = () => {
     if (!undoState || Date.now() >= undoState.expiresAt) return
-    restoreCourtInventory(undoState.inventory)
+    if (undoState.inventory) restoreCourtInventory(undoState.inventory)
+    if (undoState.overrides) replaceSlotOverrides(undoState.overrides)
     setUndoState(null)
   }
 
@@ -235,10 +369,22 @@ export const CourtCalendarPage = () => {
           <p className="mt-1 text-sm text-muted-foreground">{venueName} · {COURT_SLOT_DURATION_MINUTES} phút/slot · Không nghỉ giữa ca.</p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
+          <label className="flex min-h-12 items-center gap-2 rounded-xl border bg-card px-3 text-sm font-bold shadow-xs">
+            <MapPin className="h-4 w-4 text-primary" />
+            <span className="sr-only">Chọn cụm sân</span>
+            <select
+              value={selectedVenueId}
+              onChange={(event) => { setSelectedVenueId(event.target.value); setSelectedSlotKeys([]); setSelectedSlotDetails(null) }}
+              className="min-w-56 bg-transparent outline-none"
+            >
+              {playerVenues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}
+              <option value={legacyVenue.id}>{legacyVenue.name}</option>
+            </select>
+          </label>
           <div className="flex items-center rounded-xl border bg-card p-1 shadow-xs">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeDate(-1)}><ChevronLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeDate(-1)} aria-label="Ngày trước"><ChevronLeft className="h-4 w-4" /></Button>
             <div className="flex items-center gap-1.5 px-3 text-xs font-bold sm:text-sm"><CalendarDays className="h-4 w-4 text-primary" />Ngày: {selectedDate}</div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeDate(1)}><ChevronRight className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeDate(1)} aria-label="Ngày tiếp theo"><ChevronRight className="h-4 w-4" /></Button>
           </div>
           <Button
             type="button"
@@ -310,29 +456,23 @@ export const CourtCalendarPage = () => {
         <div className="h-3 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${occupancyRate}%` }} /></div>
       </section>
 
-      {selectedSlotDetails && selectedSlot && selectedStatus && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border/80 bg-card p-6 shadow-2xl">
-          <div className="flex items-start justify-between gap-4 border-b pb-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Chi tiết slot thuộc cụm sân của bạn</p><h2 className="mt-1 text-xl font-black">{selectedSlotDetails.courtName} · Slot {selectedSlot.slotNumber}</h2><p className="mt-1 text-xs text-muted-foreground">{venueName}</p></div><Badge className={selectedStatus.className}>{selectedStatus.label}</Badge></div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl bg-muted/45 p-4 text-xs"><p className="flex items-center gap-2 font-bold"><CalendarDays className="h-4 w-4 text-primary" />Ngày và thời gian</p><dl className="mt-3 grid grid-cols-[100px_1fr] gap-2 text-muted-foreground"><dt>Ngày</dt><dd className="font-semibold text-foreground">{selectedDate}</dd><dt>Khung giờ</dt><dd className="font-semibold text-foreground">{selectedSlot.timeRange}</dd><dt>Thời lượng</dt><dd className="font-semibold text-foreground">{COURT_SLOT_DURATION_MINUTES} phút</dd></dl></div>
-            <div className="rounded-2xl bg-muted/45 p-4 text-xs"><p className="flex items-center gap-2 font-bold"><MapPin className="h-4 w-4 text-primary" />Sân và vị trí</p><dl className="mt-3 grid grid-cols-[100px_1fr] gap-2 text-muted-foreground"><dt>Sân</dt><dd className="font-semibold text-foreground">{selectedSlotDetails.courtName}</dd><dt>Loại sân</dt><dd className="font-semibold text-foreground">{selectedCourt?.courtType === 'indoor' ? 'Trong nhà' : selectedCourt?.courtType === 'outdoor' ? 'Ngoài trời' : 'Có mái che'}</dd><dt>Địa chỉ</dt><dd className="font-semibold text-foreground">{venueAddress}</dd></dl></div>
-          </div>
-
-          <section className="mt-3 rounded-2xl border p-4 text-xs">
-            <h3 className="font-black">Thông tin đặt sân</h3>
-            {selectedSlot.status === 'AVAILABLE' ? <p className="mt-3 rounded-xl bg-emerald-500/10 p-3 font-semibold text-emerald-700 dark:text-emerald-300">Chưa có người đặt.</p> : selectedSlot.status === 'MAINTENANCE' ? <div className="mt-3 rounded-xl bg-slate-500/10 p-3"><p className="font-semibold">Không có người đặt.</p><p className="mt-1 text-muted-foreground">Lý do bảo trì: {selectedSlot.maintenanceReason ?? selectedSlot.bookedNote ?? 'Chưa có dữ liệu'}</p></div> : <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-muted/45 p-3"><p className="flex items-center gap-2 font-bold"><Clock3 className="h-4 w-4 text-primary" />Giao dịch</p><dl className="mt-3 grid grid-cols-[92px_1fr] gap-2 text-muted-foreground"><dt>Mã booking</dt><dd className="font-semibold text-foreground">{selectedSlot.bookingId ?? booking?.id ?? 'Chưa có dữ liệu'}</dd><dt>Trạng thái</dt><dd className="font-semibold text-foreground">{selectedSlot.bookingStatus ?? selectedStatus.label}</dd><dt>Thời điểm đặt</dt><dd className="font-semibold text-foreground">{selectedSlot.bookedAt ?? booking?.createdAt ?? 'Chưa có dữ liệu'}</dd></dl></div>
-              <div className="rounded-xl bg-muted/45 p-3"><p className="flex items-center gap-2 font-bold"><UserRound className="h-4 w-4 text-primary" />Người đặt</p>{selectedSlot.status === 'MATCH_PUBLISHED' ? <p className="mt-3 text-muted-foreground">Kèo Social không gắn một khách đặt sân riêng. Hiện có <strong className="text-foreground">{playerCountFor(selectedSlot) ?? '0/4'} Player</strong>.</p> : <dl className="mt-3 grid grid-cols-[92px_1fr] gap-2 text-muted-foreground"><dt>Họ tên</dt><dd className="font-semibold text-foreground">{customerName ?? 'Chưa có dữ liệu'}</dd><dt>Số điện thoại</dt><dd className="font-semibold text-foreground">{customerPhone ?? 'Chưa có dữ liệu'}</dd></dl>}</div>
-            </div>}
-            {selectedSlot.matchTitle && <p className="mt-3"><b>Kèo:</b> {selectedSlot.matchTitle} · {selectedSlot.duprRange} · {playerCountFor(selectedSlot)}</p>}
-            {selectedSlot.bookedNote && selectedSlot.status !== 'MAINTENANCE' && <p className="mt-2"><b>Ghi chú:</b> {selectedSlot.bookedNote}</p>}
-          </section>
-
-          {selectedSlot.status === 'AVAILABLE' ? <div className="mt-4 space-y-2"><Button onClick={handleOpenPublish} className="h-11 w-full justify-start gap-2.5"><Sparkles className="h-4 w-4" />Mở kèo Social DUPR</Button><button type="button" onClick={handleLockPrivate} className="w-full rounded-xl border border-orange-500/25 bg-orange-500/5 p-3 text-left text-xs font-semibold transition hover:bg-orange-500/10"><Lock className="mr-2 inline h-3.5 w-3.5 text-orange-500" />Khóa cho khách vãng lai</button><Button variant="ghost" onClick={handleMaintenance} className="w-full justify-start gap-2 text-xs text-muted-foreground"><Wrench className="h-3.5 w-3.5" />Tạm dừng để bảo trì</Button></div> : selectedSlot.status === 'MAINTENANCE' ? <Button variant="outline" onClick={() => { releaseSlot(selectedSlotDetails.courtId, selectedSlot.slotNumber); setSelectedSlotDetails(null) }} className="mt-4 w-full">Mở lại slot thành còn trống</Button> : <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200"><ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" /><p><strong>Không thể giải phóng trực tiếp.</strong> Slot này đã có giao dịch; hãy dùng luồng hủy và hoàn tiền tương ứng để bảo vệ quyền lợi khách hàng.</p></div>}
-          <div className="mt-4 flex justify-end border-t pt-4"><Button variant="outline" onClick={() => setSelectedSlotDetails(null)}>Đóng</Button></div>
-        </div>
-      </div>}
+      {selectedSlotDetails && selectedSlot && <SlotDetailModal
+        open
+        venueName={venueName}
+        venueAddress={venueAddress}
+        dateLabel={selectedDate}
+        courtName={selectedSlotDetails.courtName}
+        courtType={selectedCourt?.courtType === 'outdoor' ? 'Ngoài trời' : selectedCourt?.courtType === 'covered' ? 'Có mái che' : 'Trong nhà'}
+        slot={selectedSlot}
+        match={selectedPlayerMatch}
+        courtBooking={selectedCourtBooking}
+        onClose={() => setSelectedSlotDetails(null)}
+        onPublish={handleOpenPublish}
+        onWalkIn={handleLockPrivate}
+        onMaintenance={handleMaintenance}
+        onRelease={handleRelease}
+        onNotify={(message) => showToast(message, 'info')}
+      />}
 
       {isQuickEditOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="quick-edit-title">
         <div className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl">

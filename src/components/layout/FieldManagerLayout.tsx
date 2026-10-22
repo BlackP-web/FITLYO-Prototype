@@ -103,10 +103,10 @@ export default function FieldManagerLayout() {
           <div className="mb-5 rounded-xl border border-primary/15 bg-primary/5 p-3">
             <div className="flex items-center gap-2 text-primary">
               <ShieldCheck className="h-4 w-4" />
-              <span className="text-xs font-bold">Tài khoản Chủ sân</span>
+              <span className="text-xs font-bold">{session?.isVerified ? 'Chủ sân đã được duyệt' : 'Chủ sân chưa được mở khóa'}</span>
             </div>
             <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Bạn chỉ có quyền điều hành lịch sân và kèo Social của cụm sân.
+              {session?.isVerified ? 'Bạn chỉ có quyền điều hành lịch sân và kèo Social của cụm sân.' : 'Hãy hoàn tất hồ sơ pháp lý. Lịch sân và chức năng vận hành sẽ mở sau khi Admin phê duyệt.'}
             </p>
           </div>
 
@@ -116,16 +116,20 @@ export default function FieldManagerLayout() {
           <nav className="space-y-1">
             {ownerNavigation.map((item) => {
               const Icon = item.icon
+              const locked = !session?.isVerified && !['/fm/settings', '/fm/verification'].includes(item.to)
               return (
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  aria-disabled={locked}
+                  onClick={(event) => { if (locked) event.preventDefault() }}
                   className={({ isActive }) =>
                     cn(
                       'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors',
                       isActive
                         ? 'bg-primary text-primary-foreground shadow-sm'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                      locked && 'cursor-not-allowed opacity-45 hover:bg-transparent hover:text-muted-foreground',
                     )
                   }
                 >
@@ -138,6 +142,7 @@ export default function FieldManagerLayout() {
         </aside>
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+          {!session?.isVerified && <div className="mb-5 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200"><strong>Tài khoản Field Manager chưa được xác minh.</strong> Bạn chỉ có thể cập nhật thông tin và nộp hồ sơ; lịch sân, báo cáo và check-in đang bị khóa.</div>}
           <Outlet />
         </main>
       </div>

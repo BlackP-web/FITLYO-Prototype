@@ -33,7 +33,7 @@ const coachNavigation = [
 export default function CoachLayout() {
   const navigate = useNavigate()
   const { coachAccount, toastMessage, clearToast } = useFitlyoStore()
-  const logout = useAuthStore((state) => state.logout)
+  const { session, logout } = useAuthStore()
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -43,7 +43,7 @@ export default function CoachLayout() {
           <div className="hidden border-l border-border pl-3 sm:block">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Coach Portal</p>
             <div className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
-              <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /> Tài khoản đã xác thực
+              <ShieldCheck className={`h-3 w-3 ${session?.isVerified ? 'text-emerald-600' : 'text-amber-600'}`} /> {session?.isVerified ? 'Tài khoản đã xác thực' : 'Đang chờ xác minh'}
             </div>
           </div>
         </div>
@@ -77,13 +77,17 @@ export default function CoachLayout() {
         <nav className="flex gap-1 overflow-x-auto pb-1">
           {coachNavigation.map((item) => {
             const Icon = item.icon
+            const locked = !session?.isVerified && !['/coach/profile', '/coach/verification'].includes(item.to)
             return (
               <NavLink
                 key={item.to}
                 to={item.to}
+                aria-disabled={locked}
+                onClick={(event) => { if (locked) event.preventDefault() }}
                 className={({ isActive }) => cn(
                   'flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold',
                   isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+                  locked && 'cursor-not-allowed opacity-45',
                 )}
               >
                 <Icon className="h-3.5 w-3.5" /> {item.shortLabel}
@@ -98,10 +102,10 @@ export default function CoachLayout() {
           <div className="mb-5 rounded-2xl border border-primary/15 bg-secondary/35 p-4">
             <div className="flex items-center gap-2 text-primary">
               <ShieldCheck className="h-4 w-4" />
-              <span className="text-xs font-bold">Coach đã được duyệt</span>
+              <span className="text-xs font-bold">{session?.isVerified ? 'Coach đã được duyệt' : 'Coach chưa được mở khóa'}</span>
             </div>
             <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-              Bạn chỉ có thể quản lý khóa học, lịch dạy và học viên thuộc tài khoản của mình.
+              {session?.isVerified ? 'Bạn chỉ có thể quản lý khóa học, lịch dạy và học viên thuộc tài khoản của mình.' : 'Hãy hoàn tất hồ sơ xác minh. Các chức năng vận hành sẽ mở sau khi Admin phê duyệt.'}
             </p>
           </div>
 
@@ -109,15 +113,19 @@ export default function CoachLayout() {
           <nav className="space-y-1">
             {coachNavigation.map((item) => {
               const Icon = item.icon
+              const locked = !session?.isVerified && !['/coach/profile', '/coach/verification'].includes(item.to)
               return (
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  aria-disabled={locked}
+                  onClick={(event) => { if (locked) event.preventDefault() }}
                   className={({ isActive }) => cn(
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors',
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'text-muted-foreground hover:bg-secondary/45 hover:text-foreground',
+                    locked && 'cursor-not-allowed opacity-45 hover:bg-transparent hover:text-muted-foreground',
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -129,6 +137,7 @@ export default function CoachLayout() {
         </aside>
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+          {!session?.isVerified && <div className="mb-5 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200"><strong>Tài khoản Coach chưa được xác minh.</strong> Bạn chỉ có thể cập nhật hồ sơ và nộp chứng chỉ; lịch dạy, khóa học, học viên và ví đang bị khóa.</div>}
           <Outlet />
         </main>
       </div>

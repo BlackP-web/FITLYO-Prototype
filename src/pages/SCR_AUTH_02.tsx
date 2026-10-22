@@ -7,19 +7,24 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
   Sparkles,
   ArrowLeft,
   FileText,
+  Mail,
+  Users,
+  Dumbbell,
+  Building2,
   X,
 } from 'lucide-react'
 import { PublicAuthHeader } from '@/components/auth/PublicAuthHeader'
+import type { AuthRole } from '@/store/useAuthStore'
 
 export function SCR_AUTH_02() {
   const navigate = useNavigate()
 
   const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [role, setRole] = useState<Exclude<AuthRole, 'admin'>>('player')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -37,6 +42,11 @@ export function SCR_AUTH_02() {
 
     if (!fullName.trim()) {
       setError('Vui lòng nhập Họ và tên hiển thị.')
+      return
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError('Vui lòng nhập email đăng nhập hợp lệ.')
       return
     }
 
@@ -62,6 +72,10 @@ export function SCR_AUTH_02() {
       setError('Mật khẩu phải bao gồm cả chữ cái và số.')
       return
     }
+    if (password !== confirmPassword) {
+      setError('Mật khẩu xác nhận chưa khớp.')
+      return
+    }
 
     if (!agreedTerms) {
       setError('Vui lòng đồng ý với Điều khoản dịch vụ & Chính sách Ký quỹ Escrow.')
@@ -77,6 +91,9 @@ export function SCR_AUTH_02() {
         JSON.stringify({
           fullName: fullName.trim(),
           phone: cleanPhone,
+          email: email.trim().toLowerCase(),
+          password,
+          role,
         })
       )
       // Navigate to SCR_AUTH_03 (OTP Verification)
@@ -84,6 +101,8 @@ export function SCR_AUTH_02() {
         state: {
           phone: cleanPhone,
           fullName: fullName.trim(),
+          email: email.trim().toLowerCase(),
+          role,
         },
       })
     }, 500)
@@ -124,6 +143,17 @@ export function SCR_AUTH_02() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-bold text-foreground/85">Bạn đăng ký với vai trò nào? (*)</legend>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  ['player', 'Player', Users],
+                  ['coach', 'Coach', Dumbbell],
+                  ['fm', 'Chủ sân', Building2],
+                ] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => setRole(value)} className={`min-h-20 rounded-2xl border p-2 text-center transition ${role === value ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/15' : 'border-border bg-muted/30 text-muted-foreground hover:border-primary/40'}`}><Icon className="mx-auto h-5 w-5" /><span className="mt-1.5 block text-xs font-black">{label}</span></button>)}
+              </div>
+              {role !== 'player' && <p className="rounded-xl bg-amber-500/10 p-2.5 text-[11px] leading-4 text-amber-800 dark:text-amber-200">Tài khoản sẽ được tạo ngay nhưng chỉ mở khóa nghiệp vụ sau khi Admin duyệt hồ sơ xác minh.</p>}
+            </fieldset>
             {/* Họ và tên hiển thị */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-foreground/85 flex items-center justify-between">
@@ -142,6 +172,11 @@ export function SCR_AUTH_02() {
                   className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-muted/45 border border-border text-sm font-semibold text-foreground focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
                 />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground/85">Email đăng nhập (*)</label>
+              <div className="relative flex items-center"><Mail className="pointer-events-none absolute left-3.5 h-4 w-4 text-muted-foreground/70" /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ban@fitlyo.vn" className="h-11 w-full rounded-xl border border-border bg-muted/45 pl-10 pr-3.5 text-sm font-semibold focus:border-transparent focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary" /></div>
             </div>
 
             {/* Số điện thoại di động */}
@@ -194,6 +229,9 @@ export function SCR_AUTH_02() {
                 </button>
               </div>
             </div>
+
+            {/* Checkbox bắt buộc */}
+            <div className="space-y-1.5"><label className="text-xs font-bold text-foreground/85">Xác nhận mật khẩu (*)</label><div className="relative flex items-center"><Lock className="pointer-events-none absolute left-3.5 h-4 w-4 text-muted-foreground/70" /><input type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Nhập lại mật khẩu" className="h-11 w-full rounded-xl border border-border bg-muted/45 pl-10 pr-3.5 text-sm font-semibold focus:border-transparent focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary" /></div></div>
 
             {/* Checkbox bắt buộc */}
             <div className="pt-2">
@@ -251,8 +289,10 @@ export function SCR_AUTH_02() {
               type="button"
               onClick={() => {
                 setFullName('Nguyễn Văn An')
+                setEmail('player.new@fitlyo.vn')
                 setPhone('0987 654 321')
                 setPassword('Fitlyo@2026')
+                setConfirmPassword('Fitlyo@2026')
                 setAgreedTerms(true)
               }}
               className="text-[11px] text-muted-foreground/70 hover:text-primary underline font-medium cursor-pointer"

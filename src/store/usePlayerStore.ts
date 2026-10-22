@@ -5,6 +5,7 @@ import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 import { courtRefundOutcome, hoursUntilEvent, socialRefundOutcome } from '@/lib/paymentPolicies'
 import { getPlayerMatchFee } from '@/lib/playerMatch'
 import { usePaymentStore } from '@/store/usePaymentStore'
+import { useCrossRoleStore } from '@/store/useCrossRoleStore'
 import type {
   PlayerMatch,
   PlayerProfile,
@@ -106,6 +107,7 @@ const people = {
   bao: {
     id: 'player_bao',
     name: 'Lê Quốc Bảo',
+    phone: '0912 330 231',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
     dupr: 3.1,
     reputation: 98,
@@ -113,6 +115,7 @@ const people = {
   tri: {
     id: 'player_tri',
     name: 'Trần Minh Trí',
+    phone: '0938 224 445',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop',
     dupr: 3.4,
     reputation: 95,
@@ -120,6 +123,7 @@ const people = {
   ngoc: {
     id: 'player_ngoc',
     name: 'Nguyễn Bích Ngọc',
+    phone: '0928 510 338',
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
     dupr: 3.35,
     reputation: 100,
@@ -127,6 +131,7 @@ const people = {
   long: {
     id: 'player_long',
     name: 'Phạm Thành Long',
+    phone: '0908 772 906',
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop',
     dupr: 3.55,
     reputation: 97,
@@ -152,9 +157,6 @@ const venueImages = {
 const makeSlots = (offset = 0): PlayerVenue['courts'][number]['slots'] => COURT_SLOT_TIMES.map((slot) => {
   const isPeak = slot.slotNumber >= 9
   const price = (isPeak ? 220000 : slot.slotNumber <= 2 ? 140000 : 100000) + offset
-  if (slot.slotNumber === 2) return { ...slot, price, status: 'PRIVATE', label: 'Đã bao sân' }
-  if (slot.slotNumber === 3) return { ...slot, price, status: 'COACHING', label: 'Lớp HLV Dũng' }
-  if (slot.slotNumber === 9) return { ...slot, price, status: 'SOCIAL', label: 'Kèo Social', duprRange: '3.0 - 3.5', players: '3/4', isPeak }
   return { ...slot, price, status: 'AVAILABLE', isPeak }
 })
 
@@ -215,13 +217,16 @@ const initialVenues: PlayerVenue[] = [
   },
 ]
 
-const currentParticipant = (profile: PlayerProfile): PlayerMatch['participants'][number] => ({
+const currentParticipant = (profile: PlayerProfile, paidAmount = 0): PlayerMatch['participants'][number] => ({
   id: profile.id,
   name: profile.name,
+  phone: profile.phone,
   avatarUrl: profile.avatarUrl,
   dupr: profile.dupr,
   reputation: profile.reputation,
   isCurrentUser: true,
+  paymentStatus: 'PAID',
+  paidAmount,
 })
 
 const futurePrototypeDate = (offset: number, relativeLabel?: string) => {
@@ -410,6 +415,7 @@ const migratePlayerImages = (persistedState: unknown): PlayerState => {
   }
   const imagesByVenueId = new Map(initialVenues.map((venue) => [venue.id, venue.images]))
   const imageByMatchId = new Map(initialMatches.map((match) => [match.id, match.imageUrl]))
+  const participantById = new Map(initialMatches.flatMap((match) => match.participants).map((participant) => [participant.id, participant]))
   const scheduleByMatchId = new Map(initialMatches.map((match) => [match.id, { slotNumber: match.slotNumber, timeRange: match.timeRange, date: match.date, dateLabel: match.dateLabel }]))
   const scheduleById = new Map(initialSchedule.map((item) => [item.id, item]))
 
@@ -419,6 +425,11 @@ const migratePlayerImages = (persistedState: unknown): PlayerState => {
     venues: initialVenues,
     matches: (state.matches ?? initialMatches).map((match) => ({
       ...match,
+      participants: match.participants.map((participant) => ({
+        ...participantById.get(participant.id),
+        ...participant,
+        phone: participant.phone ?? participantById.get(participant.id)?.phone,
+      })),
       fee: getPlayerMatchFee(match) || initialMatches.find((item) => item.id === match.id)?.fee || 0,
       ...scheduleByMatchId.get(match.id),
       imageUrl:
@@ -468,6 +479,38 @@ const migratePlayerImages = (persistedState: unknown): PlayerState => {
 }
 
 const ticketCodeFor = (matchId: string) => `FTL-${matchId.slice(-4).toUpperCase()}-${String(Date.now()).slice(-4)}`
+
+const syncCourtBookingsToShared = (state: Pick<PlayerState, 'profile' | 'venues' | 'schedule'>) => {
+  state.schedule.filter((item) => item.kind === 'COURT' && item.status === 'UPCOMING').forEach((item) => {
+    const venue = state.venues.find((candidate) => candidate.id === item.venueId || candidate.name === item.venueName)
+    const court = venue?.courts.find((candidate) => candidate.id === item.courtId || item.courtName.startsWith(candidate.name))
+    const slot = court?.slots.find((candidate) => candidate.slotNumber === item.slotNumber || candidate.timeRange === item.timeRange)
+    if (!venue || !court || !slot) return
+    useCrossRoleStore.getState().upsertCourtBooking({
+      id: item.id,
+      bookingCode: item.bookingCode,
+      playerId: state.profile.id,
+      playerName: state.profile.name,
+      playerPhone: state.profile.phone,
+      venueId: venue.id,
+      venueName: venue.name,
+      venueAddress: venue.address,
+      courtId: court.id,
+      courtName: court.name,
+      courtType: court.type,
+      date: item.date,
+      dateLabel: item.dateLabel,
+      slotNumber: slot.slotNumber,
+      timeRange: slot.timeRange,
+      totalAmount: item.totalAmount ?? item.amount,
+      paidAmount: item.paidAmount ?? item.amount,
+      paymentStatus: 'PAID',
+      status: 'CONFIRMED',
+      bookedAt: item.bookedAt,
+      rescheduleCount: item.rescheduleCount ?? 0,
+    })
+  })
+}
 
 export const usePlayerStore = create<PlayerState>()(
   persist(
@@ -525,7 +568,7 @@ export const usePlayerStore = create<PlayerState>()(
           },
           matches: current.matches.map((item) => {
             if (item.id !== matchId) return item
-            const participants = [...item.participants, currentParticipant(current.profile)]
+            const participants = [...item.participants, currentParticipant(current.profile, matchFee)]
             return { ...item, participants, status: participants.length >= item.maxPlayers ? 'FULL' : 'OPEN' }
           }),
           tickets: [...current.tickets, { code, matchId, status: 'ACTIVE', createdAt: new Date().toISOString(), locker: 'Locker #08', paymentReferenceId, paidAmount: matchFee }],
@@ -677,6 +720,11 @@ export const usePlayerStore = create<PlayerState>()(
         if (!venue || !court || !slot) return { success: false, message: 'Không tìm thấy slot sân.' }
         const slotKey = `${input.date}:${input.venueId}:${input.courtId}:${input.slotNumber}`
         if (state.bookedSlotKeys.includes(slotKey)) return { success: false, message: 'Bạn đã đặt slot này.' }
+        const sharedState = useCrossRoleStore.getState()
+        const occupiedByBooking = sharedState.courtBookings.some((item) => item.status === 'CONFIRMED' && item.venueId === input.venueId && item.date === input.date && item.courtId === input.courtId && item.slotNumber === input.slotNumber)
+        const fmOverride = sharedState.slotOverrides.find((item) => item.venueId === input.venueId && item.date === input.date && item.courtId === input.courtId && item.slotNumber === input.slotNumber)
+        const occupiedBySocial = state.matches.some((item) => item.status !== 'CANCELLED' && item.venueId === input.venueId && item.date === input.date && item.slotNumber === input.slotNumber && item.courtName.startsWith(court.name))
+        if (occupiedByBooking || occupiedBySocial || (fmOverride && fmOverride.status !== 'AVAILABLE')) return { success: false, message: 'Slot vừa được cập nhật hoặc đã có người đặt. Vui lòng chọn slot khác.' }
         if (slot.status !== 'AVAILABLE') return { success: false, message: 'Slot này hiện không nhận đặt mới.' }
         const conflict = state.schedule.find((item) => item.status === 'UPCOMING' && item.date === input.date && item.timeRange === slot.timeRange)
         if (conflict) return { success: false, message: `Bạn đã trùng lịch với “${conflict.title}” trong khung giờ ${slot.timeRange}.` }
@@ -687,6 +735,8 @@ export const usePlayerStore = create<PlayerState>()(
         if (paymentMethod === 'WALLET' && state.profile.walletBalance < amount) return { success: false, message: 'Số dư Ví FITLYO không đủ.' }
 
         const ticketCode = `FTL-C${input.slotNumber}-${String(Date.now()).slice(-5)}`
+        const scheduleId = `schedule-court-${Date.now()}`
+        const bookedAt = new Date().toISOString()
         const paymentReferenceId = `court-${ticketCode}`
         usePaymentStore.getState().createAwaitingPayment({
           referenceId: paymentReferenceId,
@@ -705,7 +755,7 @@ export const usePlayerStore = create<PlayerState>()(
           },
           bookedSlotKeys: [...current.bookedSlotKeys, slotKey],
           schedule: [{
-            id: `schedule-court-${Date.now()}`,
+            id: scheduleId,
             kind: 'COURT',
             title: 'Bao trọn sân 90 phút',
             subtitle: `Đã thanh toán 100% · ${amount.toLocaleString('vi-VN')}đ · Vé QR sẵn sàng`,
@@ -722,13 +772,36 @@ export const usePlayerStore = create<PlayerState>()(
             remainingAmount,
             slotKey,
             bookingCode: ticketCode,
-            bookedAt: new Date().toISOString(),
+            bookedAt,
             venueId: venue.id,
             courtId: court.id,
             slotNumber: slot.slotNumber,
             rescheduleCount: 0,
           }, ...current.schedule],
         }))
+        useCrossRoleStore.getState().upsertCourtBooking({
+          id: scheduleId,
+          bookingCode: ticketCode,
+          playerId: state.profile.id,
+          playerName: state.profile.name,
+          playerPhone: state.profile.phone,
+          venueId: venue.id,
+          venueName: venue.name,
+          venueAddress: venue.address,
+          courtId: court.id,
+          courtName: court.name,
+          courtType: court.type,
+          date: input.date,
+          dateLabel: input.dateLabel,
+          slotNumber: slot.slotNumber,
+          timeRange: slot.timeRange,
+          totalAmount,
+          paidAmount: amount,
+          paymentStatus: 'PAID',
+          status: 'CONFIRMED',
+          bookedAt,
+          rescheduleCount: 0,
+        })
         return { success: true, message: `Đã thanh toán 100% phí đặt sân (${amount.toLocaleString('vi-VN')}đ).`, ticketCode }
       },
 
@@ -758,6 +831,7 @@ export const usePlayerStore = create<PlayerState>()(
             subtitle: outcome.refundAmount > 0 ? `${outcome.label} · ${outcome.refundAmount.toLocaleString('vi-VN')}đ` : outcome.label,
           } : item),
         }))
+        useCrossRoleStore.getState().cancelCourtBooking(scheduleId)
         return { success: true, message: outcome.refundAmount > 0 ? `Đã hủy sân. ${outcome.label}.` : `Đã hủy sân. ${outcome.label}.` }
       },
 
@@ -823,6 +897,18 @@ export const usePlayerStore = create<PlayerState>()(
             subtitle: `Đã đổi lịch 1 lần · Thanh toán 100% · ${slot.price.toLocaleString('vi-VN')}đ`,
           } : item),
         }))
+        useCrossRoleStore.getState().rescheduleCourtBooking(scheduleId, {
+          date: input.date,
+          dateLabel: input.dateLabel,
+          courtId: court.id,
+          courtName: court.name,
+          courtType: court.type,
+          slotNumber: slot.slotNumber,
+          timeRange: slot.timeRange,
+          totalAmount: slot.price,
+          paidAmount: slot.price,
+          rescheduleCount: 1,
+        })
 
         return {
           success: true,
@@ -964,6 +1050,7 @@ export const usePlayerStore = create<PlayerState>()(
 
       resetPlayerDemo: () => {
         usePaymentStore.getState().resetPayments()
+        useCrossRoleStore.getState().resetCrossRoleDemo()
         set({
           profile: initialProfile,
           matches: initialMatches,
@@ -973,13 +1060,20 @@ export const usePlayerStore = create<PlayerState>()(
           reviewedMatchIds: [],
           bookedSlotKeys: [],
         })
+        syncCourtBookingsToShared({ profile: initialProfile, venues: initialVenues, schedule: initialSchedule })
       },
     }),
     {
       name: playerStorageKey,
       storage: createJSONStorage(() => window.localStorage),
-      version: 6,
+      version: 9,
       migrate: migratePlayerImages,
     },
   ),
 )
+
+// Reconcile bookings created by older prototype versions into the shared
+// Player ↔ Field Manager source of truth after persisted state is hydrated.
+if (typeof window !== 'undefined') {
+  window.queueMicrotask(() => syncCourtBookingsToShared(usePlayerStore.getState()))
+}

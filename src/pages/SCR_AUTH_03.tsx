@@ -5,23 +5,23 @@ import {
   ArrowRight,
   ArrowLeft,
   RotateCcw,
-  CheckCircle2,
   Sparkles,
-  PhoneCall,
   Smartphone,
 } from 'lucide-react'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { PublicAuthHeader } from '@/components/auth/PublicAuthHeader'
+import { sessionHome, useAuthStore, type AuthRole } from '@/store/useAuthStore'
 
 export function SCR_AUTH_03() {
   const navigate = useNavigate()
   const location = useLocation()
   const { showToast } = useFitlyoStore()
+  const registerAccount = useAuthStore((state) => state.registerAccount)
 
   // Retrieve phone passed from SCR_AUTH_02 or sessionStorage fallback
   const locationState = location.state as { phone?: string; fullName?: string } | null
   const tempReg = typeof window !== 'undefined' ? sessionStorage.getItem('fitlyo_temp_reg') : null
-  const parsedReg = tempReg ? JSON.parse(tempReg) : null
+  const parsedReg = tempReg ? JSON.parse(tempReg) as { fullName?: string; phone?: string; email?: string; password?: string; role?: Exclude<AuthRole, 'admin'> } : null
 
   const displayPhone = locationState?.phone || parsedReg?.phone || '0987 654 321'
   const formattedPhone = displayPhone.startsWith('+84')
@@ -116,9 +116,24 @@ export function SCR_AUTH_03() {
     setIsLoading(true)
     setTimeout(() => {
       setIsLoading(false)
-      if (showToast) showToast('Xác thực số điện thoại thành công!', 'success')
-      // Navigate to SCR_AUTH_04 (DUPR Initial Skill Survey)
-      navigate('/auth/dupr-survey')
+      if (!parsedReg?.fullName || !parsedReg.email || !parsedReg.password || !parsedReg.role) {
+        setError('Thông tin đăng ký đã hết hạn. Vui lòng đăng ký lại.')
+        return
+      }
+      const result = registerAccount({
+        name: parsedReg.fullName,
+        phone: parsedReg.phone ?? displayPhone,
+        email: parsedReg.email,
+        password: parsedReg.password,
+        role: parsedReg.role,
+      })
+      if (!result.success || !result.session) {
+        setError(result.message)
+        return
+      }
+      sessionStorage.removeItem('fitlyo_temp_reg')
+      if (showToast) showToast('Xác thực số điện thoại và tạo tài khoản thành công!', 'success')
+      navigate(result.session.role === 'player' ? '/auth/dupr-survey' : sessionHome(result.session), { replace: true })
     }, 550)
   }
 

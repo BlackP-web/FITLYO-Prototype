@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { coachMale, communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
 import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 import { usePlayerStore } from '@/store/usePlayerStore'
+import { useAuthStore } from '@/store/useAuthStore'
 import type {
   UserAccount,
   MatchRoom,
@@ -58,6 +59,12 @@ interface FitlyoState {
     courtName: string
     slotNumber: number
     timeRange: string
+    venueId?: string
+    venueName?: string
+    venueAddress?: string
+    date?: string
+    price?: number
+    courtType?: string
   } | null
   isWalkInModalOpen: boolean
   walkInSlotData: FitlyoState['publishingSlotData']
@@ -992,7 +999,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   },
   isFeedLoading: false,
 
-  selectedDate: '13/10/2026',
+  selectedDate: new Date().toLocaleDateString('vi-VN'),
   courtInventory: initialCourts,
   isPublishModalOpen: false,
   publishingSlotData: null,
@@ -1152,10 +1159,11 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       get().showToast('Số lượng Player chỉ được chọn 4, 6, 8, 10 hoặc 12.', 'error')
       return
     }
+    const source = get().publishingSlotData
     const targetSlot = courtInventory
       .find((court) => court.id === data.courtId)
       ?.slots.find((slot) => slot.slotNumber === data.slotNumber)
-    if (!targetSlot || targetSlot.status !== 'AVAILABLE') {
+    if (targetSlot && targetSlot.status !== 'AVAILABLE') {
       get().showToast('Slot không còn trống để công bố kèo Social.', 'error')
       return
     }
@@ -1193,14 +1201,14 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       id: newMatchId,
       title: `⚡ KÈO SOCIAL CÔNG BỐ MỚI (${data.format === 'doubles' ? 'ĐÔI' : 'ĐƠN'})`,
       courtId: data.courtId,
-      courtName: 'Cụm sân D-Sports Pickleball',
+      courtName: source?.venueName ?? 'Cụm sân D-Sports Pickleball',
       courtSubName: targetCourt ? targetCourt.name : 'Sân thi đấu',
-      surfaceType: 'Trong nhà',
-      address: '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
+      surfaceType: source?.courtType === 'Ngoài trời' ? 'Ngoài trời' : source?.courtType === 'Có mái che' ? 'Mái che' : 'Trong nhà',
+      address: source?.venueAddress ?? '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
       distanceKm: 1.2,
       slotNumber: data.slotNumber,
       timeRange: timeRange ?? 'Chưa có dữ liệu',
-      dateStr: 'Hôm nay, 13/10/2026',
+      dateStr: source?.date ? `Ngày ${source.date.split('-').reverse().join('/')}` : `Ngày ${get().selectedDate}`,
       format: data.format,
       targetDuprMin: data.duprMin,
       targetDuprMax: data.duprMax,
@@ -1214,19 +1222,20 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     }
 
     const [day, month, year] = get().selectedDate.split('/')
+    const matchDate = source?.date ?? `${year}-${month?.padStart(2, '0')}-${day?.padStart(2, '0')}`
     usePlayerStore.getState().addFieldManagerMatch({
       id: newMatch.id,
       title: newMatch.title,
       label: 'KÈO DO FIELD MANAGER TẠO',
-      venueId: 'venue-dsports-thu-duc',
+      venueId: source?.venueId ?? 'venue-dsports-thu-duc',
       venueName: newMatch.courtName,
       courtName: newMatch.courtSubName,
       address: newMatch.address,
       area: 'Linh Chiểu',
       distanceKm: newMatch.distanceKm,
       imageUrl: venueIndoor,
-      date: `${year}-${month?.padStart(2, '0')}-${day?.padStart(2, '0')}`,
-      dateLabel: `Ngày ${get().selectedDate}`,
+      date: matchDate,
+      dateLabel: `Ngày ${matchDate.split('-').reverse().join('/')}`,
       slotNumber: newMatch.slotNumber,
       timeRange: newMatch.timeRange,
       format: data.format === 'doubles' ? 'Đôi nam nữ' : 'Giao lưu tự do',
@@ -1984,10 +1993,13 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       : app)
     persistAuditApplications(updated)
     set({ auditApplications: updated })
-    get().showToast(`Đã phê duyệt và xác minh hồ sơ #${id} cho tài khoản hiện tại.`, 'success')
+    const accountId = target.sourceAccountId ?? target.sourcePlayerId
+    if (accountId) useAuthStore.getState().verifyAccount(accountId)
+    get().showToast(`Đã phê duyệt hồ sơ #${id} và mở khóa chính tài khoản đối tác.`, 'success')
   },
 
   rejectAuditApplication: (id, reason) => {
+    const target = get().auditApplications.find((app) => app.id === id)
     const updated = get().auditApplications.map((app) =>
       app.id === id
         ? { ...app, status: 'REJECTED' as const, rejectionReason: reason }
@@ -1995,15 +2007,20 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     )
     persistAuditApplications(updated)
     set({ auditApplications: updated })
+    const accountId = target?.sourceAccountId ?? target?.sourcePlayerId
+    if (accountId) useAuthStore.getState().rejectAccount(accountId, reason)
     get().showToast(`Đã gửi thông báo từ chối hồ sơ #${id} kèm lý do.`, 'error')
   },
 
   requestAuditSupplement: (id, reason) => {
+    const target = get().auditApplications.find((app) => app.id === id)
     const updated = get().auditApplications.map((app) => app.id === id
       ? { ...app, status: 'NEEDS_SUPPLEMENT' as const, rejectionReason: reason }
       : app)
     persistAuditApplications(updated)
     set({ auditApplications: updated })
+    const accountId = target?.sourceAccountId ?? target?.sourcePlayerId
+    if (accountId) useAuthStore.getState().requestSupplement(accountId, reason)
     get().showToast(`Đã gửi yêu cầu bổ sung cho hồ sơ #${id}.`, 'info')
   },
 
@@ -2018,7 +2035,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       return { success: false, message: 'Hồ sơ cùng loại đang chờ Admin thẩm định.', application: existing }
     }
     if (existing?.status === 'APPROVED') {
-      return { success: false, message: 'Hồ sơ đã được duyệt và tài khoản đối tác đã được tạo.', application: existing }
+      return { success: false, message: 'Hồ sơ đã được duyệt và tài khoản đã được mở khóa.', application: existing }
     }
 
     const submitted = existing
@@ -2030,6 +2047,8 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
 
     persistAuditApplications(updated)
     set({ auditApplications: updated, selectedAuditId: submitted.id })
+    const accountId = submitted.sourceAccountId ?? submitted.sourcePlayerId
+    if (accountId) useAuthStore.getState().updateKycStatus(accountId, 'PENDING')
     get().showToast(`Đã gửi hồ sơ #${submitted.id} đến Ban quản trị.`, 'success')
     return { success: true, message: 'Hồ sơ đã được gửi thành công.', application: submitted }
   },

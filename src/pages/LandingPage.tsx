@@ -35,7 +35,7 @@ import {
   matchWeekend,
   venueIndoor,
 } from '@/assets/pickleball'
-import { roleHome, useAuthStore } from '@/store/useAuthStore'
+import { sessionHome, useAuthStore } from '@/store/useAuthStore'
 
 type VenueFilter = 'all' | 'indoor' | 'outdoor' | 'price' | 'rating'
 
@@ -363,7 +363,7 @@ export function LandingPage() {
             <ThemeToggle />
             {session ? (
               <>
-                <Button onClick={() => navigate(roleHome[session.role])} className="hidden rounded-xl sm:inline-flex">
+                <Button onClick={() => navigate(sessionHome(session))} className="hidden rounded-xl sm:inline-flex">
                   Vào portal <ArrowRight />
                 </Button>
                 <Button

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { demoAccounts, roleHome, useAuthStore, type DemoAccount } from '@/store/useAuthStore'
+import { demoAccounts, sessionHome, useAuthStore, type DemoAccount } from '@/store/useAuthStore'
 
 const roleMeta: Record<DemoAccount['role'], { label: string; short: string; tone: string }> = {
   player: { label: 'Người chơi', short: 'Player', tone: 'bg-blue-500/10 text-blue-700 dark:text-blue-300' },
@@ -26,7 +26,7 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [selectedAccountId, setSelectedAccountId] = useState('admin_super')
 
-  if (session) return <Navigate to={roleHome[session.role]} replace />
+  if (session) return <Navigate to={sessionHome(session)} replace />
 
   const chooseAccount = (account: DemoAccount) => {
     setEmail(account.email)
@@ -44,7 +44,7 @@ export function LoginPage() {
       return
     }
     const from = (location.state as { from?: string } | null)?.from
-    navigate(from ?? roleHome[result.session.role], { replace: true })
+    navigate(from ?? sessionHome(result.session), { replace: true })
   }
 
   return (

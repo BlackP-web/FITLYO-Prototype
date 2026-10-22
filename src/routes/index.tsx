@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
-import { RoleGuard, RootRedirect } from "@/components/auth/RoleGuard"
+import { PartnerIndexRedirect, RoleGuard, RootRedirect } from "@/components/auth/RoleGuard"
 import { AppLayout } from "@/components/layout/AppLayout"
 import FieldManagerLayout from "@/components/layout/FieldManagerLayout"
 import CoachLayout from "@/components/layout/CoachLayout"
@@ -105,16 +105,21 @@ export const router = createBrowserRouter([
         path: "/coach",
         element: <CoachLayout />,
         children: [
-          { index: true, element: <Navigate to="schedule" replace /> },
-          { path: "dashboard", element: <Navigate to="/coach/schedule" replace /> },
-          { path: "schedule", element: <CoachDashboardPage /> },
-          { path: "courses", element: <CoachCoursesPage /> },
-          { path: "attendance", element: <CoachAttendancePage /> },
-          { path: "venues", element: <CoachVenuesPage /> },
+          { index: true, element: <PartnerIndexRedirect /> },
           { path: "profile", element: <CoachProfilePage /> },
-          { path: "wallet", element: <CoachWalletPage /> },
-          { path: "bookings", element: <CoachBookingsPage /> },
           { path: "verification", element: <SCR_AUTH_05 /> },
+          {
+            element: <RoleGuard allow={["coach"]} requireVerified />,
+            children: [
+              { path: "dashboard", element: <Navigate to="/coach/schedule" replace /> },
+              { path: "schedule", element: <CoachDashboardPage /> },
+              { path: "courses", element: <CoachCoursesPage /> },
+              { path: "attendance", element: <CoachAttendancePage /> },
+              { path: "venues", element: <CoachVenuesPage /> },
+              { path: "wallet", element: <CoachWalletPage /> },
+              { path: "bookings", element: <CoachBookingsPage /> },
+            ],
+          },
         ],
       },
     ],
@@ -126,14 +131,19 @@ export const router = createBrowserRouter([
         path: "/fm",
         element: <FieldManagerLayout />,
         children: [
-          { index: true, element: <Navigate to="calendar" replace /> },
-          { path: "calendar", element: <CourtCalendarPage /> },
-          { path: "courts", element: <OwnerCourtsPage /> },
+          { index: true, element: <PartnerIndexRedirect /> },
           { path: "settings", element: <OwnerSettingsPage /> },
-          { path: "coaches", element: <OwnerCoachesPage /> },
-          { path: "reports", element: <OwnerReportsPage /> },
-          { path: "checkin", element: <CheckInKioskPage /> },
           { path: "verification", element: <SCR_AUTH_06 /> },
+          {
+            element: <RoleGuard allow={["fm"]} requireVerified />,
+            children: [
+              { path: "calendar", element: <CourtCalendarPage /> },
+              { path: "courts", element: <OwnerCourtsPage /> },
+              { path: "coaches", element: <OwnerCoachesPage /> },
+              { path: "reports", element: <OwnerReportsPage /> },
+              { path: "checkin", element: <CheckInKioskPage /> },
+            ],
+          },
         ],
       },
     ],

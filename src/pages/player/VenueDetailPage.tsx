@@ -10,6 +10,7 @@ import { COURT_SLOT_NUMBERS } from '@/lib/courtSchedule'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
+import { useCrossRoleStore } from '@/store/useCrossRoleStore'
 import type { VenueCourt, VenueSlot } from '@/types/player'
 
 const statusStyle: Record<VenueSlot['status'], string> = {
@@ -39,6 +40,9 @@ export function VenueDetailPage() {
   const profile = usePlayerStore((state) => state.profile)
   const bookedSlotKeys = usePlayerStore((state) => state.bookedSlotKeys)
   const bookCourt = usePlayerStore((state) => state.bookCourt)
+  const playerMatches = usePlayerStore((state) => state.matches)
+  const courtBookings = useCrossRoleStore((state) => state.courtBookings)
+  const slotOverrides = useCrossRoleStore((state) => state.slotOverrides)
   const showToast = useFitlyoStore((state) => state.showToast)
   const [imageIndex, setImageIndex] = useState(0)
   const [date, setDate] = useState(dates[0])
@@ -52,6 +56,15 @@ export function VenueDetailPage() {
   }
 
   const isBooked = (court: VenueCourt, slot: VenueSlot) => bookedSlotKeys.includes(`${date.value}:${venue.id}:${court.id}:${slot.slotNumber}`)
+  const effectiveSlot = (court: VenueCourt, slot: VenueSlot): VenueSlot => {
+    const sharedBooking = courtBookings.find((item) => item.status === 'CONFIRMED' && item.venueId === venue.id && item.date === date.value && item.courtId === court.id && item.slotNumber === slot.slotNumber)
+    const match = playerMatches.find((item) => item.status !== 'CANCELLED' && item.venueId === venue.id && item.date === date.value && item.slotNumber === slot.slotNumber && item.courtName.startsWith(court.name))
+    const override = slotOverrides.find((item) => item.venueId === venue.id && item.date === date.value && item.courtId === court.id && item.slotNumber === slot.slotNumber)
+    if (sharedBooking) return { ...slot, status: 'PRIVATE', label: 'Đã có Player đặt', price: sharedBooking.totalAmount }
+    if (match) return { ...slot, status: 'SOCIAL', label: 'Kèo Social', duprRange: `${match.duprMin.toFixed(1)}–${match.duprMax.toFixed(1)}`, players: `${match.participants.length}/${match.maxPlayers}` }
+    if (override) return { ...slot, status: override.status === 'AVAILABLE' ? 'AVAILABLE' : override.status === 'MAINTENANCE' ? 'MAINTENANCE' : 'PRIVATE', label: override.status === 'MAINTENANCE' ? 'Bảo trì' : override.status === 'PRIVATE_BOOKED' ? 'Khách vãng lai' : undefined, price: override.price }
+    return slot
+  }
 
   const handleBooking = () => {
     if (!selection || !accepted) return
@@ -121,7 +134,8 @@ export function VenueDetailPage() {
             return [
               <div key={`time-${slotNumber}`} className={cn('flex flex-col justify-center rounded-xl border p-3', slotNumber >= 9 ? 'border-amber-500/30 bg-amber-500/10' : 'border-border/60 bg-background')}><b className="text-xs">Slot {slotNumber}</b><span className="mt-1 text-[10px] text-muted-foreground">{firstSlot.timeRange}</span>{slotNumber >= 9 && <Badge className="mt-2 w-fit border-0 bg-amber-400 text-[8px] text-amber-950">GIỜ VÀNG</Badge>}</div>,
               ...venue.courts.map((court) => {
-                const slot = court.slots.find((item) => item.slotNumber === slotNumber)!
+                const sourceSlot = court.slots.find((item) => item.slotNumber === slotNumber)!
+                const slot = effectiveSlot(court, sourceSlot)
                 const booked = isBooked(court, slot)
                 const available = slot.status === 'AVAILABLE' && !booked
                 return <button key={`${court.id}-${slotNumber}`} type="button" disabled={!available} onClick={() => selectSlot(court, slot)} className={cn('min-h-24 rounded-xl border p-3 text-left transition', booked ? statusStyle.PRIVATE : statusStyle[slot.status], available && 'hover:-translate-y-0.5 hover:shadow-md')}><div className="flex items-start justify-between gap-2"><b className="text-xs">{booked ? 'ĐÃ ĐẶT BỞI BẠN' : slot.status === 'AVAILABLE' ? 'TRỐNG · ĐẶT NGAY' : slot.label ?? slot.status}</b>{slot.isPeak && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}</div><p className="mt-2 text-base font-black">{slot.price ? `${slot.price.toLocaleString('vi-VN')}đ` : 'Tạm khóa'}</p>{slot.duprRange && <p className="mt-1 text-[10px]">DUPR {slot.duprRange} · {slot.players}</p>}</button>

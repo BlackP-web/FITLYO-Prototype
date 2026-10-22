@@ -4,7 +4,9 @@ import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { DemoDataResetButton } from '@/components/layout/DemoDataResetButton'
 import { useAuthStore } from '@/store/useAuthStore'
+import { SupportChatWidget } from '@/components/support/SupportChatWidget'
 
 const ownerNavigation = [
   {
@@ -62,6 +64,7 @@ export default function FieldManagerLayout() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <DemoDataResetButton />
           <button
             type="button"
             onClick={() => navigate('/fm/checkin')}
@@ -148,6 +151,7 @@ export default function FieldManagerLayout() {
           </div>
         </div>
       )}
+      <SupportChatWidget />
     </div>
   )
 }

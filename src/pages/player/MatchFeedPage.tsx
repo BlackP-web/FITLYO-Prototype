@@ -11,27 +11,22 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { PlayerMatchCard } from '@/components/player/PlayerMatchCard'
 import { Button } from '@/components/ui/button'
 import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
+import { formatPlayerMatchFee } from '@/lib/playerMatch'
 import { usePlayerStore } from '@/store/usePlayerStore'
 
 const slots = COURT_SLOT_TIMES.map((slot) => ({ number: slot.slotNumber, time: `${slot.start}–${slot.end}` }))
-
-const dateOptions = [
-  { value: 'ALL', label: 'Tất cả ngày', sub: '14 ngày tới' },
-  { value: '2026-10-15', label: 'Hôm nay', sub: '15/10' },
-  { value: '2026-10-16', label: 'Ngày mai', sub: '16/10' },
-  { value: '2026-10-17', label: 'Thứ Bảy', sub: '17/10' },
-]
 
 export function MatchFeedPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const matches = usePlayerStore((state) => state.matches)
   const profile = usePlayerStore((state) => state.profile)
+  const processTimeBasedPolicies = usePlayerStore((state) => state.processTimeBasedPolicies)
   const [search, setSearch] = useState('')
   const [date, setDate] = useState(searchParams.get('date') || 'ALL')
   const [slot, setSlot] = useState<number | null>(null)
@@ -40,6 +35,20 @@ export function MatchFeedPage() {
   const [duprMin, setDuprMin] = useState(2.75)
   const [duprMax, setDuprMax] = useState(4)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const dateOptions = useMemo(() => [
+    { value: 'ALL', label: 'Tất cả ngày', sub: '14 ngày tới' },
+    ...Array.from(new Map(matches.map((match) => [match.date, {
+      value: match.date,
+      label: match.dateLabel.split(',')[0] ?? match.dateLabel,
+      sub: match.date.split('-').slice(1).reverse().join('/'),
+    }])).values()),
+  ], [matches])
+
+  useEffect(() => {
+    processTimeBasedPolicies()
+    const timer = window.setInterval(processTimeBasedPolicies, 30_000)
+    return () => window.clearInterval(timer)
+  }, [processTimeBasedPolicies])
 
   const filtered = useMemo(() => matches.filter((match) => {
     if (match.status === 'CANCELLED') return false
@@ -117,7 +126,7 @@ export function MatchFeedPage() {
             <h2 className="mt-2 text-xl font-black tracking-tight">{focusMatch.title}</h2>
             <div className="mt-4 space-y-3 text-sm text-muted-foreground"><p className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-primary" />{focusMatch.venueName}</p><p className="flex gap-2"><CalendarDays className="h-4 w-4 shrink-0 text-primary" />{focusMatch.dateLabel}</p><p className="flex gap-2"><Clock3 className="h-4 w-4 shrink-0 text-primary" />{focusMatch.timeRange}</p><p className="flex gap-2"><UsersRound className="h-4 w-4 shrink-0 text-primary" />{focusMatch.participants.length}/{focusMatch.maxPlayers} người · Còn {Math.max(0, focusMatch.maxPlayers - focusMatch.participants.length)} chỗ</p></div>
             <div className="mt-5 rounded-2xl bg-secondary/35 p-4"><p className="text-xs font-bold text-muted-foreground">Phù hợp với lựa chọn</p><p className="mt-2 text-sm font-black">DUPR {focusMatch.duprMin}–{focusMatch.duprMax} · {focusMatch.area}</p></div>
-            <div className="mt-5 flex items-end justify-between"><div><p className="text-[10px] text-muted-foreground">Phí tham gia</p><b className="text-2xl">{focusMatch.deposit.toLocaleString('vi-VN')}đ</b></div></div>
+            <div className="mt-5 flex items-end justify-between"><div><p className="text-[10px] text-muted-foreground">Phí tham gia</p><b className="text-2xl">{formatPlayerMatchFee(focusMatch)}</b></div></div>
             <Button onClick={() => navigate(`/player/matches/${focusMatch.id}`)} className="fitlyo-coral-button mt-4 h-12 w-full gap-2 rounded-xl border-0 font-black">Tham gia <ArrowRight className="h-4 w-4" /></Button>
           </div>
         </aside>}

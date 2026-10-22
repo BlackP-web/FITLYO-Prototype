@@ -262,8 +262,8 @@ const valueCards = [
   {
     icon: WalletCards,
     eyebrow: 'Minh bạch',
-    title: 'Cọc được bảo vệ',
-    description: 'Chi phí, chính sách hoàn cọc và trạng thái thanh toán luôn rõ ràng trước khi xác nhận.',
+    title: 'Thanh toán minh bạch',
+    description: 'Tổng phí, chính sách hoàn tiền và trạng thái thanh toán luôn rõ ràng trước khi xác nhận.',
     tone: 'bg-accent text-accent-foreground',
   },
   {

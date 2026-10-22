@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import {
   ArrowRight,
   CalendarCheck2,
@@ -10,25 +10,33 @@ import {
   MessageCircle,
   Send,
   ShieldCheck,
+  WalletCards,
+  QrCode,
+  XCircle,
 } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { PlayerPageHeader } from '@/components/player/PlayerPageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { HoldCountdown } from '@/components/payment/HoldCountdown'
+import { PaymentStatusBadge } from '@/components/payment/PaymentStatusBadge'
 import { cn } from '@/lib/utils'
 import { useCoachBookingStore } from '@/store/useCoachBookingStore'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
+import { usePaymentStore } from '@/store/usePaymentStore'
 import type { CoachBooking } from '@/types/coachBooking'
 
 const formatMoney = (value: number) => `${value.toLocaleString('vi-VN')}đ`
 
 const statusMeta: Record<CoachBooking['status'], { label: string; tone: string }> = {
   PENDING_COACH: { label: 'Chờ Coach duyệt', tone: 'border-amber-400/35 bg-amber-500/10 text-amber-700 dark:text-amber-300' },
-  AWAITING_DEPOSIT: { label: 'Chờ đặt cọc', tone: 'border-blue-400/35 bg-blue-500/10 text-blue-700 dark:text-blue-300' },
+  AWAITING_PAYMENT: { label: 'Chờ thanh toán', tone: 'border-blue-400/35 bg-blue-500/10 text-blue-700 dark:text-blue-300' },
   CONFIRMED: { label: 'Đã xác nhận', tone: 'border-emerald-400/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
   DECLINED: { label: 'Coach chưa thể nhận', tone: 'border-destructive/30 bg-destructive/10 text-destructive' },
   CANCELLED: { label: 'Đã hủy', tone: 'border-border bg-muted text-muted-foreground' },
+  EXPIRED: { label: 'Hết hạn', tone: 'border-border bg-muted text-muted-foreground' },
+  REFUNDED: { label: 'Đã hoàn tiền', tone: 'border-violet-400/35 bg-violet-500/10 text-violet-700 dark:text-violet-300' },
 }
 
 export function PlayerCoachingPage() {
@@ -39,8 +47,19 @@ export function PlayerCoachingPage() {
   const messages = useCoachBookingStore((state) => state.messages)
   const sendMessage = useCoachBookingStore((state) => state.sendMessage)
   const payApprovedRequest = useCoachBookingStore((state) => state.payApprovedRequest)
+  const refreshExpirations = useCoachBookingStore((state) => state.refreshExpirations)
+  const cancelByPlayer = useCoachBookingStore((state) => state.cancelByPlayer)
+  const requestLateReschedule = useCoachBookingStore((state) => state.requestLateReschedule)
+  const paymentRecords = usePaymentStore((state) => state.records)
   const showToast = useFitlyoStore((state) => state.showToast)
   const [draft, setDraft] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'WALLET' | 'VIETQR'>('VIETQR')
+
+  useEffect(() => {
+    refreshExpirations()
+    const timer = window.setInterval(refreshExpirations, 15_000)
+    return () => window.clearInterval(timer)
+  }, [refreshExpirations])
 
   const ownBookings = bookings.filter((booking) => booking.playerId === profile.id)
   const requestedId = searchParams.get('booking')
@@ -55,9 +74,21 @@ export function PlayerCoachingPage() {
     setDraft('')
   }
 
-  const payDeposit = () => {
+  const payFullAmount = () => {
     if (!selected) return
-    const result = payApprovedRequest(selected.id, 'VIETQR')
+    const result = payApprovedRequest(selected.id, paymentMethod)
+    showToast(result.message, result.success ? 'success' : 'error')
+  }
+
+  const handleCancel = () => {
+    if (!selected) return
+    const result = cancelByPlayer(selected.id)
+    showToast(result.message, result.success ? 'success' : 'error')
+  }
+
+  const handleReschedule = () => {
+    if (!selected) return
+    const result = requestLateReschedule(selected.id)
     showToast(result.message, result.success ? 'success' : 'error')
   }
 
@@ -68,7 +99,7 @@ export function PlayerCoachingPage() {
         <section className="rounded-[2rem] border border-dashed border-primary/25 bg-secondary/15 px-6 py-20 text-center">
           <GraduationCap className="mx-auto h-12 w-12 text-primary" />
           <h2 className="mt-5 text-2xl font-black">Bạn chưa có lịch với Coach</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">Xem lịch rảnh đã công bố, chọn slot phù hợp và đặt cọc 50% để được xác nhận ngay.</p>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">Chọn lịch phù hợp, chờ Coach duyệt tối đa 12 giờ rồi thanh toán 100% học phí trong 15 phút.</p>
           <Button onClick={() => navigate('/player/coaches')} className="mt-6 gap-2 rounded-xl">Tìm Coach phù hợp <ArrowRight className="h-4 w-4" /></Button>
         </section>
       </div>
@@ -77,6 +108,7 @@ export function PlayerCoachingPage() {
 
   if (!selected) return null
   const meta = statusMeta[selected.status]
+  const paymentRecord = paymentRecords.find((record) => record.referenceId === selected.paymentReferenceId)
 
   return (
     <div className="space-y-7 pb-8">
@@ -100,7 +132,7 @@ export function PlayerCoachingPage() {
           <section className="overflow-hidden rounded-[1.8rem] border border-border/70 bg-card shadow-sm">
             <div className="brand-gradient p-5 text-white sm:p-7">
               <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-                <div><div className="flex flex-wrap items-center gap-2"><Badge className="border-white/20 bg-white/15 text-white"><ShieldCheck className="h-3.5 w-3.5" /> FITLYO bảo vệ lịch học</Badge><Badge className={cn('border-white/20 bg-white text-[#143F42]', meta.tone)}>{meta.label}</Badge></div><h2 className="mt-4 text-2xl font-black">{selected.title}</h2><p className="mt-2 text-sm text-white/70">{selected.coachName} · {selected.type === 'COURSE' ? '8 buổi, tối đa 2 buổi/tuần' : 'Buổi PT cá nhân 90 phút'}</p></div>
+                <div><div className="flex flex-wrap items-center gap-2"><Badge className="border-white/20 bg-white/15 text-white"><ShieldCheck className="h-3.5 w-3.5" /> FITLYO bảo vệ lịch học</Badge><Badge className={cn('border-white/20 bg-white text-[#143F42]', meta.tone)}>{meta.label}</Badge>{paymentRecord && <PaymentStatusBadge status={paymentRecord.status} />}</div><h2 className="mt-4 text-2xl font-black">{selected.title}</h2><p className="mt-2 text-sm text-white/70">{selected.coachName} · {selected.type === 'COURSE' ? '8 buổi, tối đa 2 buổi/tuần' : 'Buổi PT cá nhân 90 phút'}</p></div>
                 <Button onClick={() => navigate(`/player/coaches/${selected.coachId}`)} className="bg-white text-primary hover:bg-white/90">Xem hồ sơ Coach</Button>
               </div>
             </div>
@@ -108,11 +140,14 @@ export function PlayerCoachingPage() {
             <div className="grid gap-4 p-5 sm:grid-cols-3 sm:p-6">
               <div className="rounded-2xl bg-muted/60 p-4"><MapPin className="h-5 w-5 text-primary" /><p className="mt-3 text-xs font-semibold text-muted-foreground">Địa điểm</p><p className="mt-1 text-sm font-black">{selected.venueName}</p><p className="text-[11px] text-muted-foreground">{selected.courtName}</p></div>
               <div className="rounded-2xl bg-muted/60 p-4"><CalendarCheck2 className="h-5 w-5 text-primary" /><p className="mt-3 text-xs font-semibold text-muted-foreground">Lịch đầu tiên</p><p className="mt-1 text-sm font-black">{selected.sessions[0]?.dateLabel ?? selected.firstDate}</p><p className="text-[11px] text-muted-foreground">{selected.preferredTimeRange}</p></div>
-              <div className="rounded-2xl bg-muted/60 p-4"><CreditCard className="h-5 w-5 text-primary" /><p className="mt-3 text-xs font-semibold text-muted-foreground">Cọc 50%</p><p className="mt-1 text-sm font-black">{formatMoney(selected.depositAmount)}</p><p className="text-[11px] text-muted-foreground">Tổng học phí {formatMoney(selected.totalAmount)}</p></div>
+              <div className="rounded-2xl bg-muted/60 p-4"><CreditCard className="h-5 w-5 text-primary" /><p className="mt-3 text-xs font-semibold text-muted-foreground">Học phí · 100%</p><p className="mt-1 text-sm font-black">{formatMoney(selected.paymentAmount)}</p><p className="text-[11px] text-muted-foreground">Thanh toán một lần sau khi Coach duyệt</p></div>
             </div>
 
-            {selected.status === 'PENDING_COACH' && <div className="mx-5 mb-5 rounded-2xl border border-amber-300/40 bg-amber-500/10 p-4 text-sm"><strong>Đang chờ Coach duyệt giờ đề xuất.</strong><p className="mt-1 text-xs text-muted-foreground">Bạn chưa bị trừ tiền. Có thể trao đổi thêm với Coach trong chat bên dưới.</p></div>}
-            {selected.status === 'AWAITING_DEPOSIT' && <div className="mx-5 mb-5 flex flex-col justify-between gap-4 rounded-2xl border border-blue-300/40 bg-blue-500/10 p-4 sm:flex-row sm:items-center"><div><strong>Coach đã đồng ý khung giờ.</strong><p className="mt-1 text-xs text-muted-foreground">Thanh toán cọc 50% để khóa slot và thêm đủ lịch học.</p></div><Button onClick={payDeposit} className="shrink-0">Thanh toán {formatMoney(selected.depositAmount)}</Button></div>}
+            {selected.status === 'PENDING_COACH' && <div className="mx-5 mb-5 space-y-3 rounded-2xl border border-amber-300/40 bg-amber-500/10 p-4 text-sm"><div><strong>Đang chờ Coach duyệt giờ đề xuất.</strong><p className="mt-1 text-xs text-muted-foreground">Bạn chưa bị trừ tiền. Hết 12 giờ, yêu cầu tự hủy và giải phóng lịch.</p></div><HoldCountdown expiresAt={selected.approvalExpiresAt} label="Thời gian Coach còn lại" /></div>}
+            {selected.status === 'AWAITING_PAYMENT' && selected.paymentExpiresAt && <div className="mx-5 mb-5 space-y-4 rounded-2xl border border-blue-300/40 bg-blue-500/10 p-4"><div><strong>Coach đã đồng ý khung giờ.</strong><p className="mt-1 text-xs text-muted-foreground">Bạn có 15 phút để chọn phương thức và thanh toán 100% học phí.</p></div><HoldCountdown expiresAt={selected.paymentExpiresAt} onExpire={refreshExpirations} /><div className="grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => setPaymentMethod('WALLET')} className={cn('flex items-center gap-2 rounded-xl border p-3 text-left text-xs', paymentMethod === 'WALLET' ? 'border-primary bg-card' : 'border-border/70')}><WalletCards className="h-4 w-4 text-primary" /><span className="flex-1 font-bold">Ví · {formatMoney(profile.walletBalance)}</span></button><button type="button" onClick={() => setPaymentMethod('VIETQR')} className={cn('flex items-center gap-2 rounded-xl border p-3 text-left text-xs', paymentMethod === 'VIETQR' ? 'border-primary bg-card' : 'border-border/70')}><QrCode className="h-4 w-4 text-primary" /><span className="flex-1 font-bold">VietQR mô phỏng</span></button></div><Button onClick={payFullAmount} className="w-full">Thanh toán 100% · {formatMoney(selected.paymentAmount)}</Button></div>}
+            {selected.status === 'CONFIRMED' && <div className="mx-5 mb-5 flex flex-col gap-3 rounded-2xl border border-emerald-300/40 bg-emerald-500/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"><div><strong>Đã thanh toán 100% · Lịch đã xác nhận.</strong><p className="mt-1 text-xs text-muted-foreground">Hủy trước ít nhất 24 giờ hoàn 100%. Hủy dưới 24 giờ được đổi lịch một lần; lần hủy tiếp theo không hoàn học phí.</p>{selected.rescheduleUsed && <p className="mt-1 text-xs font-bold text-amber-700 dark:text-amber-300">Bạn đã sử dụng quyền đổi lịch một lần.</p>}</div><div className="flex shrink-0 gap-2">{!selected.rescheduleUsed && <Button variant="outline" onClick={handleReschedule}>Đổi lịch 1 lần</Button>}<Button variant="outline" onClick={handleCancel} className="text-destructive"><XCircle className="h-4 w-4" /> Hủy lịch</Button></div></div>}
+            {selected.status === 'EXPIRED' && <div className="mx-5 mb-5 rounded-2xl border border-border bg-muted p-4 text-sm"><strong>Yêu cầu đã hết hạn.</strong><p className="mt-1 text-xs text-muted-foreground">Không phát sinh khoản thu và slot đã được mở lại.</p></div>}
+            {selected.status === 'REFUNDED' && <div className="mx-5 mb-5 rounded-2xl border border-violet-300/40 bg-violet-500/10 p-4 text-sm"><strong>Booking đã hủy và hoàn tiền.</strong><p className="mt-1 text-xs text-muted-foreground">Khoản hoàn được cộng vào Ví FITLYO; voucher bồi thường hiển thị trong số dư ưu đãi.</p></div>}
           </section>
 
           {selected.sessions.length > 0 && (

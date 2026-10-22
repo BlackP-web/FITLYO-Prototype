@@ -2,6 +2,8 @@ import React from "react"
 import { Outlet } from "react-router-dom"
 import { Header } from "./Header"
 import { BottomBar } from "./BottomBar"
+import { SupportChatWidget } from "@/components/support/SupportChatWidget"
+import { WalletTopUpDialog } from "@/components/payment/WalletTopUpDialog"
 
 export function AppLayout() {
   return (
@@ -11,6 +13,8 @@ export function AppLayout() {
         <Outlet />
       </main>
       <BottomBar />
+      <SupportChatWidget />
+      <WalletTopUpDialog />
     </div>
   )
 }

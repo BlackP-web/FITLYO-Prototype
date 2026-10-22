@@ -20,11 +20,17 @@ const statusStyle: Record<VenueSlot['status'], string> = {
   MAINTENANCE: 'border-slate-400/30 bg-slate-500/10 text-muted-foreground',
 }
 
-const dates = [
-  { value: '2026-10-15', label: 'Hôm nay, 15/10/2026', short: 'Hôm nay' },
-  { value: '2026-10-16', label: 'Ngày mai, 16/10/2026', short: 'Ngày mai' },
-  { value: '2026-10-17', label: 'Thứ Bảy, 17/10/2026', short: 'Thứ Bảy' },
-]
+const dateKey = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
+const futureDate = (offset: number, short: string) => {
+  const value = new Date()
+  value.setDate(value.getDate() + offset)
+  return {
+    value: dateKey(value),
+    label: new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).format(value),
+    short,
+  }
+}
+const dates = [futureDate(1, 'Ngày mai'), futureDate(2, 'Ngày kia'), futureDate(3, 'Sau 3 ngày')]
 
 export function VenueDetailPage() {
   const { venueId } = useParams()
@@ -64,6 +70,12 @@ export function VenueDetailPage() {
     }
   }
 
+  const selectSlot = (court: VenueCourt, slot: VenueSlot) => {
+    setSelection({ court, slot })
+    setPayment('WALLET')
+    setAccepted(false)
+  }
+
   return (
     <div className="space-y-6 pb-10">
       <div className="flex items-center justify-between">
@@ -98,7 +110,7 @@ export function VenueDetailPage() {
       <section className="rounded-[2rem] border border-border/70 bg-card p-4 shadow-sm sm:p-7">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">SCR_VENUE_02 · 10-Slot Matrix</p><h2 className="mt-1 text-2xl font-black">Lịch sân 90 phút</h2><p className="mt-1 text-sm text-muted-foreground">10 slot liên tục từ 06:00–21:00. Player chỉ có thể bao sân; kèo Social do Field Manager tạo.</p></div>
-          <div className="flex gap-2 overflow-x-auto">{dates.map((item) => <button key={item.value} type="button" onClick={() => setDate(item)} className={cn('min-w-24 rounded-xl border px-3 py-2 text-xs font-bold', date.value === item.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border')}>{item.short}</button>)}</div>
+          <div className="flex gap-2 overflow-x-auto">{dates.map((item) => <button key={item.value} type="button" onClick={() => { setDate(item); setSelection(null) }} className={cn('min-w-24 rounded-xl border px-3 py-2 text-xs font-bold', date.value === item.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border')}>{item.short}</button>)}</div>
         </div>
 
         <div className="mt-6 overflow-x-auto"><div className="min-w-[860px]"><div className="grid gap-2" style={{ gridTemplateColumns: `150px repeat(${venue.courts.length}, minmax(280px, 1fr))` }}>
@@ -112,7 +124,7 @@ export function VenueDetailPage() {
                 const slot = court.slots.find((item) => item.slotNumber === slotNumber)!
                 const booked = isBooked(court, slot)
                 const available = slot.status === 'AVAILABLE' && !booked
-                return <button key={`${court.id}-${slotNumber}`} type="button" disabled={!available} onClick={() => { setSelection({ court, slot }); setPayment('WALLET'); setAccepted(false) }} className={cn('min-h-24 rounded-xl border p-3 text-left transition', booked ? statusStyle.PRIVATE : statusStyle[slot.status], available && 'hover:-translate-y-0.5 hover:shadow-md')}><div className="flex items-start justify-between gap-2"><b className="text-xs">{booked ? 'ĐÃ ĐẶT BỞI BẠN' : slot.status === 'AVAILABLE' ? 'TRỐNG · ĐẶT NGAY' : slot.label ?? slot.status}</b>{slot.isPeak && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}</div><p className="mt-2 text-base font-black">{slot.price ? `${slot.price.toLocaleString('vi-VN')}đ` : 'Tạm khóa'}</p>{slot.duprRange && <p className="mt-1 text-[10px]">DUPR {slot.duprRange} · {slot.players}</p>}</button>
+                return <button key={`${court.id}-${slotNumber}`} type="button" disabled={!available} onClick={() => selectSlot(court, slot)} className={cn('min-h-24 rounded-xl border p-3 text-left transition', booked ? statusStyle.PRIVATE : statusStyle[slot.status], available && 'hover:-translate-y-0.5 hover:shadow-md')}><div className="flex items-start justify-between gap-2"><b className="text-xs">{booked ? 'ĐÃ ĐẶT BỞI BẠN' : slot.status === 'AVAILABLE' ? 'TRỐNG · ĐẶT NGAY' : slot.label ?? slot.status}</b>{slot.isPeak && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}</div><p className="mt-2 text-base font-black">{slot.price ? `${slot.price.toLocaleString('vi-VN')}đ` : 'Tạm khóa'}</p>{slot.duprRange && <p className="mt-1 text-[10px]">DUPR {slot.duprRange} · {slot.players}</p>}</button>
               }),
             ]
           })}
@@ -126,9 +138,10 @@ export function VenueDetailPage() {
           <div className="mt-6 rounded-2xl border border-primary bg-secondary/30 p-4 ring-1 ring-primary/20"><ShieldCheck className="h-5 w-5 text-primary" /><b className="mt-3 block">Bao trọn sân</b><p className="mt-1 text-xs text-muted-foreground">Không gian riêng cho nhóm trong 90 phút. Player không có quyền tạo kèo Social.</p><strong className="mt-3 block text-lg">{selection.slot.price.toLocaleString('vi-VN')}đ</strong></div>
           <div className="mt-5 space-y-2"><p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Thanh toán mô phỏng</p><button type="button" onClick={() => setPayment('WALLET')} className={cn('flex w-full items-center gap-3 rounded-xl border p-3 text-left', payment === 'WALLET' && 'border-primary bg-primary/5')}><WalletCards className="h-4 w-4 text-primary" /><span className="flex-1 text-sm font-bold">Ví FITLYO · {profile.walletBalance.toLocaleString('vi-VN')}đ</span>{payment === 'WALLET' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button><button type="button" onClick={() => setPayment('VIETQR')} className={cn('flex w-full items-center gap-3 rounded-xl border p-3 text-left', payment === 'VIETQR' && 'border-primary bg-primary/5')}><QrCode className="h-4 w-4 text-primary" /><span className="flex-1 text-sm font-bold">VietQR · Không thu tiền thật</span>{payment === 'VIETQR' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button></div>
           {payment === 'VIETQR' && <div className="mt-4 rounded-2xl border border-dashed border-primary/25 bg-white p-4 text-center text-[#143F42]"><QrCode className="mx-auto h-16 w-16" /><p className="mt-2 font-mono text-xs font-black">FITLYO-{venue.id.toUpperCase()}-S{selection.slot.slotNumber}</p></div>}
-          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-0.5 accent-[#143F42]" /><span>Tôi đồng ý với chính sách đặt sân, hoàn cọc và quy định sử dụng cụm sân.</span></label>
-          <div className="mt-5 rounded-2xl bg-muted/45 p-4"><div className="flex items-center justify-between text-sm"><span>Tổng thanh toán</span><b className="text-xl">{selection.slot.price.toLocaleString('vi-VN')}đ</b></div></div>
-          <Button disabled={!accepted} onClick={handleBooking} className="mt-5 h-12 w-full gap-2 rounded-xl bg-accent font-black text-accent-foreground hover:bg-accent/90"><Sparkles className="h-4 w-4" />Xác nhận bao sân</Button>
+          <div className="mt-5 rounded-2xl border border-border/70 p-4 text-xs leading-5 text-muted-foreground"><b className="text-foreground">Chính sách hủy:</b> trước 12 giờ hoàn 100% phí; từ 6–12 giờ hoàn 50% số tiền đã thanh toán; dưới 6 giờ không hoàn. Mọi khoản hoàn trả về Ví FITLYO.</div>
+          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-0.5 accent-[#143F42]" /><span>Tôi đồng ý với chính sách đặt sân, hoàn tiền và quy định sử dụng cụm sân.</span></label>
+          <div className="mt-5 space-y-3 rounded-2xl bg-muted/45 p-4"><div className="flex items-center justify-between text-sm"><span>Tổng giá trị booking</span><b>{selection.slot.price.toLocaleString('vi-VN')}đ</b></div><div className="flex items-center justify-between border-t border-border/60 pt-3 text-sm"><span>Thanh toán ngay · 100%</span><b className="text-xl text-primary">{selection.slot.price.toLocaleString('vi-VN')}đ</b></div><div className="flex items-center justify-between text-sm"><span>Còn lại tại quầy</span><b className="text-emerald-600">0đ</b></div></div>
+          <Button disabled={!accepted} onClick={handleBooking} className="mt-5 h-12 w-full gap-2 rounded-xl bg-accent font-black text-accent-foreground hover:bg-accent/90"><Sparkles className="h-4 w-4" />Thanh toán 100% · {selection.slot.price.toLocaleString('vi-VN')}đ</Button>
         </div>
       </div>}
     </div>

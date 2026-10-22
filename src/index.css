@@ -196,6 +196,38 @@ body {
   min-height: 100vh;
 }
 
+/* Chế độ hỗ trợ người lớn tuổi: tăng cỡ chữ, khoảng cách dòng và vùng bấm. */
+.fitlyo-large-text {
+  font-size: 18px;
+}
+
+.fitlyo-large-text body {
+  line-height: 1.65;
+}
+
+.fitlyo-large-text :where(.text-xs, [class*="text-[10px]"], [class*="text-[11px]"], [class*="text-[12px]"]) {
+  font-size: 1rem !important;
+  line-height: 1.5rem !important;
+}
+
+.fitlyo-large-text :where(.text-sm, [class*="text-[13px]"], [class*="text-[14px]"]) {
+  font-size: 1.0625rem !important;
+  line-height: 1.625rem !important;
+}
+
+.fitlyo-large-text :where(button, input, select, textarea, [role="button"], [role="menuitem"]) {
+  min-height: 48px;
+}
+
+.fitlyo-large-text :where(input, select, textarea) {
+  font-size: 1rem !important;
+}
+
+.fitlyo-large-text :where(button, a, input, select, textarea, [role="button"], [role="menuitem"]):focus-visible {
+  outline-width: 3px;
+  outline-offset: 3px;
+}
+
 .fitlyo-shell {
   width: 100%;
   max-width: var(--fitlyo-rong-toi-da);

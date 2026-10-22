@@ -17,7 +17,6 @@ export function OwnerSettingsPage() {
     openTime: COURT_OPEN_TIME,
     closeTime: COURT_CLOSE_TIME,
     cancellationHours: '12',
-    depositPercent: '30',
   })
   const [amenities, setAmenities] = useState<string[]>(venue.amenities)
 
@@ -49,7 +48,7 @@ export function OwnerSettingsPage() {
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <label className="text-sm font-semibold">Mở cửa<input type="time" value={form.openTime} readOnly className="mt-1.5 w-full rounded-lg border bg-muted px-3 py-2 font-normal" /><span className="mt-1 block text-xs font-normal text-muted-foreground">Khung giờ chuẩn toàn hệ thống</span></label>
               <label className="text-sm font-semibold">Đóng cửa<input type="time" value={form.closeTime} readOnly className="mt-1.5 w-full rounded-lg border bg-muted px-3 py-2 font-normal" /><span className="mt-1 block text-xs font-normal text-muted-foreground">10 slot liên tục, không nghỉ giữa ca</span></label>
-              <label className="text-sm font-semibold">Cọc mặc định<input type="number" min="0" max="100" value={form.depositPercent} onChange={(event) => updateField('depositPercent', event.target.value)} className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2 font-normal outline-none focus:border-primary" /><span className="mt-1 block text-xs font-normal text-muted-foreground">Phần trăm giá trị đơn</span></label>
+              <div className="text-sm font-semibold">Chính sách thanh toán<div className="mt-1.5 rounded-lg border bg-muted px-3 py-2 font-black text-primary">Thanh toán trước 100%</div><span className="mt-1 block text-xs font-normal text-muted-foreground">Áp dụng thống nhất toàn hệ thống</span></div>
             </div>
           </section>
 

@@ -308,13 +308,13 @@ export function SCR_AUTH_02() {
             ) : (
               <div className="text-xs text-muted-foreground space-y-3 leading-relaxed">
                 <p>
-                  <strong>1. Cơ chế Bảo Lãnh Cọc 100%:</strong> Khi tham gia ghép kèo, tiền đặt cọc sân của người chơi được bảo quản an toàn trong ví Ký quỹ Escrow và chỉ giải ngân cho chủ sân khi trận đấu hoàn tất.
+                  <strong>1. Cơ chế bảo vệ thanh toán:</strong> Khi tham gia ghép kèo, 100% phí tham gia được ghi nhận trong ví Ký quỹ Escrow và chỉ giải ngân cho chủ sân khi trận đấu hoàn tất.
                 </p>
                 <p>
-                  <strong>2. Chế tài Chống Bùng Kèo:</strong> Người chơi tự ý hủy kèo sát giờ (dưới 4 tiếng) hoặc vắng mặt không lý do chính đáng sẽ bị trừ 100% tiền cọc để bồi hoàn cho các VĐV còn lại trong trận.
+                  <strong>2. Chế tài chống bỏ kèo:</strong> Người chơi hủy dưới 6 giờ hoặc vắng mặt không lý do chính đáng sẽ không được hoàn phí tham gia.
                 </p>
                 <p>
-                  <strong>3. Hoàn Tiền Do Thời Tiết:</strong> Trường hợp thời tiết mưa bão sân ướt không thể thi đấu, hệ thống Escrow tự động hoàn cọc 100% về ví trong vòng 15 phút.
+                  <strong>3. Hoàn tiền do thời tiết:</strong> Trường hợp thời tiết khiến sân không thể vận hành, hệ thống hoàn 100% phí đã thanh toán về Ví FITLYO.
                 </p>
               </div>
             )}

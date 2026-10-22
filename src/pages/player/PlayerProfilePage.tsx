@@ -1,4 +1,4 @@
-import { Award, CalendarDays, Camera, ChevronRight, Crown, Edit3, MapPin, Medal, Share2, ShieldCheck, TrendingUp, Trophy, UserRound, X } from 'lucide-react'
+import { Award, CalendarDays, Camera, ChevronRight, CirclePlus, Crown, Edit3, Gift, MapPin, Medal, Share2, ShieldCheck, TrendingUp, Trophy, UserRound, WalletCards, X } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PlayerPageHeader } from '@/components/player/PlayerPageHeader'
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
+import { useWalletTopUpStore } from '@/store/useWalletTopUpStore'
 
 const skillLabels = [
   ['serve', 'Giao bóng'], ['thirdShot', 'Third-shot drop'], ['dinking', 'Dinking'], ['volley', 'Volley'], ['movement', 'Di chuyển'],
@@ -17,6 +18,7 @@ export function PlayerProfilePage() {
   const updateProfile = usePlayerStore((state) => state.updateProfile)
   const schedule = usePlayerStore((state) => state.schedule)
   const showToast = useFitlyoStore((state) => state.showToast)
+  const openTopUp = useWalletTopUpStore((state) => state.openTopUp)
   const [showEdit, setShowEdit] = useState(false)
   const [showDupr, setShowDupr] = useState(false)
   const [draft, setDraft] = useState({ name: profile.name, username: profile.username, phone: profile.phone, city: profile.city })
@@ -45,6 +47,8 @@ export function PlayerProfilePage() {
           </div>
         </div>
       </section>
+
+      <section className="grid gap-3 sm:grid-cols-2"><div className="flex flex-col gap-4 rounded-[1.4rem] border border-primary/20 bg-card p-4 sm:flex-row sm:items-center"><span className="w-fit rounded-2xl bg-secondary/55 p-3 text-primary"><WalletCards className="h-5 w-5" /></span><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Ví FITLYO</p><p className="mt-1 text-xl font-black">{profile.walletBalance.toLocaleString('vi-VN')}đ</p><p className="text-[10px] text-muted-foreground">Thanh toán booking và nhận mọi khoản hoàn tiền</p></div><Button type="button" onClick={openTopUp} className="h-11 shrink-0 gap-2 rounded-xl"><CirclePlus className="h-4 w-4" />Nạp tiền</Button></div><div className="flex items-center gap-4 rounded-[1.4rem] border border-border/70 bg-card p-4"><span className="rounded-2xl bg-amber-500/10 p-3 text-amber-600"><Gift className="h-5 w-5" /></span><div><p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Voucher bồi thường</p><p className="mt-1 text-xl font-black">{profile.voucherBalance.toLocaleString('vi-VN')}đ</p><p className="text-[10px] text-muted-foreground">Coach/sân hủy · Voucher có hạn 30 ngày</p></div></div></section>
 
       {!profile.isVip && <button type="button" onClick={() => navigate('/player/vip')} className="group flex w-full flex-col gap-4 rounded-[1.7rem] border border-amber-500/25 bg-gradient-to-r from-amber-500/14 via-card to-secondary/35 p-5 text-left transition hover:border-amber-500/50 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div className="flex items-center gap-4"><span className="rounded-2xl bg-amber-400 p-3 text-amber-950 shadow-lg shadow-amber-500/20"><Crown className="h-6 w-6" /></span><div><p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">FITLYO VIP</p><h3 className="mt-1 text-lg font-black">Đặt sân trước 14 ngày · Miễn phí giao dịch</h3><p className="mt-1 text-xs text-muted-foreground">Từ 99.000đ/tháng, mở khóa ưu tiên ghép kèo giờ vàng.</p></div></div><span className="flex items-center gap-1 text-sm font-black text-primary">Xem đặc quyền <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" /></span></button>}
 

@@ -41,6 +41,7 @@ import { VenueDetailPage } from "@/pages/player/VenueDetailPage"
 import { PlayerProfilePage } from "@/pages/player/PlayerProfilePage"
 import { VipMembershipPage } from "@/pages/player/VipMembershipPage"
 import { PlayerSchedulePage } from "@/pages/player/PlayerSchedulePage"
+import { CourtBookingDetailPage } from "@/pages/player/CourtBookingDetailPage"
 import { PlayerCoachDetailPage } from "@/pages/player/PlayerCoachDetailPage"
 import { PlayerCoachingPage } from "@/pages/player/PlayerCoachingPage"
 import { CoachBookingsPage } from "@/pages/CoachBookingsPage"
@@ -92,6 +93,7 @@ export const router = createBrowserRouter([
           { path: "profile", element: <PlayerProfilePage /> },
           { path: "vip", element: <VipMembershipPage /> },
           { path: "schedule", element: <PlayerSchedulePage /> },
+          { path: "court-bookings/:bookingId", element: <CourtBookingDetailPage /> },
         ],
       },
     ],

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { formatPlayerMatchFee } from '@/lib/playerMatch'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
 import type { PlayerMatch } from '@/types/player'
@@ -11,8 +12,6 @@ interface PlayerMatchCardProps {
   match: PlayerMatch
   featured?: boolean
 }
-
-const formatMoney = (value: number) => `${value.toLocaleString('vi-VN')}đ`
 
 export function PlayerMatchCard({ match, featured = false }: PlayerMatchCardProps) {
   const navigate = useNavigate()
@@ -62,7 +61,7 @@ export function PlayerMatchCard({ match, featured = false }: PlayerMatchCardProp
         </div>
 
         <div className="mt-auto flex items-end justify-between gap-4 border-t border-border/60 pt-4">
-          <div><p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Phí tham gia</p><strong className="text-xl text-primary">{formatMoney(match.deposit)} <span className="text-xs font-medium text-muted-foreground">/ người</span></strong></div>
+          <div><p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Phí tham gia</p><strong className="text-xl text-primary">{formatPlayerMatchFee(match)} <span className="text-xs font-medium text-muted-foreground">/ người</span></strong></div>
           <button type="button" onClick={() => navigate(`/player/matches/${match.id}`)} className="flex items-center gap-2 text-sm font-black text-primary transition hover:gap-3">{joined ? 'Mở vé' : 'Xem chi tiết'} <ArrowRight className="h-4 w-4" /></button>
         </div>
       </div>

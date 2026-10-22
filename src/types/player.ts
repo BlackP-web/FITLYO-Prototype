@@ -20,6 +20,7 @@ export interface PlayerProfile {
   wins: number
   losses: number
   walletBalance: number
+  voucherBalance: number
   isVip: boolean
   vipExpiresAt?: string
   skills: {
@@ -59,7 +60,7 @@ export interface PlayerMatch {
   format: 'Đôi nam nữ' | 'Đôi nam' | 'Giao lưu tự do'
   duprMin: number
   duprMax: number
-  deposit: number
+  fee: number
   maxPlayers: number
   status: MatchStatus
   participants: MatchParticipant[]
@@ -76,6 +77,8 @@ export interface PlayerTicket {
   createdAt: string
   checkedInAt?: string
   locker: string
+  paymentReferenceId?: string
+  paidAmount?: number
 }
 
 export interface PlayerScheduleItem {
@@ -96,6 +99,17 @@ export interface PlayerScheduleItem {
   progress?: string
   coachBookingId?: string
   coachSessionId?: string
+  paymentReferenceId?: string
+  totalAmount?: number
+  paidAmount?: number
+  remainingAmount?: number
+  slotKey?: string
+  bookingCode?: string
+  bookedAt?: string
+  venueId?: string
+  courtId?: string
+  slotNumber?: number
+  rescheduleCount?: number
 }
 
 export interface VenueSlot {

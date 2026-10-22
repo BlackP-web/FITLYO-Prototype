@@ -15,7 +15,9 @@ import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { DemoDataResetButton } from '@/components/layout/DemoDataResetButton'
 import { useAuthStore } from '@/store/useAuthStore'
+import { SupportChatWidget } from '@/components/support/SupportChatWidget'
 
 const coachNavigation = [
   { label: 'Tổng quan / Lịch dạy', shortLabel: 'Lịch dạy', to: '/coach/schedule', icon: CalendarDays },
@@ -48,6 +50,7 @@ export default function CoachLayout() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <DemoDataResetButton />
           <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-1.5 shadow-sm">
             <img src={coachAccount.avatarUrl} alt={coachAccount.name} className="h-8 w-8 rounded-lg object-cover" />
             <div className="hidden text-right sm:block">
@@ -144,6 +147,7 @@ export default function CoachLayout() {
           </div>
         </div>
       )}
+      <SupportChatWidget />
     </div>
   )
 }

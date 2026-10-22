@@ -21,6 +21,8 @@ import type {
   WalkInBooking,
   WalkInPaymentMethod,
   WalkInSource,
+  BatchSlotUpdateInput,
+  BatchSlotUpdateResult,
 } from '@/types/pickleball'
 
 export type ColorMode = 'light' | 'dark'
@@ -123,6 +125,8 @@ interface FitlyoState {
   confirmTicketCheckIn: (ticketCode: string) => boolean
   setSlotMaintenance: (courtId: string, slotNumber: number) => void
   releaseSlot: (courtId: string, slotNumber: number) => void
+  batchUpdateSlots: (data: BatchSlotUpdateInput) => BatchSlotUpdateResult
+  restoreCourtInventory: (inventory: CourtInventory[]) => void
   updateStudentAttendance: (
     courseId: string,
     studentId: string,
@@ -380,7 +384,7 @@ const initialCourts: CourtInventory[] = [
     courtType: 'outdoor',
     slots: makeCourtSlots(140000, {
       1: { status: 'MAINTENANCE', price: 0, bookedNote: 'Bảo trì lưới & vệ sinh', maintenanceReason: 'Bảo trì lưới & vệ sinh' },
-      9: { status: 'PRIVATE_BOOKED', bookedNote: 'Khách cọc qua App', bookedByName: 'Chị Lan', bookedPhone: '0933.778.899', bookingStatus: 'Đã xác nhận' },
+      9: { status: 'PRIVATE_BOOKED', bookedNote: 'Khách thanh toán qua App', bookedByName: 'Chị Lan', bookedPhone: '0933.778.899', bookingStatus: 'Đã xác nhận' },
     }),
   },
 ]
@@ -1095,7 +1099,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     get().showToast(
       isFull
         ? 'Phòng đã đủ 4 người! Vé QR Check-in điện tử đã sẵn sàng.'
-        : `Giữ chỗ thành công! Đã cọc ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(target.depositFee)}`,
+        : `Tham gia thành công! Đã thanh toán ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(target.depositFee)}`,
       'success'
     )
     return true
@@ -1123,8 +1127,8 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     set({ matches: updatedMatches })
     get().showToast(
       currentUser.isPremium
-        ? 'Hủy giữ chỗ thành công. Hoàn 100% tiền cọc về ví (Chính sách VIP trước 4h).'
-        : 'Hủy giữ chỗ thành công. Hoàn cọc 100% (Báo trước 12h theo quy định).',
+        ? 'Hủy tham gia thành công. Đã hoàn 100% phí về Ví FITLYO.'
+        : 'Hủy tham gia thành công. Đã hoàn 100% phí theo chính sách.',
       'info'
     )
     return true
@@ -1228,7 +1232,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       format: data.format === 'doubles' ? 'Đôi nam nữ' : 'Giao lưu tự do',
       duprMin: newMatch.targetDuprMin,
       duprMax: newMatch.targetDuprMax,
-      deposit: newMatch.depositFee,
+      fee: newMatch.depositFee,
       maxPlayers: newMatch.maxPlayers,
       status: 'OPEN',
       participants: [],
@@ -1411,7 +1415,17 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   },
 
   releaseSlot: (courtId, slotNumber) => {
-    const updated = get().courtInventory.map((court) => {
+    const current = get().courtInventory
+    const target = current
+      .find((court) => court.id === courtId)
+      ?.slots.find((slot) => slot.slotNumber === slotNumber)
+
+    if (!target || target.status !== 'MAINTENANCE') {
+      get().showToast('Slot đã có booking, lớp Coach hoặc kèo Social phải đi qua luồng hủy và hoàn tiền.', 'error')
+      return
+    }
+
+    const updated = current.map((court) => {
       if (court.id !== courtId) return court
 
       return {
@@ -1442,6 +1456,141 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
 
     set({ courtInventory: updated })
     get().showToast(`Đã mở lại Slot ${slotNumber} thành Trống.`, 'info')
+  },
+
+  batchUpdateSlots: (data) => {
+    const { courtInventory } = get()
+    const uniqueTargets = Array.from(
+      new Map(data.slots.map((slot) => [`${slot.courtId}:${slot.slotNumber}`, slot])).values(),
+    )
+
+    if (uniqueTargets.length === 0) {
+      return { success: false, message: 'Vui lòng chọn ít nhất một slot.' }
+    }
+    if (!Number.isFinite(data.price) || data.price < 10000) {
+      return { success: false, message: 'Giá mới phải từ 10.000đ trở lên.' }
+    }
+
+    const selectedSlots = uniqueTargets.map((target) => ({
+      target,
+      slot: courtInventory
+        .find((court) => court.id === target.courtId)
+        ?.slots.find((slot) => slot.slotNumber === target.slotNumber),
+    }))
+    const invalidSelection = selectedSlots.find(
+      ({ slot }) => !slot || !['AVAILABLE', 'MAINTENANCE'].includes(slot.status),
+    )
+    if (invalidSelection) {
+      return {
+        success: false,
+        message: 'Một hoặc nhiều slot đã phát sinh booking. Vui lòng tải lại và thao tác qua luồng hủy/hoàn tiền.',
+      }
+    }
+
+    const maintenanceReason = data.maintenanceReason?.trim() ?? ''
+    if (data.targetStatus === 'MAINTENANCE' && maintenanceReason.length < 3) {
+      return { success: false, message: 'Vui lòng nhập lý do bảo trì.' }
+    }
+
+    const walkIn = data.walkIn
+    if (data.targetStatus === 'PRIVATE_BOOKED') {
+      if (!walkIn || walkIn.customerName.trim().length < 2) {
+        return { success: false, message: 'Vui lòng nhập họ tên khách vãng lai.' }
+      }
+      if (!/^0\d{9}$/.test(walkIn.phone.replace(/\s/g, ''))) {
+        return { success: false, message: 'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.' }
+      }
+    }
+
+    const previousInventory = courtInventory
+    const bookingTotal = data.price * uniqueTargets.length
+    const createdAt = new Date().toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const normalizedPhone = walkIn?.phone.replace(/\s/g, '') ?? ''
+    const booking: WalkInBooking | undefined = walkIn
+      ? {
+          id: `WALK-${Date.now().toString().slice(-6)}`,
+          customerName: walkIn.customerName.trim(),
+          phone: normalizedPhone,
+          source: 'AT_COUNTER',
+          paymentMethod: walkIn.paymentMethod,
+          courtFee: bookingTotal,
+          extraFee: 0,
+          paidAmount: walkIn.paymentMethod === 'DEBT' ? 0 : bookingTotal,
+          note: `Đặt ${uniqueTargets.length} slot tại quầy`,
+          createdAt,
+        }
+      : undefined
+    const selectedKeys = new Set(uniqueTargets.map((slot) => `${slot.courtId}:${slot.slotNumber}`))
+
+    const updatedInventory = courtInventory.map((court) => ({
+      ...court,
+      slots: court.slots.map((slot) => {
+        if (!selectedKeys.has(`${court.id}:${slot.slotNumber}`)) return slot
+
+        const clearedSlot = {
+          ...slot,
+          price: data.price,
+          matchRoomId: undefined,
+          matchTitle: undefined,
+          duprRange: undefined,
+          playersCount: undefined,
+          bookedNote: undefined,
+          bookedContact: undefined,
+          bookedByName: undefined,
+          bookedPhone: undefined,
+          bookingId: undefined,
+          bookedAt: undefined,
+          bookingStatus: undefined,
+          maintenanceReason: undefined,
+          walkInBooking: undefined,
+        }
+
+        if (data.targetStatus === 'MAINTENANCE') {
+          return {
+            ...clearedSlot,
+            status: 'MAINTENANCE' as const,
+            bookedNote: maintenanceReason,
+            maintenanceReason,
+          }
+        }
+
+        if (data.targetStatus === 'PRIVATE_BOOKED' && booking) {
+          const isPaid = booking.paymentMethod !== 'DEBT'
+          return {
+            ...clearedSlot,
+            status: 'PRIVATE_BOOKED' as const,
+            bookedNote: isPaid ? 'Khách vãng lai · Đã thu đủ' : 'Khách vãng lai · Còn nợ',
+            bookedContact: `${booking.customerName} · ${booking.phone}`,
+            bookedByName: booking.customerName,
+            bookedPhone: booking.phone,
+            bookingId: booking.id,
+            bookedAt: booking.createdAt,
+            bookingStatus: isPaid ? 'Đã thanh toán' : 'Còn công nợ',
+            walkInBooking: booking,
+          }
+        }
+
+        return { ...clearedSlot, status: 'AVAILABLE' as const }
+      }),
+    }))
+
+    set({ courtInventory: updatedInventory })
+    const actionLabel = data.targetStatus === 'AVAILABLE'
+      ? 'còn trống'
+      : data.targetStatus === 'MAINTENANCE'
+        ? 'bảo trì'
+        : 'khách vãng lai'
+    const message = `Đã cập nhật ${uniqueTargets.length} slot thành ${actionLabel} với giá ${data.price.toLocaleString('vi-VN')}đ.`
+    get().showToast(message, 'success')
+    return { success: true, message, previousInventory }
+  },
+
+  restoreCourtInventory: (inventory) => {
+    set({ courtInventory: inventory })
+    get().showToast('Đã hoàn tác cập nhật slot.', 'info')
   },
 
   updateStudentAttendance: (courseId, studentId, status) => {
@@ -1772,7 +1921,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
         recipientId: initiatedBy === 'coach' ? `fm:${target.venueId}` : target.coachId,
         message: initiatedBy === 'coach'
           ? `Coach đã hủy liên kết với ${target.venueName}.`
-          : `${target.venueName} đã ngắt liên kết Coach. Các buổi đã đặt cọc vẫn được giữ nguyên.`,
+          : `${target.venueName} đã ngắt liên kết Coach. Các buổi đã thanh toán vẫn được giữ nguyên.`,
         createdAt,
         tone: 'info' as const,
       },
@@ -1781,7 +1930,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     persistCoachAffiliations(nextAffiliations)
     persistCoachAffiliationNotifications(nextNotifications)
     set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
-    get().showToast('Đã hủy liên kết. Các buổi đã đặt cọc vẫn được giữ nguyên.', 'success')
+    get().showToast('Đã hủy liên kết. Các buổi đã thanh toán vẫn được giữ nguyên.', 'success')
     return true
   },
 

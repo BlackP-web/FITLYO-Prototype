@@ -273,7 +273,7 @@ export function OwnerCoachesPage() {
 
       <div className="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-muted-foreground">
         <Award className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-        Chỉ Coach có trạng thái Đang liên kết mới được chọn cụm sân này khi tạo lớp mới. Hủy liên kết không làm mất các buổi học đã đặt cọc.
+        Chỉ Coach có trạng thái Đang liên kết mới được chọn cụm sân này khi tạo lớp mới. Hủy liên kết không làm mất các buổi học đã thanh toán.
       </div>
 
       <Dialog open={isAddOpen} onOpenChange={(open) => { setIsAddOpen(open); if (!open) resetLookup() }}>
@@ -367,7 +367,7 @@ export function OwnerCoachesPage() {
           </DialogHeader>
           {unlinkTarget && unlinkTarget.activeCourses > 0 && (
             <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200">
-              Coach còn {unlinkTarget.activeCourses} khóa chưa kết thúc tại sân. Các buổi đã được học viên đặt cọc vẫn giữ nguyên để hoàn thành nghĩa vụ.
+              Coach còn {unlinkTarget.activeCourses} khóa chưa kết thúc tại sân. Các buổi đã được học viên thanh toán vẫn giữ nguyên để hoàn thành nghĩa vụ.
             </div>
           )}
           <DialogFooter>

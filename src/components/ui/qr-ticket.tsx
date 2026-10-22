@@ -13,7 +13,7 @@ interface QrTicketProps {
   duprRange: string
   format: string
   playerName: string
-  depositAmount: number
+  paidAmount: number
   onShare?: () => void
 }
 
@@ -27,7 +27,7 @@ export const QrTicket: React.FC<QrTicketProps> = ({
   duprRange,
   format,
   playerName,
-  depositAmount,
+  paidAmount,
   onShare,
 }) => {
   const [copied, setCopied] = useState(false)
@@ -150,9 +150,9 @@ export const QrTicket: React.FC<QrTicketProps> = ({
             <p className="font-semibold text-foreground truncate">{playerName}</p>
           </div>
           <div>
-            <span className="text-muted-foreground">Phí cọc slot:</span>
+            <span className="text-muted-foreground">Phí đã thanh toán:</span>
             <p className="font-semibold text-emerald-600 dark:text-emerald-400">
-              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(depositAmount)}
+              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(paidAmount)}
             </p>
           </div>
           <div>

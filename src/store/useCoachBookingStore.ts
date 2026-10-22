@@ -2,6 +2,16 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { usePlayerStore } from '@/store/usePlayerStore'
 import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
+import {
+  addDaysIso,
+  addHoursIso,
+  addMinutesIso,
+  COACH_PAYMENT_WINDOW_MINUTES,
+  COACH_APPROVAL_HOURS,
+  hoursUntilEvent,
+  partnerCancellationVoucher,
+} from '@/lib/paymentPolicies'
+import { usePaymentStore } from '@/store/usePaymentStore'
 import type { CoachItem } from '@/types/pickleball'
 import type {
   CoachBooking,
@@ -100,6 +110,11 @@ interface CoachBookingState {
   approveRequest: (bookingId: string) => CoachBookingActionResult
   declineRequest: (bookingId: string) => CoachBookingActionResult
   payApprovedRequest: (bookingId: string, paymentMethod: CoachPaymentMethod) => CoachBookingActionResult
+  refreshExpirations: () => void
+  cancelByPlayer: (bookingId: string) => CoachBookingActionResult
+  requestLateReschedule: (bookingId: string) => CoachBookingActionResult
+  cancelByCoach: (bookingId: string) => CoachBookingActionResult
+  cancelCourseSessionByCoach: (bookingId: string, sessionId: string) => CoachBookingActionResult
   sendMessage: (bookingId: string, senderRole: 'PLAYER' | 'COACH', senderName: string, text: string) => boolean
 }
 
@@ -116,12 +131,14 @@ export const useCoachBookingStore = create<CoachBookingState>()(
         return get().bookings.some((booking) => (
           booking.id !== ignoreBookingId
           && booking.coachId === coachId
-          && ['CONFIRMED', 'AWAITING_DEPOSIT'].includes(booking.status)
-          && booking.sessions.some((session) => (
-            session.status === 'SCHEDULED'
-            && session.date === date
-            && session.slotNumber === slotNumber
-          ))
+          && ['PENDING_COACH', 'CONFIRMED', 'AWAITING_PAYMENT'].includes(booking.status)
+          && (booking.status === 'PENDING_COACH'
+            ? booking.firstDate === date && booking.preferredSlotNumber === slotNumber
+            : booking.sessions.some((session) => (
+              session.status === 'SCHEDULED'
+              && session.date === date
+              && session.slotNumber === slotNumber
+            )))
         ))
       }
 
@@ -199,7 +216,8 @@ export const useCoachBookingStore = create<CoachBookingState>()(
           title: booking.title,
           venueName: booking.venueName,
           courtName: booking.courtName,
-          depositAmount: booking.depositAmount,
+          totalAmount: booking.totalAmount,
+          paymentAmount: booking.paymentAmount,
           paymentMethod,
           sessions: booking.sessions,
         })
@@ -241,46 +259,9 @@ export const useCoachBookingStore = create<CoachBookingState>()(
 
         previewBooking,
 
-        createInstantBooking: ({ coach, type, date, slotNumber, paymentMethod }) => {
-          if (!isPublished(coach.id, date, slotNumber)) {
-            return { success: false, message: 'Slot này không nằm trong lịch Coach đã công bố.' }
-          }
-          const preview = previewBooking(coach.id, date, slotNumber, type)
-          if (!preview.success) return { success: false, message: preview.message }
-
-          const pattern = coachPatterns[coach.id]
-          const bookingId = `coach-booking-${Date.now()}`
-          const totalAmount = type === 'SINGLE' ? coach.ratePerSession : coach.ratePerMonthCourse
-          const booking: CoachBooking = {
-            id: bookingId,
-            playerId: usePlayerStore.getState().profile.id,
-            playerName: usePlayerStore.getState().profile.name,
-            playerAvatarUrl: usePlayerStore.getState().profile.avatarUrl,
-            coachId: coach.id,
-            coachName: coach.name,
-            coachAvatarUrl: coach.avatarUrl,
-            type,
-            status: 'CONFIRMED',
-            title: type === 'COURSE' ? (coach.featuredCourse ?? `Khóa học cùng ${coach.name}`) : `PT 1-1 cùng ${coach.name}`,
-            venueName: pattern?.venueName ?? coach.serviceLocations[0],
-            courtName: pattern?.courtName ?? 'Sân Coach',
-            totalAmount,
-            depositAmount: Math.ceil(totalAmount / 2),
-            paymentMethod,
-            createdAt: new Date().toISOString(),
-            confirmedAt: new Date().toISOString(),
-            firstDate: date,
-            preferredSlotNumber: slotNumber,
-            preferredTimeRange: slotTimes[slotNumber],
-            sessions: preview.sessions,
-          }
-
-          const playerResult = recordConfirmedBooking(booking, paymentMethod)
-          if (!playerResult.success) return playerResult
-          set((state) => ({ bookings: [booking, ...state.bookings] }))
-          appendSystemMessage(bookingId, `Lịch đã được xác nhận tức thì. FITLYO đã ghi nhận cọc 50% là ${booking.depositAmount.toLocaleString('vi-VN')}đ.`)
-          return { success: true, message: 'Đặt lịch thành công! Lịch đã được xác nhận ngay.', bookingId }
-        },
+        createInstantBooking: ({ coach, type, date, slotNumber }) => (
+          get().createCustomRequest({ coach, type, date, slotNumber })
+        ),
 
         createCustomRequest: ({ coach, type, date, slotNumber }) => {
           const timeRange = slotTimes[slotNumber]
@@ -310,29 +291,52 @@ export const useCoachBookingStore = create<CoachBookingState>()(
             venueName: pattern?.venueName ?? coach.serviceLocations[0],
             courtName: pattern?.courtName ?? 'Sân Coach',
             totalAmount,
-            depositAmount: Math.ceil(totalAmount / 2),
+            paymentAmount: totalAmount,
             createdAt: new Date().toISOString(),
+            approvalExpiresAt: addHoursIso(COACH_APPROVAL_HOURS),
             firstDate: date,
             preferredSlotNumber: slotNumber,
             preferredTimeRange: timeRange,
             sessions: [],
+            rescheduleUsed: false,
           }
           set((state) => ({ bookings: [booking, ...state.bookings] }))
-          appendSystemMessage(bookingId, `Đã gửi yêu cầu khung giờ ${dateLabel(date)}, ${timeRange}. Coach cần duyệt trước khi bạn thanh toán cọc.`)
-          return { success: true, message: 'Đã gửi yêu cầu giờ khác đến Coach.', bookingId }
+          appendSystemMessage(bookingId, `Đã gửi yêu cầu khung giờ ${dateLabel(date)}, ${timeRange}. Coach có 12 giờ để duyệt; bạn chưa bị trừ tiền.`)
+          return { success: true, message: 'Đã gửi yêu cầu đến Coach. Chưa thu tiền trước khi Coach duyệt.', bookingId }
         },
 
         approveRequest: (bookingId) => {
+          get().refreshExpirations()
           const booking = get().bookings.find((item) => item.id === bookingId)
           if (!booking || booking.status !== 'PENDING_COACH') return { success: false, message: 'Yêu cầu không còn ở trạng thái chờ duyệt.' }
           const preview = previewBooking(booking.coachId, booking.firstDate, booking.preferredSlotNumber, booking.type, booking.id)
           if (!preview.success) return { success: false, message: preview.message }
-          set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? { ...item, status: 'AWAITING_DEPOSIT', sessions: preview.sessions } : item) }))
-          appendSystemMessage(bookingId, 'Coach đã đồng ý khung giờ. Vui lòng thanh toán cọc 50% để xác nhận và khóa lịch.')
-          return { success: true, message: 'Đã duyệt yêu cầu và chờ Player thanh toán cọc.', bookingId }
+          const approvedAt = new Date().toISOString()
+          const paymentExpiresAt = addMinutesIso(COACH_PAYMENT_WINDOW_MINUTES)
+          const paymentReferenceId = `coach-${bookingId}`
+          usePaymentStore.getState().createAwaitingPayment({
+            referenceId: paymentReferenceId,
+            service: 'COACH',
+            title: booking.title,
+            totalAmount: booking.totalAmount,
+            paidAmount: booking.paymentAmount,
+            remainingAmount: 0,
+            paymentExpiresAt,
+          })
+          set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? {
+            ...item,
+            status: 'AWAITING_PAYMENT',
+            sessions: preview.sessions,
+            approvedAt,
+            paymentExpiresAt,
+            paymentReferenceId,
+          } : item) }))
+          appendSystemMessage(bookingId, 'Coach đã đồng ý khung giờ. Player có 15 phút để thanh toán 100% học phí.')
+          return { success: true, message: 'Đã duyệt yêu cầu và chờ Player thanh toán 100% học phí.', bookingId }
         },
 
         declineRequest: (bookingId) => {
+          get().refreshExpirations()
           const booking = get().bookings.find((item) => item.id === bookingId)
           if (!booking || booking.status !== 'PENDING_COACH') return { success: false, message: 'Yêu cầu không còn ở trạng thái chờ duyệt.' }
           set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? { ...item, status: 'DECLINED' } : item) }))
@@ -341,16 +345,157 @@ export const useCoachBookingStore = create<CoachBookingState>()(
         },
 
         payApprovedRequest: (bookingId, paymentMethod) => {
+          get().refreshExpirations()
           const booking = get().bookings.find((item) => item.id === bookingId)
-          if (!booking || booking.status !== 'AWAITING_DEPOSIT') return { success: false, message: 'Lịch này chưa sẵn sàng để thanh toán.' }
+          if (!booking || booking.status !== 'AWAITING_PAYMENT') return { success: false, message: 'Lịch này chưa sẵn sàng để thanh toán.' }
           const preview = previewBooking(booking.coachId, booking.firstDate, booking.preferredSlotNumber, booking.type, booking.id)
           if (!preview.success) return { success: false, message: preview.message }
           const confirmed = { ...booking, sessions: preview.sessions }
+          if (paymentMethod === 'WALLET' && usePlayerStore.getState().profile.walletBalance < booking.paymentAmount) {
+            return { success: false, message: 'Số dư Ví FITLYO không đủ để thanh toán toàn bộ học phí.' }
+          }
+          if (!booking.paymentReferenceId) return { success: false, message: 'Không tìm thấy giao dịch thanh toán của lịch này.' }
+          const paymentResult = usePaymentStore.getState().confirmPayment(booking.paymentReferenceId, paymentMethod)
+          if (!paymentResult.success) return paymentResult
           const playerResult = recordConfirmedBooking(confirmed, paymentMethod)
           if (!playerResult.success) return playerResult
           set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? { ...item, status: 'CONFIRMED', paymentMethod, confirmedAt: new Date().toISOString(), sessions: preview.sessions } : item) }))
-          appendSystemMessage(bookingId, `Thanh toán cọc 50% thành công: ${booking.depositAmount.toLocaleString('vi-VN')}đ. Lịch học đã được xác nhận.`)
-          return { success: true, message: 'Thanh toán cọc thành công. Lịch đã được xác nhận.', bookingId }
+          appendSystemMessage(bookingId, `Thanh toán 100% học phí thành công: ${booking.paymentAmount.toLocaleString('vi-VN')}đ. Lịch học đã được xác nhận.`)
+          return { success: true, message: 'Thanh toán 100% học phí thành công. Lịch đã được xác nhận.', bookingId }
+        },
+
+        refreshExpirations: () => {
+          const now = Date.now()
+          const expiring = get().bookings.filter((booking) => (
+            (booking.status === 'PENDING_COACH' && now >= new Date(booking.approvalExpiresAt).getTime())
+            || (booking.status === 'AWAITING_PAYMENT' && booking.paymentExpiresAt && now >= new Date(booking.paymentExpiresAt).getTime())
+          ))
+          if (!expiring.length) return
+          expiring.forEach((booking) => {
+            if (booking.paymentReferenceId) usePaymentStore.getState().markExpired(booking.paymentReferenceId)
+          })
+          set((state) => ({
+            bookings: state.bookings.map((booking) => expiring.some((item) => item.id === booking.id) ? { ...booking, status: 'EXPIRED' } : booking),
+            messages: [
+              ...state.messages,
+              ...expiring.map((booking) => ({
+                id: `message-expired-${booking.id}-${Date.now()}`,
+                bookingId: booking.id,
+                senderRole: 'SYSTEM' as const,
+                senderName: 'FITLYO',
+                text: booking.status === 'PENDING_COACH'
+                  ? 'Coach không xử lý trong 12 giờ. Yêu cầu đã tự hủy và lịch được giải phóng.'
+                  : 'Player không thanh toán trong 15 phút. Quyền giữ slot đã hết hạn và lịch được mở lại.',
+                sentAt: new Date().toISOString(),
+              })),
+            ],
+          }))
+        },
+
+        cancelByPlayer: (bookingId) => {
+          get().refreshExpirations()
+          const booking = get().bookings.find((item) => item.id === bookingId)
+          if (!booking || ['DECLINED', 'CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)) {
+            return { success: false, message: 'Lịch này không thể hủy ở trạng thái hiện tại.' }
+          }
+          if (booking.status === 'PENDING_COACH' || booking.status === 'AWAITING_PAYMENT') {
+            if (booking.paymentReferenceId) usePaymentStore.getState().markExpired(booking.paymentReferenceId)
+            set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? { ...item, status: 'CANCELLED' } : item) }))
+            appendSystemMessage(bookingId, 'Player đã hủy yêu cầu trước khi thanh toán. Không phát sinh khoản thu.')
+            return { success: true, message: 'Đã hủy yêu cầu. Bạn chưa bị trừ tiền.', bookingId }
+          }
+
+          const hoursBefore = hoursUntilEvent(booking.firstDate, booking.preferredTimeRange)
+          if (hoursBefore < 24 && !booking.rescheduleUsed) {
+            return { success: false, message: 'Lịch còn dưới 24 giờ. Bạn có thể dùng một lần đổi lịch miễn phí thay vì mất toàn bộ học phí.', bookingId }
+          }
+
+          const paymentReferenceId = booking.paymentReferenceId
+          const payment = paymentReferenceId
+            ? usePaymentStore.getState().records.find((item) => item.referenceId === paymentReferenceId)
+            : undefined
+          const refundablePaidAmount = Math.max(0, (payment?.paidAmount ?? booking.paymentAmount) - (payment?.refundAmount ?? 0))
+          if (hoursBefore >= 24) {
+            if (paymentReferenceId) usePaymentStore.getState().refundPayment({ referenceId: paymentReferenceId, amount: refundablePaidAmount, reason: 'Player hủy lịch Coach trước ít nhất 24 giờ.' })
+            usePlayerStore.getState().creditWallet(refundablePaidAmount)
+            usePlayerStore.getState().cancelCoachSchedule(bookingId, `Đã hoàn ${refundablePaidAmount.toLocaleString('vi-VN')}đ về Ví FITLYO`)
+            set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? { ...item, status: 'REFUNDED' } : item) }))
+            appendSystemMessage(bookingId, `Player đã hủy đúng hạn. FITLYO hoàn toàn bộ ${refundablePaidAmount.toLocaleString('vi-VN')}đ đã thanh toán về Ví.`)
+            return { success: true, message: 'Đã hủy lịch và hoàn 100% khoản đã thanh toán về Ví FITLYO.', bookingId }
+          }
+
+          if (paymentReferenceId) usePaymentStore.getState().forfeitPayment(paymentReferenceId, 'Player tiếp tục hủy dưới 24 giờ sau khi đã dùng quyền đổi lịch: không hoàn toàn bộ học phí.')
+          usePlayerStore.getState().cancelCoachSchedule(bookingId, 'Đã hủy muộn · Không hoàn học phí')
+          set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? { ...item, status: 'CANCELLED' } : item) }))
+          appendSystemMessage(bookingId, 'Player đã hủy dưới 24 giờ sau khi dùng quyền đổi lịch. Toàn bộ học phí không được hoàn theo chính sách.')
+          return { success: true, message: 'Đã hủy lịch. Toàn bộ học phí không được hoàn theo chính sách.', bookingId }
+        },
+
+        requestLateReschedule: (bookingId) => {
+          const booking = get().bookings.find((item) => item.id === bookingId)
+          if (!booking || booking.status !== 'CONFIRMED') return { success: false, message: 'Chỉ lịch đã xác nhận mới có thể yêu cầu đổi.' }
+          if (hoursUntilEvent(booking.firstDate, booking.preferredTimeRange) >= 24) return { success: false, message: 'Lịch còn trên 24 giờ; bạn có thể hủy và đặt lại để được hoàn 100%.' }
+          if (booking.rescheduleUsed) return { success: false, message: 'Bạn đã sử dụng quyền đổi lịch một lần cho booking này.' }
+          set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? { ...item, rescheduleUsed: true } : item) }))
+          appendSystemMessage(bookingId, 'Player đã dùng quyền đổi lịch một lần. Hai bên vui lòng thống nhất slot mới trong chat; toàn bộ học phí tiếp tục được bảo lưu.')
+          return { success: true, message: 'Đã gửi yêu cầu đổi lịch một lần. Toàn bộ học phí được bảo lưu.', bookingId }
+        },
+
+        cancelByCoach: (bookingId) => {
+          get().refreshExpirations()
+          const booking = get().bookings.find((item) => item.id === bookingId)
+          if (!booking || ['DECLINED', 'CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)) return { success: false, message: 'Lịch này không thể hủy.' }
+          const isPaidBooking = booking.status === 'CONFIRMED'
+          const voucherAmount = isPaidBooking ? partnerCancellationVoucher(booking.totalAmount) : 0
+          if (booking.status === 'CONFIRMED' && booking.paymentReferenceId) {
+            const payment = usePaymentStore.getState().records.find((item) => item.referenceId === booking.paymentReferenceId)
+            const refundablePaidAmount = Math.max(0, (payment?.paidAmount ?? booking.paymentAmount) - (payment?.refundAmount ?? 0))
+            usePaymentStore.getState().refundPayment({
+              referenceId: booking.paymentReferenceId,
+              amount: refundablePaidAmount,
+              reason: 'Coach hủy lịch đã xác nhận.',
+              voucherAmount,
+              voucherExpiresAt: addDaysIso(30),
+            })
+            usePlayerStore.getState().creditWallet(refundablePaidAmount)
+          } else if (booking.paymentReferenceId) {
+            usePaymentStore.getState().markExpired(booking.paymentReferenceId)
+          }
+          if (voucherAmount > 0) usePlayerStore.getState().creditVoucher(voucherAmount)
+          if (isPaidBooking) usePlayerStore.getState().cancelCoachSchedule(bookingId, `Coach hủy · Hoàn 100% khoản đã trả và tặng voucher ${voucherAmount.toLocaleString('vi-VN')}đ`)
+          set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? { ...item, status: booking.status === 'CONFIRMED' ? 'REFUNDED' : 'CANCELLED', sessions: item.sessions.map((session) => ({ ...session, status: 'CANCELLED' })) } : item) }))
+          appendSystemMessage(bookingId, isPaidBooking
+            ? `Coach đã hủy lịch. FITLYO hoàn toàn bộ khoản đã thanh toán và tặng voucher ${voucherAmount.toLocaleString('vi-VN')}đ, hạn 30 ngày.`
+            : 'Coach đã hủy yêu cầu trước khi Player thanh toán. Không phát sinh hoàn tiền hay voucher.')
+          return { success: true, message: isPaidBooking ? `Đã hủy lịch, hoàn tiền và cấp voucher ${voucherAmount.toLocaleString('vi-VN')}đ.` : 'Đã hủy yêu cầu chưa thanh toán.', bookingId }
+        },
+
+        cancelCourseSessionByCoach: (bookingId, sessionId) => {
+          const booking = get().bookings.find((item) => item.id === bookingId)
+          const session = booking?.sessions.find((item) => item.id === sessionId)
+          if (!booking || booking.type !== 'COURSE' || booking.status !== 'CONFIRMED' || !session || session.status !== 'SCHEDULED') {
+            return { success: false, message: 'Buổi học này không thể hủy.' }
+          }
+          const sessionValue = Math.round(booking.totalAmount / 8)
+          const payment = booking.paymentReferenceId ? usePaymentStore.getState().records.find((item) => item.referenceId === booking.paymentReferenceId) : undefined
+          const refundable = Math.min(sessionValue, Math.max(0, (payment?.paidAmount ?? booking.paymentAmount) - (payment?.refundAmount ?? 0)))
+          const voucherAmount = partnerCancellationVoucher(sessionValue)
+          if (booking.paymentReferenceId) usePaymentStore.getState().refundPayment({
+            referenceId: booking.paymentReferenceId,
+            amount: refundable,
+            reason: `Coach hủy buổi ${session.sequence}/8 và không thể xếp lại.`,
+            voucherAmount,
+            voucherExpiresAt: addDaysIso(30),
+          })
+          usePlayerStore.getState().creditWallet(refundable)
+          usePlayerStore.getState().creditVoucher(voucherAmount)
+          usePlayerStore.getState().cancelCoachSchedule(bookingId, `Coach hủy buổi ${session.sequence}/8 · Hoàn ${refundable.toLocaleString('vi-VN')}đ`, sessionId)
+          set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? {
+            ...item,
+            sessions: item.sessions.map((courseSession) => courseSession.id === sessionId ? { ...courseSession, status: 'CANCELLED' } : courseSession),
+          } : item) }))
+          appendSystemMessage(bookingId, `Coach hủy buổi ${session.sequence}/8. Đã hoàn ${refundable.toLocaleString('vi-VN')}đ (tổng học phí ÷ 8) và tặng voucher ${voucherAmount.toLocaleString('vi-VN')}đ.`)
+          return { success: true, message: `Đã hoàn ${refundable.toLocaleString('vi-VN')}đ cho buổi bị hủy và cấp voucher.`, bookingId }
         },
 
         sendMessage: (bookingId, senderRole, senderName, text) => {
@@ -372,7 +517,25 @@ export const useCoachBookingStore = create<CoachBookingState>()(
     {
       name: bookingStorageKey,
       storage: createJSONStorage(() => window.localStorage),
-      version: 1,
+      version: 3,
+      migrate: (persistedState) => {
+        const state = persistedState as CoachBookingState & {
+          bookings?: Array<CoachBooking & { depositAmount?: number; remainingAmount?: number }>
+        }
+        return {
+          ...state,
+          bookings: (state.bookings ?? []).map((booking) => ({
+            ...booking,
+            status: String(booking.status) === 'AWAITING_DEPOSIT' ? 'AWAITING_PAYMENT' : booking.status,
+            approvalExpiresAt: booking.approvalExpiresAt ?? addHoursIso(COACH_APPROVAL_HOURS, new Date(booking.createdAt)),
+            approvedAt: booking.approvedAt,
+            paymentExpiresAt: booking.paymentExpiresAt ?? (String(booking.status) === 'AWAITING_DEPOSIT' ? addMinutesIso(COACH_PAYMENT_WINDOW_MINUTES, new Date(booking.createdAt)) : undefined),
+            paymentAmount: booking.totalAmount,
+            paymentReferenceId: booking.paymentReferenceId,
+            rescheduleUsed: booking.rescheduleUsed ?? false,
+          })),
+        }
+      },
     },
   ),
 )

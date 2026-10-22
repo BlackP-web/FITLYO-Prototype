@@ -2,6 +2,7 @@ import { BarChart3, Bell, FileCheck2, Gavel, LogOut, Settings2, ShieldCheck, Spa
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { DemoDataResetButton } from '@/components/layout/DemoDataResetButton'
 import { cn } from '@/lib/utils'
 import { useAdminStore } from '@/store/useAdminStore'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -41,6 +42,7 @@ export default function AdminLayout() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <DemoDataResetButton />
           <button type="button" className="relative hidden h-9 w-9 items-center justify-center rounded-xl border bg-card text-muted-foreground transition hover:bg-muted hover:text-foreground sm:flex" aria-label="Thông báo Admin">
             <Bell className="h-4 w-4" /><span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />
           </button>

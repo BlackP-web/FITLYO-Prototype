@@ -1,16 +1,23 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Clock3, Flame, Lock, MapPin,
-  Sparkles, TrendingUp, UserRound, Wrench,
+  Banknote, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
+  Flame, Lock, MapPin, PencilLine, RotateCcw, ShieldAlert, Sparkles, TrendingUp,
+  UserRound, UsersRound, Wrench, X,
 } from 'lucide-react'
 import { PublishMatchModal } from '@/components/modals/PublishMatchModal'
 import { WalkInBookingModal } from '@/components/modals/WalkInBookingModal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { COURT_SLOT_DURATION_MINUTES, COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
-import type { CourtSlot } from '@/types/pickleball'
+import type {
+  CourtInventory,
+  CourtSlot,
+  QuickSlotTargetStatus,
+  WalkInPaymentMethod,
+} from '@/types/pickleball'
 
 const statusMeta: Record<CourtSlot['status'], { label: string; className: string; dot: string }> = {
   AVAILABLE: { label: 'Còn trống', className: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300', dot: 'bg-emerald-500' },
@@ -22,14 +29,77 @@ const statusMeta: Record<CourtSlot['status'], { label: string; className: string
 
 const venueName = 'Cụm sân D-Sports Pickleball Thủ Đức'
 const venueAddress = '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức'
+const editableStatuses: CourtSlot['status'][] = ['AVAILABLE', 'MAINTENANCE']
+
+const quickStatusOptions: Array<{
+  value: QuickSlotTargetStatus
+  label: string
+  description: string
+  icon: typeof CheckCircle2
+  className: string
+}> = [
+  {
+    value: 'AVAILABLE',
+    label: 'Còn trống',
+    description: 'Mở slot để Player có thể đặt',
+    icon: CheckCircle2,
+    className: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300',
+  },
+  {
+    value: 'MAINTENANCE',
+    label: 'Bảo trì',
+    description: 'Tạm khóa và ghi rõ lý do',
+    icon: Wrench,
+    className: 'border-slate-400/50 bg-slate-500/10 text-slate-700 dark:text-slate-200',
+  },
+  {
+    value: 'PRIVATE_BOOKED',
+    label: 'Khách vãng lai',
+    description: 'Giữ nhiều slot cho cùng một khách',
+    icon: UsersRound,
+    className: 'border-orange-500/35 bg-orange-500/10 text-orange-800 dark:text-orange-300',
+  },
+]
 
 export const CourtCalendarPage = () => {
   const {
     courtInventory, selectedDate, setSelectedDate, openPublishModal, openWalkInModal,
-    setSlotMaintenance, releaseSlot, showToast,
+    setSlotMaintenance, releaseSlot, batchUpdateSlots, restoreCourtInventory, showToast,
   } = useFitlyoStore()
   const playerMatches = usePlayerStore((state) => state.matches)
   const [selectedSlotDetails, setSelectedSlotDetails] = useState<{ courtId: string; courtName: string; slot: CourtSlot } | null>(null)
+  const [quickEditMode, setQuickEditMode] = useState(false)
+  const [selectedSlotKeys, setSelectedSlotKeys] = useState<string[]>([])
+  const [isQuickEditOpen, setIsQuickEditOpen] = useState(false)
+  const [targetStatus, setTargetStatus] = useState<QuickSlotTargetStatus>('AVAILABLE')
+  const [newPrice, setNewPrice] = useState('')
+  const [maintenanceReason, setMaintenanceReason] = useState('')
+  const [walkInName, setWalkInName] = useState('')
+  const [walkInPhone, setWalkInPhone] = useState('')
+  const [walkInPayment, setWalkInPayment] = useState<WalkInPaymentMethod>('CASH')
+  const [quickEditError, setQuickEditError] = useState('')
+  const [undoState, setUndoState] = useState<{ inventory: CourtInventory[]; expiresAt: number } | null>(null)
+  const [undoSeconds, setUndoSeconds] = useState(10)
+
+  const selectedSlots = useMemo(() => {
+    const keys = new Set(selectedSlotKeys)
+    return courtInventory.flatMap((court) => court.slots
+      .filter((slot) => keys.has(`${court.id}:${slot.slotNumber}`))
+      .map((slot) => ({ courtId: court.id, courtName: court.name, slot })))
+  }, [courtInventory, selectedSlotKeys])
+
+  useEffect(() => {
+    if (!undoState) return
+
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.ceil((undoState.expiresAt - Date.now()) / 1000))
+      setUndoSeconds(remaining)
+      if (remaining === 0) setUndoState(null)
+    }
+    updateCountdown()
+    const interval = window.setInterval(updateCountdown, 250)
+    return () => window.clearInterval(interval)
+  }, [undoState])
 
   const totalSlots = courtInventory.reduce((total, court) => total + court.slots.length, 0)
   const maintenanceSlots = courtInventory.reduce((total, court) => total + court.slots.filter((slot) => slot.status === 'MAINTENANCE').length, 0)
@@ -86,6 +156,76 @@ export const CourtCalendarPage = () => {
     setSelectedSlotDetails(null)
   }
 
+  const toggleQuickEditMode = () => {
+    setQuickEditMode((current) => !current)
+    setSelectedSlotKeys([])
+    setSelectedSlotDetails(null)
+  }
+
+  const handleSlotClick = (courtId: string, courtName: string, slot: CourtSlot) => {
+    if (!quickEditMode) {
+      setSelectedSlotDetails({ courtId, courtName, slot })
+      return
+    }
+    if (!editableStatuses.includes(slot.status)) {
+      showToast('Slot đã có booking/lớp/kèo và phải xử lý qua luồng hủy, hoàn tiền.', 'error')
+      return
+    }
+
+    const key = `${courtId}:${slot.slotNumber}`
+    setSelectedSlotKeys((current) => current.includes(key)
+      ? current.filter((item) => item !== key)
+      : [...current, key])
+  }
+
+  const selectAllEditableSlots = () => {
+    setSelectedSlotKeys(courtInventory.flatMap((court) => court.slots
+      .filter((slot) => editableStatuses.includes(slot.status))
+      .map((slot) => `${court.id}:${slot.slotNumber}`)))
+  }
+
+  const openQuickEdit = () => {
+    if (selectedSlots.length === 0) return
+    const firstPrice = selectedSlots[0]?.slot.price ?? 0
+    const hasSamePrice = selectedSlots.every(({ slot }) => slot.price === firstPrice)
+    setNewPrice(hasSamePrice ? String(firstPrice) : '')
+    setTargetStatus('AVAILABLE')
+    setMaintenanceReason('')
+    setWalkInName('')
+    setWalkInPhone('')
+    setWalkInPayment('CASH')
+    setQuickEditError('')
+    setIsQuickEditOpen(true)
+  }
+
+  const handleBatchUpdate = () => {
+    const price = Number(newPrice)
+    const result = batchUpdateSlots({
+      slots: selectedSlots.map(({ courtId, slot }) => ({ courtId, slotNumber: slot.slotNumber })),
+      targetStatus,
+      price,
+      maintenanceReason: targetStatus === 'MAINTENANCE' ? maintenanceReason : undefined,
+      walkIn: targetStatus === 'PRIVATE_BOOKED'
+        ? { customerName: walkInName, phone: walkInPhone, paymentMethod: walkInPayment }
+        : undefined,
+    })
+    if (!result.success || !result.previousInventory) {
+      setQuickEditError(result.message)
+      return
+    }
+
+    setUndoState({ inventory: result.previousInventory, expiresAt: Date.now() + 10_000 })
+    setUndoSeconds(10)
+    setIsQuickEditOpen(false)
+    setSelectedSlotKeys([])
+  }
+
+  const handleUndo = () => {
+    if (!undoState || Date.now() >= undoState.expiresAt) return
+    restoreCourtInventory(undoState.inventory)
+    setUndoState(null)
+  }
+
   return (
     <div className="space-y-6 pb-20">
       <header className="flex flex-col justify-between gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center">
@@ -94,12 +234,41 @@ export const CourtCalendarPage = () => {
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Ma trận lịch sân 06:00–21:00</h1>
           <p className="mt-1 text-sm text-muted-foreground">{venueName} · {COURT_SLOT_DURATION_MINUTES} phút/slot · Không nghỉ giữa ca.</p>
         </div>
-        <div className="flex items-center rounded-xl border bg-card p-1 shadow-xs">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeDate(-1)}><ChevronLeft className="h-4 w-4" /></Button>
-          <div className="flex items-center gap-1.5 px-3 text-xs font-bold sm:text-sm"><CalendarDays className="h-4 w-4 text-primary" />Ngày: {selectedDate}</div>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeDate(1)}><ChevronRight className="h-4 w-4" /></Button>
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center rounded-xl border bg-card p-1 shadow-xs">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeDate(-1)}><ChevronLeft className="h-4 w-4" /></Button>
+            <div className="flex items-center gap-1.5 px-3 text-xs font-bold sm:text-sm"><CalendarDays className="h-4 w-4 text-primary" />Ngày: {selectedDate}</div>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeDate(1)}><ChevronRight className="h-4 w-4" /></Button>
+          </div>
+          <Button
+            type="button"
+            variant={quickEditMode ? 'default' : 'outline'}
+            className="h-9 gap-2 text-xs"
+            onClick={toggleQuickEditMode}
+          >
+            {quickEditMode ? <X className="h-3.5 w-3.5" /> : <PencilLine className="h-3.5 w-3.5" />}
+            {quickEditMode ? 'Thoát cập nhật nhanh' : 'Cập nhật slot nhanh'}
+          </Button>
         </div>
       </header>
+
+      {quickEditMode && <section className="rounded-2xl border border-primary/25 bg-primary/5 p-4 shadow-sm">
+        <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+          <div className="flex items-start gap-3">
+            <span className="rounded-xl bg-primary/10 p-2 text-primary"><PencilLine className="h-4 w-4" /></span>
+            <div>
+              <h2 className="text-sm font-black">Chế độ cập nhật nhanh</h2>
+              <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
+                Chọn nhiều slot còn trống hoặc bảo trì, rồi cập nhật trạng thái và một mức giá chung. Slot có Player đặt, lớp Coach hoặc kèo Social được khóa để bảo vệ giao dịch.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={selectAllEditableSlots}>Chọn tất cả có thể sửa</Button>
+            <Button type="button" variant="ghost" size="sm" disabled={selectedSlotKeys.length === 0} onClick={() => setSelectedSlotKeys([])}>Bỏ chọn</Button>
+          </div>
+        </div>
+      </section>}
 
       <div className="flex items-center gap-4 overflow-x-auto rounded-2xl border border-border/60 bg-muted/40 p-3 text-xs">
         <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider">Chú giải:</span>
@@ -117,8 +286,18 @@ export const CourtCalendarPage = () => {
             {COURT_SLOT_TIMES.map((standardSlot) => {
               const slot = court.slots.find((item) => item.slotNumber === standardSlot.slotNumber) ?? { slotNumber: standardSlot.slotNumber, timeRange: standardSlot.timeRange, status: 'AVAILABLE' as const, price: 0 }
               const meta = statusMeta[slot.status]
-              return <button key={slot.slotNumber} type="button" onClick={() => setSelectedSlotDetails({ courtId: court.id, courtName: court.name, slot })} className={`group m-1.5 flex min-w-0 flex-col justify-between rounded-xl border p-2.5 text-left transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/60 ${meta.className}`}>
-                <span className="flex items-center gap-1.5 text-[10px] font-bold"><i className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} /><span className="truncate">{meta.label}</span>{slot.isPeak && <Flame className="ml-auto h-3.5 w-3.5 text-orange-500" />}</span>
+              const key = `${court.id}:${slot.slotNumber}`
+              const isEditable = editableStatuses.includes(slot.status)
+              const isSelected = selectedSlotKeys.includes(key)
+              return <button
+                key={slot.slotNumber}
+                type="button"
+                onClick={() => handleSlotClick(court.id, court.name, slot)}
+                aria-pressed={quickEditMode ? isSelected : undefined}
+                className={`group relative m-1.5 flex min-w-0 flex-col justify-between rounded-xl border p-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-primary/60 ${meta.className} ${quickEditMode && !isEditable ? 'cursor-not-allowed opacity-55' : 'hover:-translate-y-0.5 hover:shadow-md'} ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+              >
+                {quickEditMode && isEditable && <span className={`absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full border transition ${isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-current bg-card/80 text-transparent'}`}><Check className="h-3 w-3" /></span>}
+                <span className="flex items-center gap-1.5 pr-5 text-[10px] font-bold"><i className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} /><span className="truncate">{meta.label}</span>{slot.isPeak && <Flame className="ml-auto h-3.5 w-3.5 text-orange-500" />}</span>
                 <span className="mt-2 line-clamp-2 text-[9px] opacity-85">{slot.status === 'AVAILABLE' ? `${slot.price.toLocaleString('vi-VN')}đ` : slot.status === 'MATCH_PUBLISHED' ? `${slot.duprRange ?? 'DUPR'} · ${playerCountFor(slot) ?? '0/4'}` : slot.bookedNote ?? slot.maintenanceReason ?? 'Xem chi tiết'}</span>
               </button>
             })}
@@ -150,9 +329,101 @@ export const CourtCalendarPage = () => {
             {selectedSlot.bookedNote && selectedSlot.status !== 'MAINTENANCE' && <p className="mt-2"><b>Ghi chú:</b> {selectedSlot.bookedNote}</p>}
           </section>
 
-          {selectedSlot.status === 'AVAILABLE' ? <div className="mt-4 space-y-2"><Button onClick={handleOpenPublish} className="h-11 w-full justify-start gap-2.5"><Sparkles className="h-4 w-4" />Mở kèo Social DUPR</Button><button type="button" onClick={handleLockPrivate} className="w-full rounded-xl border border-orange-500/25 bg-orange-500/5 p-3 text-left text-xs font-semibold transition hover:bg-orange-500/10"><Lock className="mr-2 inline h-3.5 w-3.5 text-orange-500" />Khóa cho khách vãng lai</button><Button variant="ghost" onClick={handleMaintenance} className="w-full justify-start gap-2 text-xs text-muted-foreground"><Wrench className="h-3.5 w-3.5" />Tạm dừng để bảo trì</Button></div> : <Button variant="outline" onClick={() => { releaseSlot(selectedSlotDetails.courtId, selectedSlot.slotNumber); setSelectedSlotDetails(null) }} className="mt-4 w-full">Giải phóng slot về trạng thái trống</Button>}
+          {selectedSlot.status === 'AVAILABLE' ? <div className="mt-4 space-y-2"><Button onClick={handleOpenPublish} className="h-11 w-full justify-start gap-2.5"><Sparkles className="h-4 w-4" />Mở kèo Social DUPR</Button><button type="button" onClick={handleLockPrivate} className="w-full rounded-xl border border-orange-500/25 bg-orange-500/5 p-3 text-left text-xs font-semibold transition hover:bg-orange-500/10"><Lock className="mr-2 inline h-3.5 w-3.5 text-orange-500" />Khóa cho khách vãng lai</button><Button variant="ghost" onClick={handleMaintenance} className="w-full justify-start gap-2 text-xs text-muted-foreground"><Wrench className="h-3.5 w-3.5" />Tạm dừng để bảo trì</Button></div> : selectedSlot.status === 'MAINTENANCE' ? <Button variant="outline" onClick={() => { releaseSlot(selectedSlotDetails.courtId, selectedSlot.slotNumber); setSelectedSlotDetails(null) }} className="mt-4 w-full">Mở lại slot thành còn trống</Button> : <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200"><ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" /><p><strong>Không thể giải phóng trực tiếp.</strong> Slot này đã có giao dịch; hãy dùng luồng hủy và hoàn tiền tương ứng để bảo vệ quyền lợi khách hàng.</p></div>}
           <div className="mt-4 flex justify-end border-t pt-4"><Button variant="outline" onClick={() => setSelectedSlotDetails(null)}>Đóng</Button></div>
         </div>
+      </div>}
+
+      {isQuickEditOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="quick-edit-title">
+        <div className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl">
+          <header className="flex items-start justify-between gap-4 border-b px-5 py-4 sm:px-6">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Cập nhật hàng loạt</p>
+              <h2 id="quick-edit-title" className="mt-1 text-xl font-black">{selectedSlots.length} slot đã chọn</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Một thao tác duy nhất cho trạng thái, giá và thông tin vận hành.</p>
+            </div>
+            <Button type="button" variant="ghost" size="icon" onClick={() => setIsQuickEditOpen(false)} aria-label="Đóng"><X className="h-4 w-4" /></Button>
+          </header>
+
+          <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[1fr_1.05fr]">
+            <section className="border-b p-5 lg:border-b-0 lg:border-r sm:p-6">
+              <h3 className="text-sm font-black">1. Chọn trạng thái mới</h3>
+              <div className="mt-3 grid gap-2">
+                {quickStatusOptions.map((option) => {
+                  const Icon = option.icon
+                  const isActive = targetStatus === option.value
+                  return <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => { setTargetStatus(option.value); setQuickEditError('') }}
+                    className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${isActive ? `${option.className} ring-2 ring-current/20` : 'border-border/70 bg-background hover:border-primary/35'}`}
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-current/10"><Icon className="h-4 w-4" /></span>
+                    <span className="min-w-0"><span className="block text-sm font-black">{option.label}</span><span className="mt-0.5 block text-[11px] opacity-75">{option.description}</span></span>
+                    {isActive && <CheckCircle2 className="ml-auto h-4 w-4 shrink-0" />}
+                  </button>
+                })}
+              </div>
+
+              <div className="mt-5">
+                <div className="flex items-center justify-between"><h3 className="text-sm font-black">2. Các slot đã chọn</h3><span className="text-[11px] font-semibold text-muted-foreground">Giá hiện tại</span></div>
+                <div className="mt-2 max-h-64 space-y-2 overflow-y-auto pr-1">
+                  {selectedSlots.map(({ courtId, courtName, slot }) => <div key={`${courtId}:${slot.slotNumber}`} className="flex items-center justify-between gap-3 rounded-xl bg-muted/45 px-3 py-2.5 text-xs">
+                    <div className="min-w-0"><p className="truncate font-bold">{courtName} · Slot {slot.slotNumber}</p><p className="mt-0.5 text-[10px] text-muted-foreground">{slot.timeRange} · {statusMeta[slot.status].label}</p></div>
+                    <span className="shrink-0 font-black">{slot.price.toLocaleString('vi-VN')}đ</span>
+                  </div>)}
+                </div>
+              </div>
+            </section>
+
+            <section className="p-5 sm:p-6">
+              <h3 className="text-sm font-black">3. Nhập thông tin cập nhật</h3>
+              <label className="mt-4 block text-xs font-bold" htmlFor="batch-price">Giá mới áp dụng cho mỗi slot <span className="text-destructive">*</span></label>
+              <div className="relative mt-2">
+                <Input id="batch-price" type="number" min="10000" step="10000" value={newPrice} onChange={(event) => { setNewPrice(event.target.value); setQuickEditError('') }} className="h-11 pr-14 font-bold" placeholder="Ví dụ: 180000" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">VNĐ</span>
+              </div>
+              <p className="mt-1.5 text-[10px] text-muted-foreground">Mức giá này thay thế giá hiện tại của toàn bộ {selectedSlots.length} slot đã chọn.</p>
+
+              {targetStatus === 'MAINTENANCE' && <div className="mt-5">
+                <label className="block text-xs font-bold" htmlFor="maintenance-reason">Lý do bảo trì chung <span className="text-destructive">*</span></label>
+                <textarea id="maintenance-reason" rows={4} value={maintenanceReason} onChange={(event) => { setMaintenanceReason(event.target.value); setQuickEditError('') }} className="mt-2 w-full resize-none rounded-xl border border-input bg-background/70 px-3 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-ring/40" placeholder="Ví dụ: Bảo dưỡng mặt sân và hệ thống đèn" />
+              </div>}
+
+              {targetStatus === 'PRIVATE_BOOKED' && <div className="mt-5 space-y-4 rounded-2xl border border-orange-500/20 bg-orange-500/5 p-4">
+                <div><h4 className="flex items-center gap-2 text-sm font-black"><UsersRound className="h-4 w-4 text-orange-500" />Thông tin khách vãng lai</h4><p className="mt-1 text-[10px] text-muted-foreground">Nhập một lần cho toàn bộ slot đã chọn.</p></div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div><label className="block text-xs font-bold" htmlFor="walk-in-name">Họ và tên <span className="text-destructive">*</span></label><Input id="walk-in-name" value={walkInName} onChange={(event) => { setWalkInName(event.target.value); setQuickEditError('') }} className="mt-2 h-10" placeholder="Nguyễn Văn A" /></div>
+                  <div><label className="block text-xs font-bold" htmlFor="walk-in-phone">Số điện thoại <span className="text-destructive">*</span></label><Input id="walk-in-phone" inputMode="numeric" value={walkInPhone} onChange={(event) => { setWalkInPhone(event.target.value); setQuickEditError('') }} className="mt-2 h-10" placeholder="0901234567" /></div>
+                </div>
+                <fieldset><legend className="text-xs font-bold">Phương thức thanh toán</legend><div className="mt-2 grid grid-cols-3 gap-2">{([['CASH', 'Tiền mặt'], ['VIETQR', 'VietQR'], ['DEBT', 'Ghi nợ']] as const).map(([value, label]) => <button key={value} type="button" onClick={() => setWalkInPayment(value)} className={`rounded-xl border px-2 py-2.5 text-[11px] font-bold transition ${walkInPayment === value ? 'border-orange-500 bg-orange-500/10 text-orange-800 dark:text-orange-300' : 'border-border bg-background hover:border-orange-500/40'}`}>{label}</button>)}</div></fieldset>
+                <div className="flex items-center justify-between rounded-xl bg-background/80 p-3 text-xs"><span className="flex items-center gap-2 text-muted-foreground"><Banknote className="h-4 w-4" />Tổng tiền dự kiến</span><strong className="text-base">{(Number(newPrice) > 0 ? Number(newPrice) * selectedSlots.length : 0).toLocaleString('vi-VN')}đ</strong></div>
+              </div>}
+
+              {quickEditError && <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-xs font-semibold text-destructive"><ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />{quickEditError}</div>}
+
+              <div className="mt-6 rounded-xl bg-muted/45 p-3 text-[11px] leading-5 text-muted-foreground">
+                <strong className="text-foreground">Kiểm tra trước khi lưu:</strong> thao tác sẽ áp dụng đồng thời cho {selectedSlots.length} slot. Bạn có 10 giây để hoàn tác sau khi xác nhận.
+              </div>
+            </section>
+          </div>
+
+          <footer className="flex flex-col-reverse justify-end gap-2 border-t bg-card px-5 py-4 sm:flex-row sm:px-6">
+            <Button type="button" variant="outline" onClick={() => setIsQuickEditOpen(false)}>Hủy</Button>
+            <Button type="button" className="gap-2" onClick={handleBatchUpdate}><Check className="h-4 w-4" />Xác nhận cập nhật {selectedSlots.length} slot</Button>
+          </footer>
+        </div>
+      </div>}
+
+      {quickEditMode && selectedSlots.length > 0 && !isQuickEditOpen && <div className="fixed inset-x-3 bottom-4 z-40 mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border border-primary/25 bg-card/95 p-3 shadow-2xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-4">
+        <div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-sm font-black text-primary-foreground">{selectedSlots.length}</span><div><p className="text-sm font-black">slot đã chọn</p><p className="text-[10px] text-muted-foreground">Chỉ gồm slot trống hoặc bảo trì</p></div></div>
+        <div className="flex gap-2"><Button type="button" variant="ghost" size="sm" onClick={() => setSelectedSlotKeys([])}>Bỏ chọn</Button><Button type="button" size="sm" className="gap-2" onClick={openQuickEdit}><PencilLine className="h-3.5 w-3.5" />Cập nhật trạng thái & giá</Button></div>
+      </div>}
+
+      {undoState && <div className="fixed bottom-4 right-4 z-[60] flex max-w-sm items-center gap-3 rounded-2xl border border-emerald-500/25 bg-slate-950 p-3.5 text-white shadow-2xl">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/20 text-emerald-300"><CheckCircle2 className="h-4 w-4" /></span>
+        <div className="min-w-0"><p className="text-xs font-bold">Đã cập nhật slot thành công</p><p className="mt-0.5 text-[10px] text-slate-300">Có thể hoàn tác trong {undoSeconds} giây</p></div>
+        <Button type="button" variant="outline" size="sm" onClick={handleUndo} className="ml-1 h-8 shrink-0 gap-1.5 border-white/20 bg-white/10 px-2.5 text-[11px] text-white hover:bg-white/20 hover:text-white"><RotateCcw className="h-3 w-3" />Hoàn tác</Button>
       </div>}
 
       <PublishMatchModal />

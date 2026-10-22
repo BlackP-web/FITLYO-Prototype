@@ -125,6 +125,31 @@ export interface CourtInventory {
   slots: CourtSlot[]
 }
 
+export type QuickSlotTargetStatus = 'AVAILABLE' | 'MAINTENANCE' | 'PRIVATE_BOOKED'
+
+export interface QuickSlotSelection {
+  courtId: string
+  slotNumber: number
+}
+
+export interface BatchSlotUpdateInput {
+  slots: QuickSlotSelection[]
+  targetStatus: QuickSlotTargetStatus
+  price: number
+  maintenanceReason?: string
+  walkIn?: {
+    customerName: string
+    phone: string
+    paymentMethod: WalkInPaymentMethod
+  }
+}
+
+export interface BatchSlotUpdateResult {
+  success: boolean
+  message: string
+  previousInventory?: CourtInventory[]
+}
+
 export interface CoachItem {
   id: string
   userId: string

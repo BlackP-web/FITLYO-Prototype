@@ -217,7 +217,7 @@ export function CoachVenuesPage() {
           </DialogHeader>
           {unlinkTarget && activeCoursesAtVenue(unlinkTarget) > 0 && (
             <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200">
-              Bạn còn {activeCoursesAtVenue(unlinkTarget)} khóa chưa kết thúc tại sân. Các slot học viên đã đặt cọc vẫn giữ nguyên và cần được hoàn thành.
+              Bạn còn {activeCoursesAtVenue(unlinkTarget)} khóa chưa kết thúc tại sân. Các slot học viên đã thanh toán vẫn giữ nguyên và cần được hoàn thành.
             </div>
           )}
           <DialogFooter>

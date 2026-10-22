@@ -4,10 +4,8 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
-  CreditCard,
   Repeat2,
   ShieldCheck,
-  WalletCards,
   X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -17,9 +15,8 @@ import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 import { cn } from '@/lib/utils'
 import { useCoachBookingStore } from '@/store/useCoachBookingStore'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
-import { usePlayerStore } from '@/store/usePlayerStore'
 import type { CoachItem } from '@/types/pickleball'
-import type { CoachBookingType, CoachPaymentMethod } from '@/types/coachBooking'
+import type { CoachBookingType } from '@/types/coachBooking'
 
 interface CoachBookingDialogProps {
   coach: CoachItem
@@ -31,26 +28,21 @@ const formatMoney = (value: number) => `${value.toLocaleString('vi-VN')}đ`
 export function CoachBookingDialog({ coach, onClose }: CoachBookingDialogProps) {
   const navigate = useNavigate()
   const showToast = useFitlyoStore((state) => state.showToast)
-  const walletBalance = usePlayerStore((state) => state.profile.walletBalance)
-  usePlayerStore((state) => state.schedule)
   useCoachBookingStore((state) => state.bookings)
   const getCalendar = useCoachBookingStore((state) => state.getCalendar)
   const previewBooking = useCoachBookingStore((state) => state.previewBooking)
-  const createInstantBooking = useCoachBookingStore((state) => state.createInstantBooking)
   const createCustomRequest = useCoachBookingStore((state) => state.createCustomRequest)
 
   const calendar = getCalendar(coach.id, 35)
   const [bookingType, setBookingType] = useState<CoachBookingType>('SINGLE')
   const [selectedDate, setSelectedDate] = useState(() => calendar[0]?.date ?? '')
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
-  const [paymentMethod, setPaymentMethod] = useState<CoachPaymentMethod>('VIETQR')
   const [customMode, setCustomMode] = useState(false)
   const [customDate, setCustomDate] = useState(() => calendar[0]?.date ?? '')
   const [customSlot, setCustomSlot] = useState(4)
 
   const selectedDay = calendar.find((day) => day.date === selectedDate) ?? calendar[0]
   const totalAmount = bookingType === 'SINGLE' ? coach.ratePerSession : coach.ratePerMonthCourse
-  const depositAmount = Math.ceil(totalAmount / 2)
   const preview = selectedDate && selectedSlot
     ? previewBooking(coach.id, selectedDate, selectedSlot, bookingType)
     : null
@@ -78,7 +70,7 @@ export function CoachBookingDialog({ coach, onClose }: CoachBookingDialogProps) 
       showToast('Vui lòng chọn ngày và khung giờ còn trống.', 'error')
       return
     }
-    const result = createInstantBooking({ coach, type: bookingType, date: selectedDate, slotNumber: selectedSlot, paymentMethod })
+    const result = createCustomRequest({ coach, type: bookingType, date: selectedDate, slotNumber: selectedSlot })
     if (!result.success || !result.bookingId) {
       showToast(result.message, 'error')
       return
@@ -106,7 +98,7 @@ export function CoachBookingDialog({ coach, onClose }: CoachBookingDialogProps) 
           <div className="flex min-w-0 items-center gap-3">
             <img src={coach.avatarUrl} alt={coach.name} className="h-11 w-11 rounded-xl object-cover" />
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">Đặt lịch Coach</p><Badge variant="success" className="py-0.5 text-[9px]"><CheckCircle2 className="h-3 w-3" /> Xác nhận ngay</Badge></div>
+              <div className="flex flex-wrap items-center gap-2"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">Đặt lịch Coach</p><Badge variant="success" className="py-0.5 text-[9px]"><CheckCircle2 className="h-3 w-3" /> Coach duyệt trước</Badge></div>
               <h2 className="truncate text-lg font-black sm:text-xl">{coach.name}</h2>
             </div>
           </div>
@@ -146,7 +138,7 @@ export function CoachBookingDialog({ coach, onClose }: CoachBookingDialogProps) 
                 <div className="flex items-center justify-between"><p className="text-[10px] font-black uppercase text-primary">Giờ đề xuất</p><button type="button" onClick={() => setCustomMode(false)} className="text-[10px] font-bold text-primary underline">Lịch công bố</button></div>
                 <label className="mt-3 block text-[10px] font-bold">Ngày<input type="date" value={customDate} min={calendar[0]?.date} onChange={(event) => setCustomDate(event.target.value)} className="mt-1 h-9 w-full rounded-lg border bg-background px-2 text-xs" /></label>
                 <label className="mt-2 block text-[10px] font-bold">Khung giờ<select value={customSlot} onChange={(event) => setCustomSlot(Number(event.target.value))} className="mt-1 h-9 w-full rounded-lg border bg-background px-2 text-xs">{COURT_SLOT_TIMES.map((slot) => <option key={slot.slotNumber} value={slot.slotNumber}>Slot {slot.slotNumber} · {slot.timeRange}</option>)}</select></label>
-                <p className="mt-2 flex gap-1.5 text-[9px] leading-4 text-muted-foreground"><Clock3 className="h-3 w-3 shrink-0" />Chưa thu cọc cho đến khi Coach duyệt.</p>
+                <p className="mt-2 flex gap-1.5 text-[9px] leading-4 text-muted-foreground"><Clock3 className="h-3 w-3 shrink-0" />Chưa thu tiền cho đến khi Coach duyệt.</p>
               </div>
             )}
           </section>
@@ -187,27 +179,17 @@ export function CoachBookingDialog({ coach, onClose }: CoachBookingDialogProps) 
           </section>
 
           <aside className="bg-muted/25 p-4">
-            <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">4 · Xác nhận & đặt cọc</p>
+            <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">4 · Gửi yêu cầu</p>
             <div className="mt-2 rounded-xl border border-border bg-card p-3">
               <div className="flex justify-between gap-3 text-xs"><span className="text-muted-foreground">Học phí</span><strong>{formatMoney(totalAmount)}</strong></div>
-              <div className="mt-2 flex items-end justify-between gap-3 border-t border-dashed pt-2"><span className="text-xs font-bold">Cọc 50%</span><strong className="text-xl text-primary">{formatMoney(depositAmount)}</strong></div>
-              <div className="mt-2 flex gap-1.5 rounded-lg bg-secondary/35 p-2 text-[9px] leading-4 text-muted-foreground"><ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />Slot được khóa ngay sau khi cọc.</div>
+              <div className="mt-2 flex items-end justify-between gap-3 border-t border-dashed pt-2"><span className="text-xs font-bold">Thanh toán sau khi duyệt · 100%</span><strong className="text-xl text-primary">{formatMoney(totalAmount)}</strong></div>
+              <div className="mt-2 flex gap-1.5 rounded-lg bg-secondary/35 p-2 text-[9px] leading-4 text-muted-foreground"><ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />Chưa thu tiền. Coach có 12 giờ duyệt; sau đó bạn có 15 phút thanh toán toàn bộ học phí.</div>
             </div>
 
-            {!customMode && (
-              <div className="mt-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Phương thức</p>
-                <div className="mt-2 space-y-2">
-                  <button type="button" onClick={() => setPaymentMethod('VIETQR')} className={cn('flex w-full items-center gap-2 rounded-xl border p-2.5 text-left', paymentMethod === 'VIETQR' ? 'border-primary bg-secondary/30' : 'border-border')}><CreditCard className="h-4 w-4 text-primary" /><div className="min-w-0 flex-1"><p className="text-xs font-black">VietQR mô phỏng</p><p className="truncate text-[9px] text-muted-foreground">Xác nhận tức thì</p></div>{paymentMethod === 'VIETQR' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button>
-                  <button type="button" onClick={() => setPaymentMethod('WALLET')} className={cn('flex w-full items-center gap-2 rounded-xl border p-2.5 text-left', paymentMethod === 'WALLET' ? 'border-primary bg-secondary/30' : 'border-border')}><WalletCards className="h-4 w-4 text-primary" /><div className="min-w-0 flex-1"><p className="text-xs font-black">Ví FITLYO</p><p className="truncate text-[9px] text-muted-foreground">{formatMoney(walletBalance)}</p></div>{paymentMethod === 'WALLET' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button>
-                </div>
-              </div>
-            )}
-
             <Button data-testid="confirm-coach-booking" onClick={customMode ? handleCustomRequest : handleInstantBooking} className="fitlyo-coral-button mt-4 h-11 w-full rounded-xl border-0 text-xs font-black">
-              {customMode ? 'Gửi Coach duyệt' : `Đặt cọc ${formatMoney(depositAmount)}`}
+              Gửi Coach duyệt
             </Button>
-            <p className="mt-2 text-center text-[9px] leading-4 text-muted-foreground">Sau khi đặt, chat FITLYO và lịch học mở ngay.</p>
+            <p className="mt-2 text-center text-[9px] leading-4 text-muted-foreground">Theo dõi trạng thái và chat trong “Huấn luyện của tôi”.</p>
           </aside>
         </div>
       </div>

@@ -1,10 +1,12 @@
 export type CoachBookingType = 'SINGLE' | 'COURSE'
 export type CoachBookingStatus =
   | 'PENDING_COACH'
-  | 'AWAITING_DEPOSIT'
+  | 'AWAITING_PAYMENT'
   | 'CONFIRMED'
   | 'DECLINED'
   | 'CANCELLED'
+  | 'EXPIRED'
+  | 'REFUNDED'
 
 export type CoachPaymentMethod = 'WALLET' | 'VIETQR'
 export type CoachSlotState = 'AVAILABLE' | 'BOOKED' | 'PLAYER_CONFLICT'
@@ -33,14 +35,19 @@ export interface CoachBooking {
   venueName: string
   courtName: string
   totalAmount: number
-  depositAmount: number
+  paymentAmount: number
   paymentMethod?: CoachPaymentMethod
   createdAt: string
+  approvalExpiresAt: string
+  approvedAt?: string
+  paymentExpiresAt?: string
   confirmedAt?: string
   firstDate: string
   preferredSlotNumber: number
   preferredTimeRange: string
   sessions: CoachBookingSession[]
+  paymentReferenceId?: string
+  rescheduleUsed: boolean
 }
 
 export interface CoachChatMessage {

@@ -1,7 +1,8 @@
-import { Bell, CalendarDays, Crown, GraduationCap, LogOut, MapPin, UserRound, WalletCards } from 'lucide-react'
+import { Bell, CalendarDays, CirclePlus, Crown, GraduationCap, LogOut, MapPin, UserRound, WalletCards } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { DemoDataResetButton } from '@/components/layout/DemoDataResetButton'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
+import { useWalletTopUpStore } from '@/store/useWalletTopUpStore'
 
 const desktopNav = [
   { label: 'Khám phá', href: '/player' },
@@ -32,6 +34,7 @@ export function Header() {
   const toastMessage = useFitlyoStore((state) => state.toastMessage)
   const clearToast = useFitlyoStore((state) => state.clearToast)
   const showToast = useFitlyoStore((state) => state.showToast)
+  const openTopUp = useWalletTopUpStore((state) => state.openTopUp)
 
   const handleLogout = () => {
     logout()
@@ -66,10 +69,13 @@ export function Header() {
             <div className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-2 text-xs font-bold text-foreground xl:flex">
               <MapPin className="h-3.5 w-3.5 text-primary" /> TP. Thủ Đức
             </div>
-            <Button variant="ghost" size="sm" className="hidden gap-1.5 rounded-full border border-border/60 bg-background/60 md:inline-flex" onClick={() => navigate('/player/profile')}>
-              <WalletCards className="h-4 w-4 text-primary" />
-              <span className="font-bold">{profile.walletBalance.toLocaleString('vi-VN')}đ</span>
-            </Button>
+            <div className="hidden items-center rounded-full border border-border/60 bg-background/60 p-0.5 md:flex">
+              <Button variant="ghost" size="sm" className="gap-1.5 rounded-full border-0 bg-transparent shadow-none" onClick={() => navigate('/player/profile')} aria-label={`Xem Ví FITLYO, số dư ${profile.walletBalance.toLocaleString('vi-VN')} đồng`}>
+                <WalletCards className="h-4 w-4 text-primary" />
+                <span className="font-bold">{profile.walletBalance.toLocaleString('vi-VN')}đ</span>
+              </Button>
+              <button type="button" onClick={openTopUp} className="inline-flex h-8 items-center gap-1 rounded-full bg-primary px-2.5 text-xs font-black text-primary-foreground transition hover:bg-primary/90" aria-label="Nạp tiền vào Ví FITLYO"><CirclePlus className="h-3.5 w-3.5" />Nạp tiền</button>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -81,6 +87,7 @@ export function Header() {
               <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-brand-coral ring-2 ring-card" />
             </Button>
             <ThemeToggle />
+            <DemoDataResetButton />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -99,6 +106,7 @@ export function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={openTopUp} className="cursor-pointer font-bold text-primary"><CirclePlus className="mr-2 h-4 w-4" />Nạp tiền vào ví</DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/player/profile"><UserRound className="mr-2 h-4 w-4" />Hồ sơ người chơi</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/player/schedule"><CalendarDays className="mr-2 h-4 w-4" />Lịch của tôi</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/player/coaching"><GraduationCap className="mr-2 h-4 w-4" />Huấn luyện của tôi</Link></DropdownMenuItem>

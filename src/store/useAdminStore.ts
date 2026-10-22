@@ -80,14 +80,14 @@ const initialDisputes: AdminDispute[] = [
   {
     id: 'DIS-12', subject: 'Kèo #FTL-M26-8891 · Bỏ trận giữa Set 1', category: 'NO_SHOW', claimant: 'Minh Trí', respondent: 'Văn Hùng', amount: 45000, severity: 'HIGH', status: 'INVESTIGATING', openedAt: '14/10/2026 · 20:45',
     description: 'Người bị khiếu nại rời sân giữa Set 1 và không thanh toán phần tiền sân còn lại.',
-    policy: 'Điều 5.2 — Thành viên tự ý bỏ kèo sau check-in mất 100% cọc và bị trừ điểm uy tín.',
-    recommendation: 'Chuyển 100% cọc cho nhóm còn lại và trừ 15 điểm uy tín tài khoản bị khiếu nại.',
+    policy: 'Điều 5.2 — Thành viên tự ý bỏ kèo sau check-in không được hoàn phí và bị trừ điểm uy tín.',
+    recommendation: 'Phân bổ khoản phí không hoàn cho nhóm còn lại và trừ 15 điểm uy tín tài khoản bị khiếu nại.',
     evidence: ['Ảnh bảng điểm lúc 20:11', 'Lịch sử check-in QR', 'Biên bản xác nhận của Field Manager'],
   },
   {
     id: 'DIS-13', subject: 'Đặt sân An Khánh · Mưa ngập sân', category: 'WEATHER', claimant: 'Nguyễn Tuấn', respondent: 'Chủ sân An Khánh', amount: 180000, severity: 'MEDIUM', status: 'OPEN', openedAt: '14/10/2026 · 18:52',
-    description: 'Mưa lớn khiến sân ngoài trời ngập nước nhưng chủ sân từ chối hoàn cọc cho khách.',
-    policy: 'Điều 7.1 — Sự kiện thời tiết bất khả kháng được hoàn 100% tiền cọc nếu sân không thể vận hành.',
+    description: 'Mưa lớn khiến sân ngoài trời ngập nước nhưng chủ sân từ chối hoàn phí cho khách.',
+    policy: 'Điều 7.1 — Sự kiện thời tiết bất khả kháng được hoàn 100% số tiền đã thanh toán nếu sân không thể vận hành.',
     recommendation: 'Hoàn 180.000đ về Ví người chơi; ghi nhận trợ giá bảo trì 50.000đ cho cụm sân.',
     evidence: ['2 ảnh sân ngập lúc 18:35', 'Video đối soát tại quầy', 'Dữ liệu thời tiết khu vực'],
   },
@@ -95,7 +95,7 @@ const initialDisputes: AdminDispute[] = [
     id: 'DIS-09', subject: 'Nghi vấn khai gian DUPR · Kèo MM-9011', category: 'DUPR_FRAUD', claimant: 'Cộng đồng người chơi', respondent: 'Tài khoản #U0971', amount: 90000, severity: 'HIGH', status: 'OPEN', openedAt: '13/10/2026 · 22:10',
     description: 'Tài khoản tự khai DUPR 2.3 nhưng dữ liệu 12 trận gần nhất cho thấy năng lực tương đương DUPR 4.0.',
     policy: 'Điều 9.4 — Sandbagging có chủ đích bị khóa matchmaking tối thiểu 30 ngày.',
-    recommendation: 'Tạm khóa matchmaking, yêu cầu đánh giá DUPR có giám sát và hoàn cọc cho hai trận bị ảnh hưởng.',
+    recommendation: 'Tạm khóa matchmaking, yêu cầu đánh giá DUPR có giám sát và hoàn phí cho hai trận bị ảnh hưởng.',
     evidence: ['Video 3 trận gần nhất', 'Biểu đồ hiệu suất 12 trận', '5 báo cáo từ đối thủ'],
   },
   {

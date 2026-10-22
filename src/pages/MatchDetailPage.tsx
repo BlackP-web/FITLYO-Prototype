@@ -38,9 +38,9 @@ export const MatchDetailPage: React.FC = () => {
   )
   const isFull = match.currentPlayers >= match.maxPlayers
 
-  const handleDepositClick = () => {
+  const handlePaymentClick = () => {
     if (isUserJoined) {
-      showToast('Bạn đã cọc slot và giữ chỗ trong phòng này rồi!', 'info')
+      showToast('Bạn đã thanh toán và có chỗ trong phòng này rồi!', 'info')
       return
     }
     joinMatchRoom(match.id)
@@ -224,7 +224,7 @@ export const MatchDetailPage: React.FC = () => {
               </div>
 
               <Badge variant="success" className="text-xs">
-                <CheckCircle2 className="w-3 h-3 mr-1" /> Đã cọc slot
+                <CheckCircle2 className="w-3 h-3 mr-1" /> Đã thanh toán
               </Badge>
             </div>
           ))}
@@ -248,7 +248,7 @@ export const MatchDetailPage: React.FC = () => {
                       Đang chờ 1 người chơi nữa tham gia...
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Bấm nút cọc slot bên dưới để tham gia ngay phòng này
+                      Thanh toán phí tham gia để vào phòng đấu này
                     </p>
                   </div>
                 </div>
@@ -284,7 +284,7 @@ export const MatchDetailPage: React.FC = () => {
             duprRange={`DUPR ${match.targetDuprMin} - ${match.targetDuprMax}`}
             format={match.format === 'doubles' ? 'Đánh Đôi (4 người)' : 'Đánh Đơn (2 người)'}
             playerName={currentUser.name}
-            depositAmount={match.depositFee}
+            paidAmount={match.depositFee}
             onShare={() => showToast('Đã tạo liên kết chia sẻ vé QR!', 'info')}
           />
         </div>
@@ -297,7 +297,7 @@ export const MatchDetailPage: React.FC = () => {
               Phòng đang chờ đủ 4 người để phát sinh Vé QR Check-in
             </h4>
             <p className="text-muted-foreground leading-relaxed">
-              Ngay khi người chơi cuối cùng bấm cọc slot thành công, hệ thống sẽ tự động kích hoạt mã QR check-in và gửi thông báo đẩy đến điện thoại của toàn bộ 4 thành viên.
+              Ngay khi người chơi cuối cùng thanh toán thành công, hệ thống sẽ tự động kích hoạt mã QR check-in và gửi thông báo đẩy đến điện thoại của toàn bộ 4 thành viên.
             </p>
           </div>
         </div>
@@ -307,12 +307,12 @@ export const MatchDetailPage: React.FC = () => {
       <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-3 text-xs sm:text-sm">
         <h4 className="font-bold text-foreground flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-primary" />
-          <span>Chi Phí & Chính Sách Hoàn Cọc</span>
+          <span>Chi phí & Chính sách hoàn tiền</span>
         </h4>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
           <div className="rounded-xl bg-muted/40 p-3 space-y-1">
-            <span className="text-xs text-muted-foreground">Mức phí cọc slot 90 phút:</span>
+            <span className="text-xs text-muted-foreground">Phí tham gia thanh toán 100%:</span>
             <p className="text-base font-bold text-primary">
               {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(match.depositFee)}
               <span className="text-xs text-muted-foreground font-normal"> / người</span>
@@ -323,12 +323,12 @@ export const MatchDetailPage: React.FC = () => {
           </div>
 
           <div className="rounded-xl bg-muted/40 p-3 space-y-1">
-            <span className="text-xs text-muted-foreground">Quy định hủy slot & hoàn cọc:</span>
+            <span className="text-xs text-muted-foreground">Quy định hủy và hoàn tiền:</span>
             <p className="text-xs font-medium text-foreground">
-              • <b>Hội viên Free:</b> Hủy trước $\ge 12$ tiếng hoàn 100% về ví.
+              • Hủy trước từ 6 giờ trở lên: hoàn 100% về Ví FITLYO.
             </p>
-            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-              • <b>Hội viên Premium:</b> Hủy trước $\ge 4$ tiếng vẫn hoàn 100%.
+            <p className="text-xs font-medium text-destructive">
+              • Hủy dưới 6 giờ hoặc không đến: không hoàn phí.
             </p>
           </div>
         </div>
@@ -343,11 +343,11 @@ export const MatchDetailPage: React.FC = () => {
               onClick={() => setShowCancelModal(true)}
               className="text-xs sm:text-sm text-destructive border-destructive/40 hover:bg-destructive/10 active:scale-[0.98]"
             >
-              Hủy Giữ Chỗ
+              Hủy tham gia
             </Button>
           ) : (
             <div className="text-left">
-              <span className="text-[11px] text-muted-foreground block">Tổng phí cọc:</span>
+              <span className="text-[11px] text-muted-foreground block">Tổng phí:</span>
               <span className="text-base font-bold text-foreground">
                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(match.depositFee)}
               </span>
@@ -357,12 +357,12 @@ export const MatchDetailPage: React.FC = () => {
           <div className="flex items-center gap-2">
             {!isUserJoined && (
               <Button
-                onClick={handleDepositClick}
+                onClick={handlePaymentClick}
                 disabled={isFull}
                 className="gap-2 bg-primary text-primary-foreground font-bold shadow-md active:scale-[0.98] min-w-[180px]"
               >
                 <Sparkles className="w-4 h-4" />
-                {isFull ? 'PHÒNG ĐÃ ĐỦ NGƯỜI' : 'XÁC NHẬN CỌC SLOT'}
+                {isFull ? 'PHÒNG ĐÃ ĐỦ NGƯỜI' : 'THANH TOÁN 100%'}
               </Button>
             )}
 
@@ -399,12 +399,10 @@ export const MatchDetailPage: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-bold text-lg text-foreground">
-                  Xác nhận Hủy giữ chỗ phòng đấu?
+                  Xác nhận hủy tham gia phòng đấu?
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  {currentUser.isPremium
-                    ? 'Bạn là Hội viên FITLYO Premium: Hủy slot trước 4 tiếng sẽ được hoàn 100% tiền cọc về ví ngay lập tức.'
-                    : 'Theo quy định, hủy slot trước 12 tiếng sẽ được hoàn 100% tiền cọc. Nếu hủy sát giờ, tiền cọc sẽ chuyển cho chủ sân.'}
+                  Hủy trước giờ chơi từ 6 giờ trở lên sẽ hoàn 100% số tiền đã thanh toán về Ví FITLYO. Hủy dưới 6 giờ hoặc không đến sẽ không được hoàn phí.
                 </p>
               </div>
             </div>

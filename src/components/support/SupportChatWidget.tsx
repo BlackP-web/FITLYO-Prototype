@@ -100,7 +100,7 @@ export function SupportChatWidget() {
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-muted/15 p-4" aria-live="polite">
           {chatbotThread.messages.map((message) => {
             const isMine = message.senderRole === senderRole
-            return <div key={message.id} className={cn('flex', isMine ? 'justify-end' : 'justify-start')}><div className={cn('max-w-[86%] rounded-2xl px-3.5 py-3 text-sm leading-6 shadow-sm', isMine ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border bg-card text-foreground')}><p className={cn('mb-1 text-[10px] font-black', isMine ? 'text-primary-foreground/75' : 'text-muted-foreground')}>{message.senderName} · {message.sentAt}</p><p>{message.text}</p></div></div>
+            return <div key={message.id} className={cn('flex', isMine ? 'justify-end' : 'justify-start')}><div className={cn('max-w-[86%] rounded-2xl px-3.5 py-3 text-sm leading-6 shadow-sm', isMine ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border bg-card text-foreground')}><p className={cn('mb-1 text-[10px] font-black', isMine ? 'text-primary-foreground/75' : 'text-muted-foreground')}>{message.senderName} · {message.sentAt}</p><p className="whitespace-pre-line">{message.text}</p></div></div>
           })}
           <div ref={messagesEndRef} />
         </div>

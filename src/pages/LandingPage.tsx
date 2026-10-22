@@ -535,29 +535,7 @@ export function LandingPage() {
           <div className="mx-auto max-w-[1320px]">
             <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-[#3dbca1]">Gợi ý hôm nay</p><h2 className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">Buổi chơi đang được quan tâm</h2></div><button type="button" onClick={() => navigate(matchDestination)} className="hidden items-center gap-2 text-sm font-black text-primary sm:flex">Xem tất cả <ArrowRight className="h-4 w-4" /></button></div>
             <div className="mt-7 grid gap-5 lg:grid-cols-2">
-              {suggestedMatches.map((match) => (
-                <article key={match.id} className="fitlyo-elevated fitlyo-interactive grid overflow-hidden rounded-[1.6rem] sm:grid-cols-[0.78fr_1.22fr]">
-                  <button
-                    type="button"
-                    onClick={() => navigate(matchDestination)}
-                    aria-label={`Xem chi tiết buổi chơi ${match.title}`}
-                    className="group relative min-h-56 overflow-hidden text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/45 focus-visible:ring-inset sm:min-h-full"
-                  >
-                    <img src={match.image} alt={match.title} className="h-56 w-full object-cover transition duration-500 group-hover:scale-105 group-focus-visible:scale-105 sm:h-full" />
-                    <span className="absolute inset-0 bg-gradient-to-t from-[#143F42]/65 via-transparent to-transparent opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100" />
-                    <span className="absolute bottom-4 left-4 right-4 flex translate-y-2 items-center justify-between rounded-xl border border-white/20 bg-[#143F42]/80 px-3 py-2 text-xs font-black text-white opacity-0 backdrop-blur-md transition group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
-                      Xem chi tiết buổi chơi <ArrowUpRight className="h-4 w-4" />
-                    </span>
-                  </button>
-                  <div className="flex flex-col p-5">
-                    <h3 className="text-xl font-black tracking-tight">{match.title}</h3>
-                    <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" />{match.venue}</p>
-                    <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Calendar className="h-4 w-4 text-primary" />{match.date}</p>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full bg-secondary/55 px-3 py-1.5 text-primary">{match.level}</span><span className="rounded-full bg-muted px-3 py-1.5">{match.seats}</span></div>
-                    <div className="mt-auto flex items-end justify-between border-t border-border/60 pt-4"><strong className="text-xl">{match.price}<span className="text-xs font-medium text-muted-foreground"> / người</span></strong><button type="button" onClick={() => navigate(matchDestination)} className="flex min-h-12 items-center gap-2 rounded-xl px-2 text-sm font-black text-primary transition hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45">Xem buổi chơi <ArrowRight className="h-4 w-4" /></button></div>
-                  </div>
-                </article>
-              ))}
+              {suggestedMatches.map((match) => <article key={match.id} className="fitlyo-elevated fitlyo-interactive grid overflow-hidden rounded-[1.6rem] sm:grid-cols-[0.78fr_1.22fr]"><img src={match.image} alt={match.title} className="h-56 w-full object-cover sm:h-full" /><div className="flex flex-col p-5"><h3 className="text-xl font-black tracking-tight">{match.title}</h3><p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="h-4 w-4 text-primary" />{match.venue}</p><p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Calendar className="h-4 w-4 text-primary" />{match.date}</p><div className="mt-4 flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full bg-secondary/55 px-3 py-1.5 text-primary">{match.level}</span><span className="rounded-full bg-muted px-3 py-1.5">{match.seats}</span></div><div className="mt-auto flex items-end justify-between border-t border-border/60 pt-4"><strong className="text-xl">{match.price}<span className="text-xs font-medium text-muted-foreground"> / người</span></strong><button type="button" onClick={() => navigate(matchDestination)} className="flex items-center gap-2 text-sm font-black text-primary">Xem buổi chơi <ArrowRight className="h-4 w-4" /></button></div></div></article>)}
             </div>
           </div>
         </section>
@@ -603,7 +581,7 @@ export function LandingPage() {
               <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {filteredVenues.map((venue) => (
                   <article key={venue.id} className="group overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-                    <button type="button" onClick={() => navigate(playerDestination)} aria-label={`Xem chi tiết sân ${venue.name}`} className="relative block h-48 w-full overflow-hidden text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/45 focus-visible:ring-inset">
+                    <div className="relative h-48 overflow-hidden">
                       <img src={venue.image} alt={venue.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#143F42]/70 to-transparent" />
                       <span className="absolute left-4 top-4 rounded-full bg-secondary px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-secondary-foreground">{venue.type}</span>
@@ -611,7 +589,7 @@ export function LandingPage() {
                         <div><p className="text-xs text-white/70">{venue.area}</p><h3 className="mt-1 text-lg font-black">{venue.name}</h3></div>
                         <span className="rounded-xl bg-white/15 px-2.5 py-1.5 text-xs font-black backdrop-blur-md"><Star className="mr-1 inline h-3.5 w-3.5 fill-[#FFB697] text-[#FFB697]" />{venue.rating}</span>
                       </div>
-                    </button>
+                    </div>
                     <div className="p-5">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{venue.distance} km · {venue.courts}</span>
@@ -675,7 +653,7 @@ export function LandingPage() {
             <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {coaches.map((coach) => (
                 <article key={coach.name} className="group overflow-hidden rounded-[1.5rem] border border-border bg-card">
-                  <button type="button" onClick={() => navigate('/coaches')} aria-label={`Xem hồ sơ ${coach.name}`} className="relative block h-60 w-full overflow-hidden text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/45 focus-visible:ring-inset">
+                  <div className="relative h-60 overflow-hidden">
                     <img src={coach.image} alt={coach.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#143F42]/85 via-transparent to-transparent" />
                     <span className="absolute left-4 top-4 rounded-full bg-secondary px-3 py-1.5 text-[10px] font-black text-secondary-foreground">{coach.certificate}</span>
@@ -683,7 +661,7 @@ export function LandingPage() {
                       <h3 className="font-black">{coach.name}</h3>
                       <p className="mt-1 text-xs text-white/70">DUPR {coach.dupr} · ★ {coach.rating}</p>
                     </div>
-                  </button>
+                  </div>
                   <div className="p-4">
                     <p className="min-h-10 text-xs leading-5 text-muted-foreground">{coach.specialty}</p>
                     <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
@@ -776,9 +754,8 @@ export function LandingPage() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-3 pt-6 text-xs text-white/35 sm:flex-row sm:items-center sm:justify-between">
+          <div className="pt-6 text-xs text-white/35">
             <p>© 2026 FITLYO. Your Fit. Your Way.</p>
-            <p>EXE101 · FPT University</p>
           </div>
         </div>
       </footer>

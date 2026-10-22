@@ -99,7 +99,7 @@ const replyFor = (message: string) => {
   if (text.includes('giữ chỗ') || text.includes('hết hạn') || text.includes('trạng thái')) {
     return 'Đặt sân và Social Session thanh toán 100% ngay khi xác nhận. Riêng booking Coach sau khi được duyệt có cửa sổ thanh toán 15 phút; quá hạn, yêu cầu hết hiệu lực và lịch được mở lại.'
   }
-  return 'Tôi chưa nhận diện đầy đủ câu hỏi này. Bạn có thể chọn một chủ đề gợi ý bên dưới hoặc nhấn “Liên hệ người phụ trách” để chuyển sang Coach, Field Manager hay đội hỗ trợ FITLYO.'
+  return 'FITLYO chưa có hướng dẫn phù hợp với nội dung bạn vừa nhập. Vui lòng liên hệ đội hỗ trợ để được hướng dẫn đúng quy trình:\n\nĐiện thoại: 0901 234 567\nEmail: hello@fitlyo.vn\nĐịa chỉ: TP. Thủ Đức, TP.HCM'
 }
 
 export const useSupportChatStore = create<SupportChatState>()(

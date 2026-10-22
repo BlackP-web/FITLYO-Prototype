@@ -91,6 +91,7 @@ export const CourtCalendarPage = () => {
   const [quickEditError, setQuickEditError] = useState('')
   const [undoState, setUndoState] = useState<{ inventory?: CourtInventory[]; overrides?: typeof slotOverrides; expiresAt: number } | null>(null)
   const [undoSeconds, setUndoSeconds] = useState(10)
+  const [bookingToOpenId, setBookingToOpenId] = useState<string | null>(null)
 
   const selectedVenue = playerVenues.find((venue) => venue.id === selectedVenueId)
   const venueName = selectedVenue?.name ?? legacyVenue.name
@@ -129,11 +130,22 @@ export const CourtCalendarPage = () => {
           bookedAt: booking?.bookedAt,
           bookingStatus: booking ? 'Đã thanh toán 100%' : undefined,
           maintenanceReason: override?.maintenanceReason,
-          bookedNote: status === 'COACHING' ? venueSlot.label : undefined,
+          bookedNote: booking
+            ? `${booking.playerName} · ${booking.playerPhone}`
+            : status === 'COACHING'
+              ? venueSlot.label
+              : override?.status === 'PRIVATE_BOOKED'
+                ? `${override.customerName ?? 'Khách vãng lai'}${override.customerPhone ? ` · ${override.customerPhone}` : ''}`
+                : undefined,
         }
       }),
     }))
   }, [selectedVenue, legacyCourtInventory, slotOverrides, courtBookings, playerMatches, selectedDateIso])
+
+  const recentPlayerBookings = useMemo(() => courtBookings
+    .filter((booking) => booking.status === 'CONFIRMED')
+    .sort((a, b) => (b.bookedAt ?? '').localeCompare(a.bookedAt ?? ''))
+    .slice(0, 1), [courtBookings])
 
   const selectedSlots = useMemo(() => {
     const keys = new Set(selectedSlotKeys)
@@ -170,6 +182,24 @@ export const CourtCalendarPage = () => {
     const playerMatch = slot.matchRoomId ? playerMatches.find((match) => match.id === slot.matchRoomId) : undefined
     return playerMatch ? `${playerMatch.participants.length}/${playerMatch.maxPlayers}` : slot.playersCount
   }
+
+  const openPlayerBooking = (booking: (typeof courtBookings)[number]) => {
+    setSelectedVenueId(booking.venueId)
+    setSelectedDate(new Date(`${booking.date}T00:00:00`).toLocaleDateString('vi-VN'))
+    setSelectedSlotDetails(null)
+    setBookingToOpenId(booking.id)
+  }
+
+  useEffect(() => {
+    if (!bookingToOpenId) return
+    const booking = courtBookings.find((item) => item.id === bookingToOpenId && item.status === 'CONFIRMED')
+    if (!booking || booking.venueId !== selectedVenueId || booking.date !== selectedDateIso) return
+    const court = courtInventory.find((item) => item.id === booking.courtId)
+    const slot = court?.slots.find((item) => item.slotNumber === booking.slotNumber)
+    if (!court || !slot) return
+    setSelectedSlotDetails({ courtId: court.id, courtName: court.name, slot })
+    setBookingToOpenId(null)
+  }, [bookingToOpenId, courtBookings, courtInventory, selectedDateIso, selectedVenueId])
 
   const changeDate = (days: number) => {
     const [day, month, year] = selectedDate.split('/').map(Number)
@@ -421,6 +451,16 @@ export const CourtCalendarPage = () => {
         {Object.values(statusMeta).map((status) => <span key={status.label} className="flex shrink-0 items-center gap-1.5 font-medium"><i className={`h-3 w-3 rounded-md ${status.dot}`} />{status.label}</span>)}
       </div>
 
+      {recentPlayerBookings.length > 0 && <section className="rounded-2xl border border-orange-400/30 bg-orange-500/5 p-4 shadow-sm sm:p-5">
+        <h2 className="text-lg font-black">Đặt sân mới nhất</h2>
+        <div className="mt-4 grid gap-2">
+          {recentPlayerBookings.map((booking) => <div key={booking.id} className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0"><p className="font-black">{booking.playerName} · {booking.playerPhone}</p><p className="mt-1 text-xs text-muted-foreground">{booking.venueName} · {booking.courtName} · Slot {booking.slotNumber} ({booking.timeRange}) · {booking.dateLabel}</p><p className="mt-1 text-xs font-bold text-emerald-600">Đã thanh toán 100% · {booking.paidAmount.toLocaleString('vi-VN')}đ</p></div>
+            <Button type="button" variant="outline" className="shrink-0" onClick={() => openPlayerBooking(booking)}>Xem</Button>
+          </div>)}
+        </div>
+      </section>}
+
       <section className="overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-sm">
         <div className="min-w-[1320px]">
           <div className="grid border-b bg-muted/60" style={{ gridTemplateColumns: '150px repeat(10, minmax(112px, 1fr))' }}>
@@ -435,6 +475,7 @@ export const CourtCalendarPage = () => {
               const key = `${court.id}:${slot.slotNumber}`
               const isEditable = editableStatuses.includes(slot.status)
               const isSelected = selectedSlotKeys.includes(key)
+              const isPlayerBooking = slot.status === 'PRIVATE_BOOKED' && Boolean(slot.bookingId)
               return <button
                 key={slot.slotNumber}
                 type="button"
@@ -443,7 +484,7 @@ export const CourtCalendarPage = () => {
                 className={`group relative m-1.5 flex min-w-0 flex-col justify-between rounded-xl border p-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-primary/60 ${meta.className} ${quickEditMode && !isEditable ? 'cursor-not-allowed opacity-55' : 'hover:-translate-y-0.5 hover:shadow-md'} ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
               >
                 {quickEditMode && isEditable && <span className={`absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full border transition ${isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-current bg-card/80 text-transparent'}`}><Check className="h-3 w-3" /></span>}
-                <span className="flex items-center gap-1.5 pr-5 text-[10px] font-bold"><i className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} /><span className="truncate">{meta.label}</span>{slot.isPeak && <Flame className="ml-auto h-3.5 w-3.5 text-orange-500" />}</span>
+                <span className="flex items-center gap-1.5 pr-5 text-[10px] font-bold"><i className={`h-2 w-2 shrink-0 rounded-full ${meta.dot}`} /><span className="truncate">{isPlayerBooking ? 'Player đặt sân' : meta.label}</span>{slot.isPeak && <Flame className="ml-auto h-3.5 w-3.5 text-orange-500" />}</span>
                 <span className="mt-2 line-clamp-2 text-[9px] opacity-85">{slot.status === 'AVAILABLE' ? `${slot.price.toLocaleString('vi-VN')}đ` : slot.status === 'MATCH_PUBLISHED' ? `${slot.duprRange ?? 'DUPR'} · ${playerCountFor(slot) ?? '0/4'}` : slot.bookedNote ?? slot.maintenanceReason ?? 'Xem chi tiết'}</span>
               </button>
             })}

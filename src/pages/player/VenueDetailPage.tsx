@@ -2,7 +2,7 @@ import {
   ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Clock3, ExternalLink,
   Heart, MapPin, Phone, QrCode, ShieldCheck, Sparkles, Star, WalletCards, X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,16 +22,17 @@ const statusStyle: Record<VenueSlot['status'], string> = {
 }
 
 const dateKey = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
-const futureDate = (offset: number, short: string) => {
+const futureDate = (offset: number) => {
   const value = new Date()
   value.setDate(value.getDate() + offset)
   return {
     value: dateKey(value),
     label: new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).format(value),
-    short,
+    short: new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(value),
+    weekday: new Intl.DateTimeFormat('vi-VN', { weekday: 'short' }).format(value),
   }
 }
-const dates = [futureDate(1, 'Ngày mai'), futureDate(2, 'Ngày kia'), futureDate(3, 'Sau 3 ngày')]
+const dates = Array.from({ length: 14 }, (_, index) => futureDate(index + 1))
 
 export function VenueDetailPage() {
   const { venueId } = useParams()
@@ -50,15 +51,23 @@ export function VenueDetailPage() {
   const [payment, setPayment] = useState<'WALLET' | 'VIETQR'>('WALLET')
   const [accepted, setAccepted] = useState(false)
   const [favorite, setFavorite] = useState(false)
+  const dateScrollerRef = useRef<HTMLDivElement>(null)
 
   if (!venue) {
     return <div className="py-24 text-center"><h1 className="text-2xl font-black">Không tìm thấy cụm sân</h1><Button onClick={() => navigate('/player/venues')} className="mt-4">Quay lại khám phá sân</Button></div>
   }
 
   const isBooked = (court: VenueCourt, slot: VenueSlot) => bookedSlotKeys.includes(`${date.value}:${venue.id}:${court.id}:${slot.slotNumber}`)
+  const findSocialMatch = (court: VenueCourt, slotNumber: number) => playerMatches.find((item) => (
+    item.status !== 'CANCELLED'
+    && item.venueId === venue.id
+    && item.date === date.value
+    && item.slotNumber === slotNumber
+    && item.courtName.startsWith(court.name)
+  ))
   const effectiveSlot = (court: VenueCourt, slot: VenueSlot): VenueSlot => {
     const sharedBooking = courtBookings.find((item) => item.status === 'CONFIRMED' && item.venueId === venue.id && item.date === date.value && item.courtId === court.id && item.slotNumber === slot.slotNumber)
-    const match = playerMatches.find((item) => item.status !== 'CANCELLED' && item.venueId === venue.id && item.date === date.value && item.slotNumber === slot.slotNumber && item.courtName.startsWith(court.name))
+    const match = findSocialMatch(court, slot.slotNumber)
     const override = slotOverrides.find((item) => item.venueId === venue.id && item.date === date.value && item.courtId === court.id && item.slotNumber === slot.slotNumber)
     if (sharedBooking) return { ...slot, status: 'PRIVATE', label: 'Đã có Player đặt', price: sharedBooking.totalAmount }
     if (match) return { ...slot, status: 'SOCIAL', label: 'Kèo Social', duprRange: `${match.duprMin.toFixed(1)}–${match.duprMax.toFixed(1)}`, players: `${match.participants.length}/${match.maxPlayers}` }
@@ -87,6 +96,10 @@ export function VenueDetailPage() {
     setSelection({ court, slot })
     setPayment('WALLET')
     setAccepted(false)
+  }
+
+  const scrollDates = (direction: -1 | 1) => {
+    dateScrollerRef.current?.scrollBy({ left: direction * 360, behavior: 'smooth' })
   }
 
   return (
@@ -123,7 +136,13 @@ export function VenueDetailPage() {
       <section className="rounded-[2rem] border border-border/70 bg-card p-4 shadow-sm sm:p-7">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">SCR_VENUE_02 · 10-Slot Matrix</p><h2 className="mt-1 text-2xl font-black">Lịch sân 90 phút</h2><p className="mt-1 text-sm text-muted-foreground">10 slot liên tục từ 06:00–21:00. Player chỉ có thể bao sân; kèo Social do Field Manager tạo.</p></div>
-          <div className="flex gap-2 overflow-x-auto">{dates.map((item) => <button key={item.value} type="button" onClick={() => { setDate(item); setSelection(null) }} className={cn('min-w-24 rounded-xl border px-3 py-2 text-xs font-bold', date.value === item.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border')}>{item.short}</button>)}</div>
+          <div className="flex min-w-0 items-center gap-2 sm:max-w-[620px]">
+            <Button type="button" size="icon" variant="outline" className="h-11 w-11 shrink-0 rounded-xl" onClick={() => scrollDates(-1)} aria-label="Xem các ngày trước"><ChevronLeft className="h-4 w-4" /></Button>
+            <div ref={dateScrollerRef} className="flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:thin]">
+              {dates.map((item) => <button key={item.value} type="button" onClick={() => { setDate(item); setSelection(null) }} aria-pressed={date.value === item.value} className={cn('min-h-12 min-w-[122px] snap-start rounded-xl border px-3 py-2 text-left transition', date.value === item.value ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-card hover:border-primary/45')}><span className="block text-[10px] font-bold uppercase opacity-70">{item.weekday}</span><span className="mt-0.5 block text-sm font-black">{item.short}</span></button>)}
+            </div>
+            <Button type="button" size="icon" variant="outline" className="h-11 w-11 shrink-0 rounded-xl" onClick={() => scrollDates(1)} aria-label="Xem các ngày tiếp theo"><ChevronRight className="h-4 w-4" /></Button>
+          </div>
         </div>
 
         <div className="mt-6 overflow-x-auto"><div className="min-w-[860px]"><div className="grid gap-2" style={{ gridTemplateColumns: `150px repeat(${venue.courts.length}, minmax(280px, 1fr))` }}>
@@ -138,7 +157,9 @@ export function VenueDetailPage() {
                 const slot = effectiveSlot(court, sourceSlot)
                 const booked = isBooked(court, slot)
                 const available = slot.status === 'AVAILABLE' && !booked
-                return <button key={`${court.id}-${slotNumber}`} type="button" disabled={!available} onClick={() => selectSlot(court, slot)} className={cn('min-h-24 rounded-xl border p-3 text-left transition', booked ? statusStyle.PRIVATE : statusStyle[slot.status], available && 'hover:-translate-y-0.5 hover:shadow-md')}><div className="flex items-start justify-between gap-2"><b className="text-xs">{booked ? 'ĐÃ ĐẶT BỞI BẠN' : slot.status === 'AVAILABLE' ? 'TRỐNG · ĐẶT NGAY' : slot.label ?? slot.status}</b>{slot.isPeak && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}</div><p className="mt-2 text-base font-black">{slot.price ? `${slot.price.toLocaleString('vi-VN')}đ` : 'Tạm khóa'}</p>{slot.duprRange && <p className="mt-1 text-[10px]">DUPR {slot.duprRange} · {slot.players}</p>}</button>
+                const socialMatch = slot.status === 'SOCIAL' ? findSocialMatch(court, slotNumber) : undefined
+                const interactive = available || Boolean(socialMatch)
+                return <button key={`${court.id}-${slotNumber}`} type="button" disabled={!interactive} onClick={() => socialMatch ? navigate(`/player/matches/${socialMatch.id}`) : selectSlot(court, slot)} aria-label={socialMatch ? `Xem chi tiết ${socialMatch.title}` : available ? `Đặt ${court.name}, slot ${slotNumber}` : undefined} className={cn('min-h-24 rounded-xl border p-3 text-left transition', booked ? statusStyle.PRIVATE : statusStyle[slot.status], interactive && 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2')}><div className="flex items-start justify-between gap-2"><b className="text-xs">{booked ? 'ĐÃ ĐẶT BỞI BẠN' : slot.status === 'AVAILABLE' ? 'TRỐNG · ĐẶT NGAY' : slot.label ?? slot.status}</b>{slot.isPeak && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}</div><p className="mt-2 text-base font-black">{slot.price ? `${slot.price.toLocaleString('vi-VN')}đ` : 'Tạm khóa'}</p>{slot.duprRange && <p className="mt-1 text-[10px]">DUPR {slot.duprRange} · {slot.players}</p>}{socialMatch && <p className="mt-2 text-[10px] font-black underline underline-offset-2">Xem chi tiết kèo</p>}</button>
               }),
             ]
           })}

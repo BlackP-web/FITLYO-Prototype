@@ -113,6 +113,9 @@ export interface PlayerScheduleItem {
   courtId?: string
   slotNumber?: number
   rescheduleCount?: number
+  bookingPlayerId?: string
+  bookingPlayerName?: string
+  bookingPlayerPhone?: string
 }
 
 export interface VenueSlot {

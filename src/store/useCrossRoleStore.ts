@@ -53,6 +53,8 @@ interface CrossRoleState {
   resetCrossRoleDemo: () => void
 }
 
+const crossRoleStorageKey = 'fitlyo-cross-role-v1'
+
 export const useCrossRoleStore = create<CrossRoleState>()(
   persist(
     (set) => ({
@@ -75,9 +77,18 @@ export const useCrossRoleStore = create<CrossRoleState>()(
       resetCrossRoleDemo: () => set({ courtBookings: [], slotOverrides: [] }),
     }),
     {
-      name: 'fitlyo-cross-role-v1',
+      name: crossRoleStorageKey,
       storage: createJSONStorage(() => localStorage),
       version: 1,
     },
   ),
 )
+
+// Player và Field Manager thường được kiểm thử ở hai tab khác nhau. Zustand
+// chỉ cập nhật store trong tab hiện tại, vì vậy tab còn lại cần rehydrate khi
+// bản ghi booking dùng chung trong localStorage thay đổi.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === crossRoleStorageKey) void useCrossRoleStore.persist.rehydrate()
+  })
+}

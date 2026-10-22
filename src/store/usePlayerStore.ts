@@ -6,6 +6,7 @@ import { courtRefundOutcome, hoursUntilEvent, socialRefundOutcome } from '@/lib/
 import { getPlayerMatchFee } from '@/lib/playerMatch'
 import { usePaymentStore } from '@/store/usePaymentStore'
 import { useCrossRoleStore } from '@/store/useCrossRoleStore'
+import { useAuthStore } from '@/store/useAuthStore'
 import type {
   PlayerMatch,
   PlayerProfile,
@@ -489,9 +490,9 @@ const syncCourtBookingsToShared = (state: Pick<PlayerState, 'profile' | 'venues'
     useCrossRoleStore.getState().upsertCourtBooking({
       id: item.id,
       bookingCode: item.bookingCode,
-      playerId: state.profile.id,
-      playerName: state.profile.name,
-      playerPhone: state.profile.phone,
+      playerId: item.bookingPlayerId ?? state.profile.id,
+      playerName: item.bookingPlayerName ?? state.profile.name,
+      playerPhone: item.bookingPlayerPhone ?? state.profile.phone,
       venueId: venue.id,
       venueName: venue.name,
       venueAddress: venue.address,
@@ -714,6 +715,8 @@ export const usePlayerStore = create<PlayerState>()(
 
       bookCourt: (input) => {
         const state = get()
+        const session = useAuthStore.getState().session
+        const bookingPlayer = session?.role === 'player' ? session : state.profile
         const venue = state.venues.find((item) => item.id === input.venueId)
         const court = venue?.courts.find((item) => item.id === input.courtId)
         const slot = court?.slots.find((item) => item.slotNumber === input.slotNumber)
@@ -728,7 +731,7 @@ export const usePlayerStore = create<PlayerState>()(
         if (slot.status !== 'AVAILABLE') return { success: false, message: 'Slot này hiện không nhận đặt mới.' }
         const conflict = state.schedule.find((item) => item.status === 'UPCOMING' && item.date === input.date && item.timeRange === slot.timeRange)
         if (conflict) return { success: false, message: `Bạn đã trùng lịch với “${conflict.title}” trong khung giờ ${slot.timeRange}.` }
-        const totalAmount = slot.price
+        const totalAmount = fmOverride?.price ?? slot.price
         const amount = totalAmount
         const remainingAmount = 0
         const paymentMethod = input.paymentMethod ?? 'WALLET'
@@ -777,14 +780,17 @@ export const usePlayerStore = create<PlayerState>()(
             courtId: court.id,
             slotNumber: slot.slotNumber,
             rescheduleCount: 0,
+            bookingPlayerId: bookingPlayer.id,
+            bookingPlayerName: bookingPlayer.name,
+            bookingPlayerPhone: bookingPlayer.phone,
           }, ...current.schedule],
         }))
         useCrossRoleStore.getState().upsertCourtBooking({
           id: scheduleId,
           bookingCode: ticketCode,
-          playerId: state.profile.id,
-          playerName: state.profile.name,
-          playerPhone: state.profile.phone,
+          playerId: bookingPlayer.id,
+          playerName: bookingPlayer.name,
+          playerPhone: bookingPlayer.phone,
           venueId: venue.id,
           venueName: venue.name,
           venueAddress: venue.address,
@@ -1076,4 +1082,7 @@ export const usePlayerStore = create<PlayerState>()(
 // Player ↔ Field Manager source of truth after persisted state is hydrated.
 if (typeof window !== 'undefined') {
   window.queueMicrotask(() => syncCourtBookingsToShared(usePlayerStore.getState()))
+  window.addEventListener('storage', (event) => {
+    if (event.key === playerStorageKey) void usePlayerStore.persist.rehydrate()
+  })
 }

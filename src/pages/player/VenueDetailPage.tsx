@@ -63,7 +63,7 @@ export function VenueDetailPage() {
     && item.venueId === venue.id
     && item.date === date.value
     && item.slotNumber === slotNumber
-    && item.courtName.startsWith(court.name)
+    && (item.courtId ? item.courtId === court.id : item.courtName.startsWith(court.name))
   ))
   const effectiveSlot = (court: VenueCourt, slot: VenueSlot): VenueSlot => {
     const sharedBooking = courtBookings.find((item) => item.status === 'CONFIRMED' && item.venueId === venue.id && item.date === date.value && item.courtId === court.id && item.slotNumber === slot.slotNumber)

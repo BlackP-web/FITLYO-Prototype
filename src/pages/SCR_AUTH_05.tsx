@@ -27,8 +27,8 @@ export function SCR_AUTH_05() {
     [auditApplications, session?.id],
   )
   const saved = existing?.applicationData
-  const [fullName, setFullName] = useState(String(saved?.fullName ?? coachAccount.name))
-  const [phone, setPhone] = useState(String(saved?.phone ?? coachAccount.phone))
+  const [fullName, setFullName] = useState(String(session?.name ?? saved?.fullName ?? coachAccount.name))
+  const [phone, setPhone] = useState(String(session?.phone ?? saved?.phone ?? coachAccount.phone))
   const [dupr, setDupr] = useState(String(saved?.dupr ?? coachAccount.duprRating))
   const [duprId, setDuprId] = useState(String(saved?.duprId ?? coachAccount.certificateCode))
   const [certificateType, setCertificateType] = useState(String(saved?.certificateType ?? coachAccount.certificateTitle))

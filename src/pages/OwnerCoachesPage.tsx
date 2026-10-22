@@ -29,7 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import type { CoachItem, CoachVenueAffiliation } from '@/types/pickleball'
 
-const managedVenueId = 'ven_1'
+const allVenuesValue = 'all'
 
 const formatDateTime = (value?: string) => {
   if (!value) return 'Chưa có dữ liệu'
@@ -56,12 +56,13 @@ export function OwnerCoachesPage() {
     coachAffiliationNotifications,
     venues,
     lookupCoachForAffiliation,
-    directAddCoachAffiliation,
+    requestCoachAffiliationFromVenue,
     approveCoachAffiliation,
     rejectCoachAffiliation,
     unlinkCoachAffiliation,
   } = useFitlyoStore()
-  const [activeTab, setActiveTab] = useState('active')
+  const [activeTab, setActiveTab] = useState('pending')
+  const [selectedVenueId, setSelectedVenueId] = useState(allVenuesValue)
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [lookupInput, setLookupInput] = useState('')
   const [lookupResult, setLookupResult] = useState<{ success: boolean; message: string; coach?: CoachItem } | null>(null)
@@ -69,14 +70,20 @@ export function OwnerCoachesPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [unlinkTarget, setUnlinkTarget] = useState<CoachVenueAffiliation | null>(null)
 
-  const venue = venues.find((item) => item.id === managedVenueId)
-  const venueAffiliations = coachAffiliations.filter((item) => item.venueId === managedVenueId)
+  const venue = venues.find((item) => item.id === selectedVenueId)
+  const venueAffiliations = selectedVenueId === allVenuesValue
+    ? coachAffiliations
+    : coachAffiliations.filter((item) => item.venueId === selectedVenueId)
   const activeAffiliations = venueAffiliations.filter((item) => item.status === 'ACTIVE')
   const pendingAffiliations = venueAffiliations.filter((item) => item.status === 'PENDING')
   const historyAffiliations = venueAffiliations.filter((item) => item.status === 'REJECTED' || item.status === 'INACTIVE')
   const notifications = useMemo(
-    () => coachAffiliationNotifications.filter((item) => item.recipientId === `fm:${managedVenueId}`).slice(0, 3),
-    [coachAffiliationNotifications],
+    () => coachAffiliationNotifications.filter((item) => (
+      selectedVenueId === allVenuesValue
+        ? item.recipientId.startsWith('fm:')
+        : item.recipientId === `fm:${selectedVenueId}`
+    )).slice(0, 5),
+    [coachAffiliationNotifications, selectedVenueId],
   )
 
   const resetLookup = () => {
@@ -86,18 +93,23 @@ export function OwnerCoachesPage() {
 
   const handleLookup = (event: React.FormEvent) => {
     event.preventDefault()
-    setLookupResult(lookupCoachForAffiliation(managedVenueId, lookupInput))
+    if (selectedVenueId === allVenuesValue) {
+      setLookupResult({ success: false, message: 'Vui lòng chọn một cụm sân trước khi thêm Coach trực tiếp.' })
+      return
+    }
+    setLookupResult(lookupCoachForAffiliation(selectedVenueId, lookupInput))
   }
 
   const handleDirectAdd = () => {
-    const result = directAddCoachAffiliation(managedVenueId, lookupInput)
+    if (selectedVenueId === allVenuesValue) return
+    const result = requestCoachAffiliationFromVenue(selectedVenueId, lookupInput)
     if (!result.success) {
       setLookupResult({ success: false, message: result.message })
       return
     }
     setIsAddOpen(false)
     resetLookup()
-    setActiveTab('active')
+    setActiveTab('pending')
   }
 
   const confirmReject = () => {
@@ -113,8 +125,25 @@ export function OwnerCoachesPage() {
   }
 
   const renderCoachCard = (affiliation: CoachVenueAffiliation) => {
-    const coach = coaches.find((item) => item.id === affiliation.coachId)
-    if (!coach) return null
+    const coach: CoachItem = coaches.find((item) => item.id === affiliation.coachId) ?? {
+      id: affiliation.coachId,
+      userId: affiliation.coachId,
+      name: affiliation.coachName ?? 'Coach FITLYO',
+      avatarUrl: affiliation.coachAvatarUrl ?? coaches[0]?.avatarUrl ?? '',
+      phone: affiliation.coachPhone ?? 'Chưa cập nhật',
+      duprRating: affiliation.coachDuprRating ?? 0,
+      isCertified: Boolean(affiliation.coachCertificateTitle),
+      certTitle: affiliation.coachCertificateTitle ?? 'Chưa cập nhật',
+      rating: 0,
+      reviewCount: 0,
+      experienceYears: affiliation.coachExperienceYears ?? 0,
+      achievements: 'Coach đã được Admin FITLYO xác thực.',
+      serviceLocations: [],
+      ratePerSession: 0,
+      ratePerMonthCourse: 0,
+      specialties: [],
+      accountStatus: 'ACTIVE',
+    }
     const isSuspended = coach.accountStatus === 'SUSPENDED'
 
     return (
@@ -143,6 +172,7 @@ export function OwnerCoachesPage() {
               {affiliation.status === 'INACTIVE' && <Badge variant="outline">Đã hủy liên kết</Badge>}
             </div>
             <p className="mt-1.5 text-xs text-muted-foreground">SĐT: {maskPhone(coach.phone)}</p>
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">{affiliation.venueName}</p>
           </div>
         </div>
 
@@ -159,11 +189,11 @@ export function OwnerCoachesPage() {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
           <div className="text-[11px] text-muted-foreground">
-            <p>{affiliation.linkType === 'FM_DIRECT_ADD' ? 'FM thêm trực tiếp' : 'Coach gửi yêu cầu'}</p>
+            <p>{affiliation.linkType === 'FM_REQUEST' ? 'FM gửi lời mời' : affiliation.linkType === 'FM_DIRECT_ADD' ? 'FM thêm trực tiếp (dữ liệu cũ)' : 'Coach gửi yêu cầu'}</p>
             <p className="mt-0.5">{formatDateTime(affiliation.linkedAt ?? affiliation.requestedAt)}</p>
           </div>
           <div className="flex gap-2">
-            {affiliation.status === 'PENDING' && (
+            {affiliation.status === 'PENDING' && affiliation.linkType === 'COACH_REQUEST' && (
               <>
                 <Button size="sm" variant="outline" onClick={() => setRejectTarget(affiliation)}>
                   <UserRoundX /> Từ chối
@@ -177,6 +207,11 @@ export function OwnerCoachesPage() {
                   <UserCheck /> Chấp thuận
                 </Button>
               </>
+            )}
+            {affiliation.status === 'PENDING' && affiliation.linkType === 'FM_REQUEST' && (
+              <Button size="sm" variant="outline" disabled className="border-amber-500/25 bg-amber-500/5 text-amber-700 dark:text-amber-300">
+                <Clock3 /> Chờ Coach phản hồi
+              </Button>
             )}
             {affiliation.status === 'ACTIVE' && (
               <Button size="sm" variant="outline" onClick={() => setUnlinkTarget(affiliation)}>
@@ -209,24 +244,35 @@ export function OwnerCoachesPage() {
             <span className="text-xs font-semibold text-muted-foreground">Field Manager · Coach Affiliation</span>
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Huấn luyện viên liên kết</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{venue?.name ?? 'Cụm sân đang quản lý'} · Duyệt và quản lý quyền mở lớp tại sân.</p>
+          <p className="mt-1 text-sm text-muted-foreground">{venue?.name ?? 'Tất cả cụm sân đang quản lý'} · Duyệt và quản lý quyền mở lớp tại đúng sân Coach đã chọn.</p>
         </div>
-        <Button
-          className="h-11"
-          onClick={() => {
-            resetLookup()
-            setIsAddOpen(true)
-          }}
-        >
-          <Plus /> Thêm Coach qua UserID
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <label className="flex h-11 items-center rounded-xl border border-border bg-card px-3 text-sm font-bold shadow-sm">
+            <span className="sr-only">Chọn cụm sân quản lý</span>
+            <select value={selectedVenueId} onChange={(event) => { setSelectedVenueId(event.target.value); setActiveTab('pending') }} className="min-w-64 bg-transparent outline-none">
+              <option value={allVenuesValue}>Tất cả cụm sân</option>
+              {venues.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
+          <Button
+            className="h-11"
+            disabled={selectedVenueId === allVenuesValue}
+            title={selectedVenueId === allVenuesValue ? 'Chọn một cụm sân để thêm Coach trực tiếp' : undefined}
+            onClick={() => {
+              resetLookup()
+              setIsAddOpen(true)
+            }}
+          >
+            <Plus /> Mời Coach liên kết
+          </Button>
+        </div>
       </div>
 
       <section className="grid gap-3 sm:grid-cols-3">
         {[
           { label: 'Đang liên kết', value: activeAffiliations.length, icon: Link2, tone: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
           { label: 'Chờ duyệt', value: pendingAffiliations.length, icon: Clock3, tone: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
-          { label: 'Đã xác thực', value: venueAffiliations.filter((item) => coaches.find((coach) => coach.id === item.coachId)?.isCertified).length, icon: ShieldCheck, tone: 'bg-secondary/60 text-primary dark:bg-secondary/15' },
+          { label: 'Đã xác thực', value: venueAffiliations.filter((item) => coaches.find((coach) => coach.id === item.coachId)?.isCertified || item.coachCertificateTitle).length, icon: ShieldCheck, tone: 'bg-secondary/60 text-primary dark:bg-secondary/15' },
         ].map((item) => {
           const Icon = item.icon
           return (
@@ -279,23 +325,23 @@ export function OwnerCoachesPage() {
       <Dialog open={isAddOpen} onOpenChange={(open) => { setIsAddOpen(open); if (!open) resetLookup() }}>
         <DialogContent className="max-w-xl rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Thêm huấn luyện viên liên kết trực tiếp</DialogTitle>
-            <DialogDescription>Kiểm tra đúng hồ sơ Coach trước khi cấp quyền mở lớp tại {venue?.name}.</DialogDescription>
+            <DialogTitle>Gửi lời mời liên kết đến Coach</DialogTitle>
+            <DialogDescription>Tìm đúng Coach đã xác minh. Liên kết chỉ có hiệu lực sau khi Coach chấp nhận lời mời từ {venue?.name}.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleLookup} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="coach-user-id">UserID hoặc mã HLV</Label>
+              <Label htmlFor="coach-user-id">Số điện thoại hoặc họ tên Coach</Label>
               <div className="flex gap-2">
                 <Input
                   id="coach-user-id"
                   value={lookupInput}
                   onChange={(event) => { setLookupInput(event.target.value); setLookupResult(null) }}
-                  placeholder="Ví dụ: COACH_VALID_99"
+                  placeholder="Ví dụ: 0909 485 285 hoặc Lê Hoàng Dũng"
                   autoFocus
                 />
                 <Button type="submit" variant="outline"><Search /> Kiểm tra</Button>
               </div>
-              <p className="text-[11px] text-muted-foreground">Hệ thống tự bỏ khoảng trắng và không phân biệt chữ hoa/thường.</p>
+              <p className="text-[11px] text-muted-foreground">Chỉ tìm trong các tài khoản Coach đã được Admin xác minh; không phân biệt dấu, chữ hoa/thường hoặc khoảng trắng.</p>
             </div>
           </form>
 
@@ -330,7 +376,7 @@ export function OwnerCoachesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Hủy bỏ</Button>
             <Button disabled={!lookupResult?.success || !lookupResult.coach} onClick={handleDirectAdd}>
-              <Link2 /> Xác nhận liên kết ngay
+              <Link2 /> Gửi lời mời liên kết
             </Button>
           </DialogFooter>
         </DialogContent>

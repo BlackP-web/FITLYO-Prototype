@@ -277,11 +277,13 @@ export const useCoachBookingStore = create<CoachBookingState>()(
           const pattern = coachPatterns[coach.id]
           const bookingId = `coach-request-${Date.now()}`
           const totalAmount = type === 'SINGLE' ? coach.ratePerSession : coach.ratePerMonthCourse
+          const playerProfile = usePlayerStore.getState().profile
           const booking: CoachBooking = {
             id: bookingId,
-            playerId: usePlayerStore.getState().profile.id,
-            playerName: usePlayerStore.getState().profile.name,
-            playerAvatarUrl: usePlayerStore.getState().profile.avatarUrl,
+            playerId: playerProfile.id,
+            playerName: playerProfile.name,
+            playerPhone: playerProfile.phone,
+            playerAvatarUrl: playerProfile.avatarUrl,
             coachId: coach.id,
             coachName: coach.name,
             coachAvatarUrl: coach.avatarUrl,
@@ -541,3 +543,11 @@ export const useCoachBookingStore = create<CoachBookingState>()(
 )
 
 export { slotTimes }
+
+// Player và Coach thường được kiểm thử ở hai tab khác nhau. Khi Player gửi
+// yêu cầu hoặc thanh toán, tab Coach cần nạp lại booking ngay từ localStorage.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === bookingStorageKey) void useCoachBookingStore.persist.rehydrate()
+  })
+}

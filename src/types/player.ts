@@ -50,6 +50,11 @@ export interface PlayerMatch {
   title: string
   label: string
   venueId: string
+  /**
+   * Khóa sân con dùng để đồng bộ chính xác giữa Player và Field Manager.
+   * Optional để dữ liệu prototype cũ trong localStorage vẫn tương thích.
+   */
+  courtId?: string
   venueName: string
   courtName: string
   address: string

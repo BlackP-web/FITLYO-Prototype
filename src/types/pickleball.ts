@@ -236,10 +236,17 @@ export interface CoachVenueAffiliation {
   id: string
   venueId: string
   coachId: string
+  /** Snapshot hồ sơ tại thời điểm gửi yêu cầu để FM luôn xem được Coach mới. */
+  coachName?: string
+  coachAvatarUrl?: string
+  coachPhone?: string
+  coachDuprRating?: number
+  coachExperienceYears?: number
+  coachCertificateTitle?: string
   venueName: string
   address: string
   distanceKm: number
-  linkType: 'COACH_REQUEST' | 'FM_DIRECT_ADD'
+  linkType: 'COACH_REQUEST' | 'FM_REQUEST' | 'FM_DIRECT_ADD'
   status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'INACTIVE'
   rejectedReason?: string
   requestedAt: string

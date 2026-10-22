@@ -50,6 +50,7 @@ export function CoachVenuesPage() {
     coachCourses,
     venues,
     requestVenueAffiliation,
+    respondToVenueAffiliationInvitation,
     unlinkCoachAffiliation,
   } = useFitlyoStore()
   const [search, setSearch] = useState('')
@@ -160,7 +161,7 @@ export function CoachVenuesPage() {
                               <p className="mt-2 flex gap-1 text-[11px] leading-relaxed text-muted-foreground"><MapPin className="mt-0.5 h-3 w-3 shrink-0" /> {venue.address}</p>
                             </div>
                             {isActive && <Badge variant="success"><CheckCircle2 /> Đã liên kết</Badge>}
-                            {isPending && <Badge variant="warning"><Clock3 /> Đang chờ duyệt</Badge>}
+                            {isPending && <Badge variant="warning"><Clock3 /> {affiliation.linkType === 'FM_REQUEST' ? 'Sân mời liên kết' : 'Đang chờ sân duyệt'}</Badge>}
                             {isRejected && <Badge variant="destructive"><XCircle /> Bị từ chối</Badge>}
                             {isInactive && <Badge variant="outline"><Unlink /> Đã hủy</Badge>}
                           </div>
@@ -175,6 +176,7 @@ export function CoachVenuesPage() {
                             <p className="mt-3 text-[11px] text-muted-foreground">
                               {isActive ? 'Có hiệu lực' : 'Gửi yêu cầu'}: {formatDateTime(affiliation.linkedAt ?? affiliation.requestedAt)}
                               {affiliation.linkType === 'FM_DIRECT_ADD' && ' · FM thêm trực tiếp'}
+                              {affiliation.linkType === 'FM_REQUEST' && ' · Lời mời từ Field Manager'}
                             </p>
                           )}
 
@@ -186,7 +188,13 @@ export function CoachVenuesPage() {
                             {!affiliation && (
                               <Button size="sm" onClick={() => requestVenueAffiliation(venue.id)} className="w-full"><Send /> Gửi yêu cầu liên kết</Button>
                             )}
-                            {isPending && <Button size="sm" variant="outline" disabled className="w-full border-amber-500/25 bg-amber-500/5 text-amber-700 dark:text-amber-300"><Clock3 /> Đang chờ duyệt</Button>}
+                            {isPending && affiliation.linkType === 'COACH_REQUEST' && <Button size="sm" variant="outline" disabled className="w-full border-amber-500/25 bg-amber-500/5 text-amber-700 dark:text-amber-300"><Clock3 /> Đang chờ Field Manager duyệt</Button>}
+                            {isPending && affiliation.linkType === 'FM_REQUEST' && (
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button size="sm" variant="outline" onClick={() => respondToVenueAffiliationInvitation(affiliation.id, false)} className="border-destructive/25 text-destructive"><XCircle /> Từ chối</Button>
+                                <Button size="sm" onClick={() => respondToVenueAffiliationInvitation(affiliation.id, true)}><CheckCircle2 /> Chấp nhận</Button>
+                              </div>
+                            )}
                             {isActive && <Button size="sm" variant="outline" onClick={() => setUnlinkTarget(affiliation)} className="w-full"><Unlink /> Hủy liên kết</Button>}
                             {(isRejected || isInactive) && (
                               <Button size="sm" onClick={() => requestVenueAffiliation(venue.id)} className="w-full"><RotateCcw /> Gửi lại yêu cầu liên kết</Button>

@@ -40,7 +40,7 @@ interface AuthState {
   login: (email: string, password: string) => AuthResult
   registerAccount: (input: RegisterInput) => AuthResult
   updateKycStatus: (accountId: string, status: KycStatus, reason?: string) => void
-  verifyAccount: (accountId: string) => void
+  verifyAccount: (accountId: string, verifiedTitle?: string) => void
   rejectAccount: (accountId: string, reason: string) => void
   requestSupplement: (accountId: string, reason: string) => void
   logout: () => void
@@ -138,8 +138,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     saveSession(session)
     set({ accounts, session })
   },
-  verifyAccount: (accountId) => get().updateKycStatus(accountId, 'APPROVED'),
+  verifyAccount: (accountId, verifiedTitle) => {
+    const accounts = get().accounts.map((account) => account.id === accountId
+      ? {
+          ...account,
+          isVerified: true,
+          kycStatus: 'APPROVED' as const,
+          kycReason: undefined,
+          title: verifiedTitle ?? account.title,
+        }
+      : account)
+    const current = get().session
+    const session = current?.id === accountId ? withoutPassword(accounts.find((item) => item.id === accountId)!) : current
+    saveAccounts(accounts)
+    saveSession(session)
+    set({ accounts, session })
+  },
   rejectAccount: (accountId, reason) => get().updateKycStatus(accountId, 'REJECTED', reason),
   requestSupplement: (accountId, reason) => get().updateKycStatus(accountId, 'NEEDS_SUPPLEMENT', reason),
   logout: () => { saveSession(null); set({ session: null }) },
 }))
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== accountsStorageKey) return
+    const accounts = readAccounts()
+    const current = useAuthStore.getState().session
+    const refreshed = current ? accounts.find((account) => account.id === current.id) : undefined
+    useAuthStore.setState({ accounts, session: refreshed ? withoutPassword(refreshed) : current })
+  })
+}

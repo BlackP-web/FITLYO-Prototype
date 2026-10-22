@@ -25,6 +25,7 @@ export interface CoachBooking {
   id: string
   playerId: string
   playerName: string
+  playerPhone?: string
   playerAvatarUrl: string
   coachId: string
   coachName: string

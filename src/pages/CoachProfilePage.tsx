@@ -4,12 +4,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuthStore } from '@/store/useAuthStore'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN').format(value) + 'đ'
 
 export function CoachProfilePage() {
   const { coachAccount, updateCoachProfile, showToast } = useFitlyoStore()
+  const session = useAuthStore((state) => state.session)
   const [form, setForm] = useState({
     name: coachAccount.name,
     phone: coachAccount.phone,
@@ -46,7 +48,7 @@ export function CoachProfilePage() {
         <form onSubmit={handleSave} className="brand-card space-y-6 rounded-3xl p-5 sm:p-6">
           <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
             <div className="relative w-fit"><img src={coachAccount.avatarUrl} alt={coachAccount.name} className="h-24 w-24 rounded-2xl object-cover" /><button type="button" onClick={() => showToast('Chức năng tải ảnh đang được mô phỏng.', 'info')} className="absolute -bottom-2 -right-2 rounded-xl bg-primary p-2 text-primary-foreground shadow"><Camera className="h-4 w-4" /></button></div>
-            <div><div className="flex flex-wrap gap-2"><Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"><BadgeCheck /> Coach đã duyệt</Badge><Badge className="border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"><Award /> {coachAccount.certificateTitle}</Badge></div><p className="mt-3 text-xs text-muted-foreground">Mã Coach: <strong className="text-foreground">{coachAccount.id}</strong> · Trạng thái xác thực không thể tự chỉnh sửa.</p></div>
+            <div><div className="flex flex-wrap gap-2"><Badge className={session?.isVerified ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300'}><BadgeCheck /> {session?.isVerified ? 'Coach đã duyệt' : 'Coach chưa xác minh'}</Badge><Badge className="border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"><Award /> {coachAccount.certificateTitle}</Badge></div><p className="mt-3 text-xs text-muted-foreground">Mã Coach: <strong className="text-foreground">{coachAccount.id}</strong> · Trạng thái xác thực không thể tự chỉnh sửa.</p></div>
           </div>
 
           <div>
@@ -82,7 +84,7 @@ export function CoachProfilePage() {
           </section>
 
           <section className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-5">
-            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300"><ShieldCheck className="h-5 w-5" /><h2 className="font-black">Chứng chỉ đã xác thực</h2></div>
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300"><ShieldCheck className="h-5 w-5" /><h2 className="font-black">{session?.isVerified ? 'Chứng chỉ đã xác thực' : 'Chứng chỉ chờ xác minh'}</h2></div>
             <div className="mt-4 rounded-2xl border border-amber-500/20 bg-card p-4"><div className="flex items-start gap-3"><div className="rounded-xl bg-amber-500/10 p-2 text-amber-700 dark:text-amber-300"><Award className="h-5 w-5" /></div><div><p className="text-sm font-black">{coachAccount.certificateTitle}</p><p className="mt-1 text-[11px] text-muted-foreground">Mã: {coachAccount.certificateCode}</p><p className="text-[11px] text-muted-foreground">Hiệu lực đến {coachAccount.certificateExpiry}</p></div></div></div>
           </section>
 

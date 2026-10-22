@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import { coachMale, communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
 import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
 import { usePlayerStore } from '@/store/usePlayerStore'
-import { useAuthStore } from '@/store/useAuthStore'
+import { useCrossRoleStore } from '@/store/useCrossRoleStore'
+import { useAuthStore, type AuthSession } from '@/store/useAuthStore'
 import type {
   UserAccount,
   MatchRoom,
@@ -147,15 +148,17 @@ interface FitlyoState {
   createCoachCourse: (course: Omit<CoachCourse, 'id' | 'coachId' | 'coachName' | 'currentStudents' | 'completedSessions' | 'students'>) => boolean
   updateCoachCourse: (courseId: string, changes: Partial<CoachCourse>) => boolean
   requestVenueAffiliation: (venueId: string) => boolean
-  lookupCoachForAffiliation: (venueId: string, coachUserId: string) => {
+  lookupCoachForAffiliation: (venueId: string, query: string) => {
     success: boolean
     message: string
     coach?: CoachItem
   }
-  directAddCoachAffiliation: (venueId: string, coachUserId: string) => { success: boolean; message: string }
+  requestCoachAffiliationFromVenue: (venueId: string, query: string) => { success: boolean; message: string }
   approveCoachAffiliation: (affiliationId: string) => boolean
   rejectCoachAffiliation: (affiliationId: string, reason: string) => boolean
+  respondToVenueAffiliationInvitation: (affiliationId: string, accept: boolean) => boolean
   unlinkCoachAffiliation: (affiliationId: string, initiatedBy: 'coach' | 'fm') => boolean
+  activateCoachSession: (session: AuthSession) => void
   updateCoachProfile: (changes: Partial<CoachAccount>) => boolean
   requestCoachWithdrawal: (amount: number) => boolean
   approveAuditApplication: (id: string) => void
@@ -600,6 +603,18 @@ const initialCoachAccount: CoachAccount = {
   bankName: 'Vietcombank',
   bankAccountMasked: '•••• •••• 7285',
 }
+
+const normalizeCertificateTitle = (value: unknown) => typeof value === 'string'
+  ? value.replace(/\s+(Instructor|Coach)$/i, '')
+  : undefined
+
+const normalizeCoachSearch = (value: string) => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/đ/g, 'd')
+  .replace(/Đ/g, 'D')
+  .replace(/[^a-zA-Z0-9]/g, '')
+  .toLowerCase()
 
 const initialCoachAffiliations: CoachVenueAffiliation[] = [
   {
@@ -1160,6 +1175,42 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       return
     }
     const source = get().publishingSlotData
+    if (!source) {
+      get().showToast('Không tìm thấy slot cần công bố. Vui lòng chọn lại slot.', 'error')
+      return
+    }
+
+    const playerState = usePlayerStore.getState()
+    const sharedState = useCrossRoleStore.getState()
+    const sourceVenue = playerState.venues.find((venue) => venue.id === source.venueId)
+    const sourceCourt = sourceVenue?.courts.find((court) => court.id === source.courtId)
+    const sourceVenueSlot = sourceCourt?.slots.find((slot) => slot.slotNumber === source.slotNumber)
+    const existingPlayerMatch = playerState.matches.some((match) => (
+      match.status !== 'CANCELLED'
+      && match.venueId === source.venueId
+      && match.date === source.date
+      && match.slotNumber === source.slotNumber
+      && (match.courtId ? match.courtId === source.courtId : match.courtName.startsWith(source.courtName))
+    ))
+    const existingCourtBooking = sharedState.courtBookings.some((booking) => (
+      booking.status === 'CONFIRMED'
+      && booking.venueId === source.venueId
+      && booking.date === source.date
+      && booking.courtId === source.courtId
+      && booking.slotNumber === source.slotNumber
+    ))
+    const blockingOverride = sharedState.slotOverrides.find((override) => (
+      override.venueId === source.venueId
+      && override.date === source.date
+      && override.courtId === source.courtId
+      && override.slotNumber === source.slotNumber
+      && override.status !== 'AVAILABLE'
+    ))
+    if (existingPlayerMatch || existingCourtBooking || blockingOverride || (sourceVenueSlot && sourceVenueSlot.status !== 'AVAILABLE')) {
+      get().showToast('Slot vừa được đặt hoặc đã có lịch khác. Không thể tạo kèo Social.', 'error')
+      return
+    }
+
     const targetSlot = courtInventory
       .find((court) => court.id === data.courtId)
       ?.slots.find((slot) => slot.slotNumber === data.slotNumber)
@@ -1168,7 +1219,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       return
     }
     const maxPlayers = data.maxPlayers
-    const newMatchId = `MM-${Math.floor(9000 + Math.random() * 900)}`
+    const newMatchId = `MM-${Date.now()}`
 
     // Update court slot status to MATCH_PUBLISHED
     const updatedCourts = courtInventory.map((court) => {
@@ -1195,20 +1246,20 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
 
     // Create a new match room in feed
     const targetCourt = courtInventory.find((c) => c.id === data.courtId)
-    const timeRange = COURT_SLOT_TIMES.find((slot) => slot.slotNumber === data.slotNumber)?.timeRange
+    const timeRange = source.timeRange ?? COURT_SLOT_TIMES.find((slot) => slot.slotNumber === data.slotNumber)?.timeRange
 
     const newMatch: MatchRoom = {
       id: newMatchId,
       title: `⚡ KÈO SOCIAL CÔNG BỐ MỚI (${data.format === 'doubles' ? 'ĐÔI' : 'ĐƠN'})`,
       courtId: data.courtId,
-      courtName: source?.venueName ?? 'Cụm sân D-Sports Pickleball',
-      courtSubName: targetCourt ? targetCourt.name : 'Sân thi đấu',
-      surfaceType: source?.courtType === 'Ngoài trời' ? 'Ngoài trời' : source?.courtType === 'Có mái che' ? 'Mái che' : 'Trong nhà',
-      address: source?.venueAddress ?? '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
+      courtName: source.venueName ?? 'Cụm sân D-Sports Pickleball',
+      courtSubName: source.courtName ?? targetCourt?.name ?? 'Sân thi đấu',
+      surfaceType: source.courtType === 'Ngoài trời' ? 'Ngoài trời' : source.courtType === 'Có mái che' ? 'Mái che' : 'Trong nhà',
+      address: source.venueAddress ?? '123 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức',
       distanceKm: 1.2,
       slotNumber: data.slotNumber,
       timeRange: timeRange ?? 'Chưa có dữ liệu',
-      dateStr: source?.date ? `Ngày ${source.date.split('-').reverse().join('/')}` : `Ngày ${get().selectedDate}`,
+      dateStr: source.date ? `Ngày ${source.date.split('-').reverse().join('/')}` : `Ngày ${get().selectedDate}`,
       format: data.format,
       targetDuprMin: data.duprMin,
       targetDuprMax: data.duprMax,
@@ -1222,18 +1273,19 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     }
 
     const [day, month, year] = get().selectedDate.split('/')
-    const matchDate = source?.date ?? `${year}-${month?.padStart(2, '0')}-${day?.padStart(2, '0')}`
+    const matchDate = source.date ?? `${year}-${month?.padStart(2, '0')}-${day?.padStart(2, '0')}`
     usePlayerStore.getState().addFieldManagerMatch({
       id: newMatch.id,
       title: newMatch.title,
       label: 'KÈO DO FIELD MANAGER TẠO',
-      venueId: source?.venueId ?? 'venue-dsports-thu-duc',
+      venueId: source.venueId ?? 'venue-dsports-thu-duc',
+      courtId: source.courtId,
       venueName: newMatch.courtName,
       courtName: newMatch.courtSubName,
       address: newMatch.address,
-      area: 'Linh Chiểu',
-      distanceKm: newMatch.distanceKm,
-      imageUrl: venueIndoor,
+      area: sourceVenue?.area ?? 'Linh Chiểu',
+      distanceKm: sourceVenue?.distanceKm ?? newMatch.distanceKm,
+      imageUrl: sourceVenue?.images[0] ?? venueIndoor,
       date: matchDate,
       dateLabel: `Ngày ${matchDate.split('-').reverse().join('/')}`,
       slotNumber: newMatch.slotNumber,
@@ -1709,6 +1761,12 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     const request: CoachVenueAffiliation = existing
       ? {
           ...existing,
+          coachName: coachAccount.name,
+          coachAvatarUrl: coachAccount.avatarUrl,
+          coachPhone: coachAccount.phone,
+          coachDuprRating: coachAccount.duprRating,
+          coachExperienceYears: coachAccount.experienceYears,
+          coachCertificateTitle: coachAccount.certificateTitle,
           linkType: 'COACH_REQUEST',
           status: 'PENDING',
           rejectedReason: undefined,
@@ -1720,6 +1778,12 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
           id: `AFF-${Date.now().toString().slice(-5)}`,
           venueId: venue.id,
           coachId: coachAccount.id,
+          coachName: coachAccount.name,
+          coachAvatarUrl: coachAccount.avatarUrl,
+          coachPhone: coachAccount.phone,
+          coachDuprRating: coachAccount.duprRating,
+          coachExperienceYears: coachAccount.experienceYears,
+          coachCertificateTitle: coachAccount.certificateTitle,
           venueName: venue.name,
           address: venue.address,
           distanceKm: 5.2,
@@ -1750,29 +1814,79 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     return true
   },
 
-  lookupCoachForAffiliation: (venueId, coachUserId) => {
-    const normalized = coachUserId.trim().toUpperCase()
-    if (!normalized) return { success: false, message: 'Vui lòng nhập UserID hoặc mã HLV.' }
+  lookupCoachForAffiliation: (venueId, query) => {
+    const normalized = normalizeCoachSearch(query.trim())
+    if (!normalized) return { success: false, message: 'Vui lòng nhập số điện thoại hoặc họ tên Coach.' }
     if (!get().venues.some((venue) => venue.id === venueId)) {
       return { success: false, message: 'Không tìm thấy cụm sân đang quản lý.' }
     }
 
-    if (['PLAYER_01', 'PLAYER_NGUYEN_AN', 'PLAYER@FITLYO.VN'].includes(normalized)) {
-      return { success: false, message: 'Tài khoản này là Người chơi, không phải Huấn luyện viên' }
-    }
-    if (['FM_DSPORTS', 'OWNER@FITLYO.VN', 'FM-01'].includes(normalized)) {
-      return { success: false, message: 'Tài khoản này là Quản lý cụm sân, không thể thêm làm Huấn luyện viên' }
-    }
-
-    const aliasCoachId = normalized === 'COACH_LINKED' ? 'coach_dung' : undefined
-    const coach = get().coaches.find((item) => (
-      item.id.toUpperCase() === normalized
-      || item.userId.toUpperCase() === normalized
-      || item.id === aliasCoachId
+    const accountCoaches: CoachItem[] = useAuthStore.getState().accounts
+      .filter((account) => account.role === 'coach' && account.isVerified)
+      .map((account) => {
+        const application = get().auditApplications.find((item) => (
+          item.type === 'COACH' && item.status === 'APPROVED' && item.sourceAccountId === account.id
+        ))
+        const data = application?.applicationData
+        return {
+          id: account.id,
+          userId: account.id,
+          name: account.name,
+          avatarUrl: account.avatarUrl,
+          phone: account.phone,
+          duprRating: typeof data?.dupr === 'number' ? data.dupr : 0,
+          isCertified: true,
+          certTitle: normalizeCertificateTitle(data?.certificateType) ?? account.title.replace(/^Coach\s*·\s*/i, ''),
+          rating: 0,
+          reviewCount: 0,
+          experienceYears: 0,
+          achievements: 'Coach đã được Admin FITLYO xác thực.',
+          serviceLocations: Array.isArray(data?.regions) ? data.regions.map(String) : [],
+          ratePerSession: typeof data?.rate === 'number' ? data.rate : 0,
+          ratePerMonthCourse: 0,
+          specialties: [],
+          accountStatus: 'ACTIVE' as const,
+        }
+      })
+    const affiliationCoaches: CoachItem[] = get().coachAffiliations
+      .filter((item) => item.coachName)
+      .map((item) => ({
+        id: item.coachId,
+        userId: item.coachId,
+        name: item.coachName ?? item.coachId,
+        avatarUrl: item.coachAvatarUrl ?? coachMale,
+        phone: item.coachPhone ?? 'Chưa cập nhật',
+        duprRating: item.coachDuprRating ?? 0,
+        isCertified: true,
+        certTitle: item.coachCertificateTitle ?? 'Coach đã xác thực',
+        rating: 0,
+        reviewCount: 0,
+        experienceYears: item.coachExperienceYears ?? 0,
+        achievements: 'Coach đã được Admin FITLYO xác thực.',
+        serviceLocations: [],
+        ratePerSession: 0,
+        ratePerMonthCourse: 0,
+        specialties: [],
+        accountStatus: 'ACTIVE' as const,
+      }))
+    const candidates = [...get().coaches, ...accountCoaches, ...affiliationCoaches]
+      .filter((coach, index, list) => list.findIndex((item) => item.id === coach.id) === index)
+    const matched = candidates.filter((coach) => (
+      [coach.name, coach.phone, coach.id, coach.userId]
+        .map(normalizeCoachSearch)
+        .some((value) => value === normalized || value.includes(normalized))
     ))
-    if (!coach || normalized === 'NOT_FOUND_ID') {
-      return { success: false, message: 'Không tìm thấy tài khoản với UserID này' }
+    const exact = matched.find((coach) => (
+      normalizeCoachSearch(coach.phone) === normalized
+      || normalizeCoachSearch(coach.name) === normalized
+      || normalizeCoachSearch(coach.id) === normalized
+      || normalizeCoachSearch(coach.userId) === normalized
+    ))
+    if (!exact && matched.length > 1) {
+      return { success: false, message: 'Có nhiều Coach trùng từ khóa. Vui lòng nhập đầy đủ họ tên hoặc số điện thoại.' }
     }
+    const coach = exact ?? matched[0]
+    if (!coach) return { success: false, message: 'Không tìm thấy Coach đã được xác minh với thông tin này.' }
     if (coach.accountStatus === 'SUSPENDED') {
       return { success: false, message: 'Tài khoản Coach đang bị tạm khóa và không thể mở lớp mới.' }
     }
@@ -1781,20 +1895,21 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       (item) => item.venueId === venueId && item.coachId === coach.id,
     )
     if (existing?.status === 'ACTIVE') {
-      return { success: false, message: 'Huấn luyện viên này đã được liên kết với sân từ trước' }
+      return { success: false, message: 'Huấn luyện viên này đã được liên kết với sân từ trước.' }
     }
-
-    return {
-      success: true,
-      message: existing?.status === 'PENDING'
-        ? 'Coach đang có yêu cầu chờ duyệt. Xác nhận sẽ kích hoạt liên kết ngay.'
-        : 'Đã tìm thấy hồ sơ Coach hợp lệ.',
-      coach,
+    if (existing?.status === 'PENDING') {
+      return {
+        success: false,
+        message: existing.linkType === 'COACH_REQUEST'
+          ? 'Coach đã chủ động gửi yêu cầu. Hãy xử lý tại danh sách chờ duyệt.'
+          : 'Lời mời liên kết đang chờ Coach phản hồi.',
+      }
     }
+    return { success: true, message: 'Đã tìm thấy đúng Coach đã được xác minh.', coach }
   },
 
-  directAddCoachAffiliation: (venueId, coachUserId) => {
-    const lookup = get().lookupCoachForAffiliation(venueId, coachUserId)
+  requestCoachAffiliationFromVenue: (venueId, query) => {
+    const lookup = get().lookupCoachForAffiliation(venueId, query)
     if (!lookup.success || !lookup.coach) {
       get().showToast(lookup.message, 'error')
       return { success: false, message: lookup.message }
@@ -1806,56 +1921,53 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     const existing = coachAffiliations.find(
       (item) => item.venueId === venueId && item.coachId === lookup.coach?.id,
     )
-    const linkedAt = new Date().toISOString()
-    const activeAffiliation: CoachVenueAffiliation = existing
-      ? {
-          ...existing,
-          linkType: 'FM_DIRECT_ADD',
-          status: 'ACTIVE',
-          rejectedReason: undefined,
-          linkedAt,
-          createdBy: 'fm_dsports',
-        }
-      : {
-          id: `AFF-${Date.now().toString().slice(-5)}`,
-          venueId,
-          coachId: lookup.coach.id,
-          venueName: venue.name,
-          address: venue.address,
-          distanceKm: 0,
-          linkType: 'FM_DIRECT_ADD',
-          status: 'ACTIVE',
-          requestedAt: linkedAt,
-          linkedAt,
-          createdBy: 'fm_dsports',
-          activeCourses: 0,
-          availableSlots: [1, 2, 4, 6, 8],
-        }
+    const requestedAt = new Date().toISOString()
+    const pendingAffiliation: CoachVenueAffiliation = {
+      ...(existing ?? {
+        id: `AFF-${Date.now().toString().slice(-5)}`,
+        venueId,
+        coachId: lookup.coach.id,
+        venueName: venue.name,
+        address: venue.address,
+        distanceKm: 0,
+        activeCourses: 0,
+        availableSlots: [1, 2, 4, 6, 8],
+      }),
+      coachName: lookup.coach.name,
+      coachAvatarUrl: lookup.coach.avatarUrl,
+      coachPhone: lookup.coach.phone,
+      coachDuprRating: lookup.coach.duprRating,
+      coachExperienceYears: lookup.coach.experienceYears,
+      coachCertificateTitle: lookup.coach.certTitle,
+      linkType: 'FM_REQUEST',
+      status: 'PENDING',
+      requestedAt,
+      linkedAt: undefined,
+      rejectedReason: undefined,
+      createdBy: `fm:${venueId}`,
+    }
     const nextAffiliations = existing
-      ? coachAffiliations.map((item) => item.id === existing.id ? activeAffiliation : item)
-      : [activeAffiliation, ...coachAffiliations]
-    const message = `Cụm sân ${venue.name} đã thêm bạn vào danh sách HLV liên kết`
-    const nextNotifications: CoachAffiliationNotification[] = [
-      {
-        id: `AFF-NOTICE-${Date.now()}`,
-        recipientId: lookup.coach.id,
-        message,
-        createdAt: linkedAt,
-        tone: 'success' as const,
-      },
-      ...coachAffiliationNotifications,
-    ].slice(0, 50)
+      ? coachAffiliations.map((item) => item.id === existing.id ? pendingAffiliation : item)
+      : [pendingAffiliation, ...coachAffiliations]
+    const message = `${venue.name} đã gửi lời mời liên kết. Vui lòng chấp nhận hoặc từ chối trong mục Cụm sân liên kết.`
+    const nextNotifications: CoachAffiliationNotification[] = [{
+      id: `AFF-NOTICE-${Date.now()}`,
+      recipientId: lookup.coach.id,
+      message,
+      createdAt: requestedAt,
+      tone: 'info' as const,
+    }, ...coachAffiliationNotifications].slice(0, 50)
     persistCoachAffiliations(nextAffiliations)
     persistCoachAffiliationNotifications(nextNotifications)
     set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
-    get().showToast(`Đã liên kết ${lookup.coach.name} với cụm sân.`, 'success')
+    get().showToast(`Đã gửi lời mời liên kết đến ${lookup.coach.name}.`, 'success')
     return { success: true, message }
   },
 
   approveCoachAffiliation: (affiliationId) => {
     const { coachAffiliations, coachAffiliationNotifications } = get()
     const target = coachAffiliations.find((item) => item.id === affiliationId)
-    if (!target || target.status !== 'PENDING') {
+    if (!target || target.status !== 'PENDING' || target.linkType !== 'COACH_REQUEST') {
       get().showToast('Yêu cầu này không còn ở trạng thái chờ duyệt.', 'error')
       return false
     }
@@ -1867,7 +1979,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       {
         id: `AFF-NOTICE-${Date.now()}`,
         recipientId: target.coachId,
-        message: 'Cụm sân đã phê duyệt yêu cầu liên kết của bạn',
+        message: `${target.venueName} đã phê duyệt yêu cầu liên kết của bạn. Bạn có thể tạo khóa học tại sân này.`,
         createdAt: linkedAt,
         tone: 'success' as const,
       },
@@ -1888,7 +2000,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     }
     const { coachAffiliations, coachAffiliationNotifications } = get()
     const target = coachAffiliations.find((item) => item.id === affiliationId)
-    if (!target || target.status !== 'PENDING') {
+    if (!target || target.status !== 'PENDING' || target.linkType !== 'COACH_REQUEST') {
       get().showToast('Yêu cầu này không còn ở trạng thái chờ duyệt.', 'error')
       return false
     }
@@ -1910,6 +2022,48 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     persistCoachAffiliationNotifications(nextNotifications)
     set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
     get().showToast('Đã từ chối yêu cầu và gửi lý do cho Coach.', 'info')
+    return true
+  },
+
+  respondToVenueAffiliationInvitation: (affiliationId, accept) => {
+    const { coachAccount, coachAffiliations, coachAffiliationNotifications } = get()
+    const target = coachAffiliations.find((item) => item.id === affiliationId)
+    if (
+      !target
+      || target.coachId !== coachAccount.id
+      || target.linkType !== 'FM_REQUEST'
+      || target.status !== 'PENDING'
+    ) {
+      get().showToast('Lời mời này không còn hiệu lực hoặc không thuộc tài khoản Coach hiện tại.', 'error')
+      return false
+    }
+
+    const respondedAt = new Date().toISOString()
+    const nextStatus: CoachVenueAffiliation['status'] = accept ? 'ACTIVE' : 'REJECTED'
+    const nextAffiliations = coachAffiliations.map((item) => item.id === affiliationId
+      ? {
+          ...item,
+          status: nextStatus,
+          linkedAt: accept ? respondedAt : undefined,
+          rejectedReason: accept ? undefined : 'Coach đã từ chối lời mời liên kết.',
+        }
+      : item)
+    const nextNotifications: CoachAffiliationNotification[] = [{
+      id: `AFF-NOTICE-${Date.now()}`,
+      recipientId: `fm:${target.venueId}`,
+      message: accept
+        ? `${coachAccount.name} đã chấp nhận lời mời liên kết với ${target.venueName}.`
+        : `${coachAccount.name} đã từ chối lời mời liên kết với ${target.venueName}.`,
+      createdAt: respondedAt,
+      tone: accept ? 'success' as const : 'error' as const,
+    }, ...coachAffiliationNotifications].slice(0, 50)
+    persistCoachAffiliations(nextAffiliations)
+    persistCoachAffiliationNotifications(nextNotifications)
+    set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
+    get().showToast(
+      accept ? 'Đã chấp nhận liên kết. Bạn có thể tạo khóa học tại sân này.' : 'Đã từ chối lời mời liên kết.',
+      accept ? 'success' : 'info',
+    )
     return true
   },
 
@@ -1941,6 +2095,73 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     set({ coachAffiliations: nextAffiliations, coachAffiliationNotifications: nextNotifications })
     get().showToast('Đã hủy liên kết. Các buổi đã thanh toán vẫn được giữ nguyên.', 'success')
     return true
+  },
+
+  activateCoachSession: (session) => {
+    if (session.role !== 'coach') return
+    const current = get().coachAccount
+    if (session.id === initialCoachAccount.id) {
+      if (current.id === session.id) return
+      set({ coachAccount: initialCoachAccount, coachWalletSummary: initialCoachWalletSummary })
+      return
+    }
+
+    const application = get().auditApplications.find((item) => (
+      item.type === 'COACH'
+      && item.status === 'APPROVED'
+      && item.sourceAccountId === session.id
+    ))
+    const data = application?.applicationData
+    const dupr = typeof data?.dupr === 'number' ? data.dupr : 0
+    const rate = typeof data?.rate === 'number' ? data.rate : 0
+    const certificateTitle = normalizeCertificateTitle(data?.certificateType)
+      ?? session.title.replace(/^Coach\s*·\s*/i, '')
+    const serviceAreas = Array.isArray(data?.regions) ? data.regions.map(String) : []
+    // Danh tính tài khoản đăng nhập là nguồn chuẩn. Hồ sơ thẩm định chỉ bổ
+    // sung dữ liệu chuyên môn; không được ghi đè tên/email/điện thoại/avatar
+    // của một Coach khác do form hoặc localStorage cũ để lại.
+    const coachName = session.name
+    if (
+      current.id === session.id
+      && current.name === coachName
+      && current.email === session.email
+      && current.phone === session.phone
+      && current.avatarUrl === session.avatarUrl
+      && current.certificateTitle === certificateTitle
+    ) return
+
+    set({
+      coachAccount: {
+        ...initialCoachAccount,
+        id: session.id,
+        name: coachName,
+        avatarUrl: session.avatarUrl,
+        email: session.email,
+        phone: session.phone,
+        duprRating: dupr,
+        rating: 0,
+        reviewCount: 0,
+        experienceYears: 0,
+        certificateTitle,
+        certificateCode: typeof data?.duprId === 'string' ? data.duprId : 'Chưa cập nhật',
+        certificateExpiry: 'Chưa cập nhật',
+        bio: session.isVerified
+          ? 'Hồ sơ Coach đã được FITLYO xác thực. Bạn có thể cập nhật phần giới thiệu chuyên môn tại Hồ sơ của tôi.'
+          : 'Hồ sơ Coach chưa được xác minh. Hãy nộp thông tin chuyên môn và chứng chỉ để Admin thẩm định.',
+        specialties: [],
+        serviceAreas,
+        ratePerSession: rate,
+        ratePerCourse: 0,
+        bankName: 'Chưa cập nhật',
+        bankAccountMasked: 'Chưa cập nhật',
+      },
+      coachWalletSummary: {
+        availableBalance: 0,
+        escrowBalance: 0,
+        pendingPayout: 0,
+        earnedThisMonth: 0,
+      },
+    })
   },
 
   updateCoachProfile: (changes) => {
@@ -1994,7 +2215,11 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     persistAuditApplications(updated)
     set({ auditApplications: updated })
     const accountId = target.sourceAccountId ?? target.sourcePlayerId
-    if (accountId) useAuthStore.getState().verifyAccount(accountId)
+    const certificateTitle = normalizeCertificateTitle(target.applicationData?.certificateType)
+    const verifiedTitle = target.type === 'COACH'
+      ? `Coach · ${certificateTitle ?? 'Đã xác thực'}`
+      : 'Chủ sân · Đã xác thực'
+    if (accountId) useAuthStore.getState().verifyAccount(accountId, verifiedTitle)
     get().showToast(`Đã phê duyệt hồ sơ #${id} và mở khóa chính tài khoản đối tác.`, 'success')
   },
 
@@ -2062,3 +2287,16 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
 
   clearToast: () => set({ toastMessage: null }),
 }))
+
+// Coach và Field Manager có thể được mở ở hai tab khác nhau. Khi một phía
+// gửi/duyệt/từ chối liên kết, tab còn lại phải nạp lại cùng nguồn dữ liệu.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === coachAffiliationsStorageKey) {
+      useFitlyoStore.setState({ coachAffiliations: readCoachAffiliations() })
+    }
+    if (event.key === coachAffiliationNotificationsStorageKey) {
+      useFitlyoStore.setState({ coachAffiliationNotifications: readCoachAffiliationNotifications() })
+    }
+  })
+}

@@ -111,7 +111,7 @@ export const CourtCalendarPage = () => {
       slots: court.slots.map((venueSlot) => {
         const override = slotOverrides.find((item) => item.venueId === selectedVenue.id && item.date === selectedDateIso && item.courtId === court.id && item.slotNumber === venueSlot.slotNumber)
         const booking = courtBookings.find((item) => item.status === 'CONFIRMED' && item.venueId === selectedVenue.id && item.date === selectedDateIso && item.courtId === court.id && item.slotNumber === venueSlot.slotNumber)
-        const match = playerMatches.find((item) => item.venueId === selectedVenue.id && item.date === selectedDateIso && item.slotNumber === venueSlot.slotNumber && item.courtName.startsWith(court.name) && item.status !== 'CANCELLED')
+        const match = playerMatches.find((item) => item.venueId === selectedVenue.id && item.date === selectedDateIso && item.slotNumber === venueSlot.slotNumber && (item.courtId ? item.courtId === court.id : item.courtName.startsWith(court.name)) && item.status !== 'CANCELLED')
         const baseStatus: CourtSlot['status'] = venueSlot.status === 'SOCIAL' ? 'MATCH_PUBLISHED' : venueSlot.status === 'PRIVATE' ? 'PRIVATE_BOOKED' : venueSlot.status === 'COACHING' ? 'COACHING' : venueSlot.status
         const status: CourtSlot['status'] = booking ? 'PRIVATE_BOOKED' : match ? 'MATCH_PUBLISHED' : override?.status ?? baseStatus
         return {

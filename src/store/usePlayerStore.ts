@@ -249,6 +249,7 @@ const initialMatches: PlayerMatch[] = [
     title: 'Giao lưu cân trình giờ vàng',
     label: 'HOT · KÈO VÀNG',
     venueId: 'venue-thao-dien',
+    courtId: 'td-court-02',
     venueName: 'D-Pickleball Thảo Điền',
     courtName: 'Sân 02 · Trong nhà',
     address: '12 Võ Trường Toản, P. Thảo Điền, TP. Thủ Đức',
@@ -275,6 +276,7 @@ const initialMatches: PlayerMatch[] = [
     title: 'Làm quen Pickleball cuối tuần',
     label: 'GIAO LƯU NEWBIE',
     venueId: 'venue-hiep-phu',
+    courtId: 'hp-court-01',
     venueName: 'Saigon Rackets Hiệp Phú',
     courtName: 'Sân 01 · Có mái che',
     address: '88 Lê Văn Việt, P. Hiệp Phú, TP. Thủ Đức',
@@ -300,6 +302,7 @@ const initialMatches: PlayerMatch[] = [
     title: 'Dinking & Third-shot Challenge',
     label: 'ADVANCED',
     venueId: 'venue-an-phu',
+    courtId: 'ap-court-01',
     venueName: 'An Phú Pickleball Hub',
     courtName: 'Sân 01 · Ngoài trời',
     address: '36 Song Hành, P. An Phú, TP. Thủ Đức',
@@ -325,6 +328,7 @@ const initialMatches: PlayerMatch[] = [
     title: 'Kèo đồng đội Thảo Điền',
     label: 'KÈO CỦA BẠN',
     venueId: 'venue-thao-dien',
+    courtId: 'td-court-01',
     venueName: 'D-Pickleball Thảo Điền',
     courtName: 'Sân 01 · Trong nhà',
     address: '12 Võ Trường Toản, P. Thảo Điền, TP. Thủ Đức',
@@ -424,20 +428,32 @@ const migratePlayerImages = (persistedState: unknown): PlayerState => {
     ...state,
     profile: { ...initialProfile, ...state.profile, voucherBalance: state.profile?.voucherBalance ?? 0 },
     venues: initialVenues,
-    matches: (state.matches ?? initialMatches).map((match) => ({
-      ...match,
-      participants: match.participants.map((participant) => ({
-        ...participantById.get(participant.id),
-        ...participant,
-        phone: participant.phone ?? participantById.get(participant.id)?.phone,
-      })),
-      fee: getPlayerMatchFee(match) || initialMatches.find((item) => item.id === match.id)?.fee || 0,
-      ...scheduleByMatchId.get(match.id),
-      imageUrl:
-        imageByMatchId.get(match.id)
-        ?? imagesByVenueId.get(match.venueId)?.[0]
-        ?? match.imageUrl,
-    })),
+    matches: (state.matches ?? initialMatches).flatMap((match) => {
+      const venue = initialVenues.find((candidate) => candidate.id === match.venueId)
+      const courtId = match.courtId
+        ?? venue?.courts.find((court) => match.courtName.startsWith(court.name))?.id
+
+      // Bản prototype cũ từng lưu kèo FM với tên chung "Sân thi đấu" nên
+      // không thể xác định slot thuộc sân con nào. Loại bản ghi lỗi này để
+      // người dùng tạo lại, tránh tiếp tục hiển thị một kèo không khóa được slot.
+      if (match.label === 'KÈO DO FIELD MANAGER TẠO' && venue && !courtId) return []
+
+      return [{
+        ...match,
+        courtId,
+        participants: match.participants.map((participant) => ({
+          ...participantById.get(participant.id),
+          ...participant,
+          phone: participant.phone ?? participantById.get(participant.id)?.phone,
+        })),
+        fee: getPlayerMatchFee(match) || initialMatches.find((item) => item.id === match.id)?.fee || 0,
+        ...scheduleByMatchId.get(match.id),
+        imageUrl:
+          imageByMatchId.get(match.id)
+          ?? imagesByVenueId.get(match.venueId)?.[0]
+          ?? match.imageUrl,
+      }]
+    }),
     schedule: (state.schedule ?? initialSchedule).map((item) => {
       const initialItem = scheduleById.get(item.id)
       if (item.kind !== 'COURT') {
@@ -726,7 +742,7 @@ export const usePlayerStore = create<PlayerState>()(
         const sharedState = useCrossRoleStore.getState()
         const occupiedByBooking = sharedState.courtBookings.some((item) => item.status === 'CONFIRMED' && item.venueId === input.venueId && item.date === input.date && item.courtId === input.courtId && item.slotNumber === input.slotNumber)
         const fmOverride = sharedState.slotOverrides.find((item) => item.venueId === input.venueId && item.date === input.date && item.courtId === input.courtId && item.slotNumber === input.slotNumber)
-        const occupiedBySocial = state.matches.some((item) => item.status !== 'CANCELLED' && item.venueId === input.venueId && item.date === input.date && item.slotNumber === input.slotNumber && item.courtName.startsWith(court.name))
+        const occupiedBySocial = state.matches.some((item) => item.status !== 'CANCELLED' && item.venueId === input.venueId && item.date === input.date && item.slotNumber === input.slotNumber && (item.courtId ? item.courtId === court.id : item.courtName.startsWith(court.name)))
         if (occupiedByBooking || occupiedBySocial || (fmOverride && fmOverride.status !== 'AVAILABLE')) return { success: false, message: 'Slot vừa được cập nhật hoặc đã có người đặt. Vui lòng chọn slot khác.' }
         if (slot.status !== 'AVAILABLE') return { success: false, message: 'Slot này hiện không nhận đặt mới.' }
         const conflict = state.schedule.find((item) => item.status === 'UPCOMING' && item.date === input.date && item.timeRange === slot.timeRange)
@@ -1072,7 +1088,7 @@ export const usePlayerStore = create<PlayerState>()(
     {
       name: playerStorageKey,
       storage: createJSONStorage(() => window.localStorage),
-      version: 9,
+      version: 10,
       migrate: migratePlayerImages,
     },
   ),

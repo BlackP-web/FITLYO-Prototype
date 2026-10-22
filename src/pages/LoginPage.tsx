@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { demoAccounts, sessionHome, useAuthStore, type DemoAccount } from '@/store/useAuthStore'
+import { sessionHome, useAuthStore, type DemoAccount } from '@/store/useAuthStore'
+import { useFitlyoStore } from '@/store/useFitlyoStore'
 
 const roleMeta: Record<DemoAccount['role'], { label: string; short: string; tone: string }> = {
   player: { label: 'Người chơi', short: 'Player', tone: 'bg-blue-500/10 text-blue-700 dark:text-blue-300' },
@@ -19,7 +20,8 @@ const roleMeta: Record<DemoAccount['role'], { label: string; short: string; tone
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { session, login } = useAuthStore()
+  const { accounts, session, login } = useAuthStore()
+  const auditApplications = useFitlyoStore((state) => state.auditApplications)
   const [email, setEmail] = useState('admin@fitlyo.vn')
   const [password, setPassword] = useState('Admin@123')
   const [showPassword, setShowPassword] = useState(false)
@@ -70,9 +72,14 @@ export function LoginPage() {
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            {demoAccounts.map((account) => {
+            {accounts.map((account) => {
               const meta = roleMeta[account.role]
               const active = selectedAccountId === account.id
+              const approvedApplication = auditApplications.find((application) => application.status === 'APPROVED' && application.sourceAccountId === account.id)
+              const approvedCertificate = account.role === 'coach' && typeof approvedApplication?.applicationData?.certificateType === 'string'
+                ? approvedApplication.applicationData.certificateType.replace(/\s+(Instructor|Coach)$/i, '')
+                : undefined
+              const accountTitle = approvedCertificate ? `Coach · ${approvedCertificate}` : account.title
               return (
                 <button
                   key={account.id}
@@ -88,7 +95,7 @@ export function LoginPage() {
                       <img src={account.avatarUrl} alt="" className="h-11 w-11 rounded-xl object-cover" />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black">{account.name}</p>
-                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{account.title}</p>
+                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{accountTitle}</p>
                       </div>
                     </div>
                     {active && <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />}

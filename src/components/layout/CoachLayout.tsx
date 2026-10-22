@@ -10,6 +10,7 @@ import {
   Sparkles,
   UserRound,
 } from 'lucide-react'
+import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
@@ -32,8 +33,26 @@ const coachNavigation = [
 
 export default function CoachLayout() {
   const navigate = useNavigate()
-  const { coachAccount, toastMessage, clearToast } = useFitlyoStore()
+  const { coachAccount, auditApplications, activateCoachSession, toastMessage, clearToast } = useFitlyoStore()
   const { session, logout } = useAuthStore()
+  const approvedApplication = auditApplications.find((application) => (
+    application.type === 'COACH'
+    && application.status === 'APPROVED'
+    && application.sourceAccountId === session?.id
+  ))
+  const approvedCertificate = typeof approvedApplication?.applicationData?.certificateType === 'string'
+    ? approvedApplication.applicationData.certificateType.replace(/\s+(Instructor|Coach)$/i, '')
+    : undefined
+  const coachReady = !session || coachAccount.id === session.id
+  const displayName = session?.name ?? coachAccount.name
+  const displayAvatar = session?.avatarUrl ?? coachAccount.avatarUrl
+  const displayCertificate = coachReady
+    ? coachAccount.certificateTitle
+    : approvedCertificate ?? session?.title.replace(/^Coach\s*·\s*/i, '') ?? 'Coach đã xác thực'
+
+  useEffect(() => {
+    if (session?.role === 'coach') activateCoachSession(session)
+  }, [activateCoachSession, session])
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -52,10 +71,10 @@ export default function CoachLayout() {
           <ThemeToggle />
           <DemoDataResetButton />
           <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-1.5 shadow-sm">
-            <img src={coachAccount.avatarUrl} alt={coachAccount.name} className="h-8 w-8 rounded-lg object-cover" />
+            <img src={displayAvatar} alt={displayName} className="h-8 w-8 rounded-lg object-cover" />
             <div className="hidden text-right sm:block">
-              <p className="text-xs font-bold leading-none">{coachAccount.name}</p>
-              <p className="mt-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300">{coachAccount.certificateTitle}</p>
+              <p className="text-xs font-bold leading-none">{displayName}</p>
+              <p className="mt-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300">{displayCertificate}</p>
             </div>
             <button
               type="button"
@@ -138,7 +157,7 @@ export default function CoachLayout() {
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
           {!session?.isVerified && <div className="mb-5 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200"><strong>Tài khoản Coach chưa được xác minh.</strong> Bạn chỉ có thể cập nhật hồ sơ và nộp chứng chỉ; lịch dạy, khóa học, học viên và ví đang bị khóa.</div>}
-          <Outlet />
+          {coachReady ? <Outlet /> : <div className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Đang tải đúng hồ sơ Coach…</div>}
         </main>
       </div>
 

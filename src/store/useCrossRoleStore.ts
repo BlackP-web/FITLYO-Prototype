@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { CourtPricing, CourtPricingMap } from '@/lib/courtPricing'
 import type { VenueSubscription } from '@/lib/venuePackages'
-import type { InvoicePayment } from '@/lib/platformInvoices'
 import type { CourtDisableSchedule } from '@/lib/courtDisableSchedule'
 
 export type SharedBookingStatus = 'CONFIRMED' | 'CANCELLED'
@@ -85,8 +84,6 @@ interface CrossRoleState {
   courtPricing: CourtPricingMap
   /** Gói dịch vụ đang đăng kí, mỗi cụm sân tối đa 1 gói (key = venueId). */
   venueSubscriptions: Record<string, VenueSubscription>
-  /** Hoá đơn phí nền tảng 5% đã thanh toán qua VietQR (key = mã hoá đơn INV-YYYY-MM). */
-  platformInvoicePayments: Record<string, InvoicePayment>
   upsertCourtBooking: (booking: SharedCourtBooking) => void
   cancelCourtBooking: (id: string) => void
   /** Chủ sân xác nhận đã thu đủ tiền của booking "Thanh toán tại sân". Không thể hoàn tác. */
@@ -102,8 +99,6 @@ interface CrossRoleState {
   setCourtPricing: (key: string, pricing: CourtPricing | null) => void
   /** Đăng kí hoặc chuyển gói cho cụm sân (ghi đè gói cũ vì mỗi cụm chỉ có 1 gói). */
   setVenueSubscription: (subscription: VenueSubscription) => void
-  /** Ghi nhận đã thanh toán hoá đơn phí nền tảng. Không ghi đè nếu hoá đơn đã thanh toán. */
-  payPlatformInvoice: (payment: InvoicePayment) => boolean
   resetCrossRoleDemo: () => void
 }
 
@@ -111,14 +106,13 @@ const crossRoleStorageKey = 'fitlyo-cross-role-v1'
 
 export const useCrossRoleStore = create<CrossRoleState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       courtBookings: [],
       slotOverrides: [],
       venueCalendarEvents: [],
       courtDisableSchedules: {},
       courtPricing: {},
       venueSubscriptions: {},
-      platformInvoicePayments: {},
       upsertCourtBooking: (booking) => set((state) => ({
         courtBookings: [booking, ...state.courtBookings.filter((item) => item.id !== booking.id)],
       })),
@@ -164,12 +158,7 @@ export const useCrossRoleStore = create<CrossRoleState>()(
       setVenueSubscription: (subscription) => set((state) => ({
         venueSubscriptions: { ...state.venueSubscriptions, [subscription.venueId]: subscription },
       })),
-      payPlatformInvoice: (payment) => {
-        if (get().platformInvoicePayments[payment.invoiceId] || payment.amount <= 0) return false
-        set((state) => ({ platformInvoicePayments: { ...state.platformInvoicePayments, [payment.invoiceId]: payment } }))
-        return true
-      },
-      resetCrossRoleDemo: () => set({ courtBookings: [], slotOverrides: [], venueCalendarEvents: [], courtDisableSchedules: {}, courtPricing: {}, venueSubscriptions: {}, platformInvoicePayments: {} }),
+      resetCrossRoleDemo: () => set({ courtBookings: [], slotOverrides: [], venueCalendarEvents: [], courtDisableSchedules: {}, courtPricing: {}, venueSubscriptions: {} }),
     }),
     {
       name: crossRoleStorageKey,

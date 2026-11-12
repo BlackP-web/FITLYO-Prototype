@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Building2, CalendarDays, LogOut, QrCode, Settings, ShieldCheck, Sparkles } from 'lucide-react'
+import { BarChart3, BookOpen, Building2, CalendarDays, LogOut, Settings, ShieldCheck, Sparkles } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
@@ -35,11 +35,6 @@ const ownerNavigation = [
     icon: BarChart3,
   },
   {
-    label: 'Quầy QR Check-in',
-    to: '/fm/checkin',
-    icon: QrCode,
-  },
-  {
     label: 'Xác minh hồ sơ',
     to: '/fm/verification',
     icon: ShieldCheck,
@@ -65,13 +60,6 @@ export default function FieldManagerLayout() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <DemoDataResetButton />
-          <button
-            type="button"
-            onClick={() => navigate('/fm/checkin')}
-            className="hidden items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary/10 sm:flex"
-          >
-            <QrCode className="h-4 w-4" /> Kiosk QR
-          </button>
           <div className="flex items-center gap-2 rounded-xl border bg-card px-2.5 py-1.5">
             <img
               src={session?.avatarUrl}

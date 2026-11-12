@@ -25,7 +25,6 @@ import { CoachProfilePage } from "@/pages/CoachProfilePage"
 import { CoachWalletPage } from "@/pages/CoachWalletPage"
 import { CoachDirectoryPage } from "@/pages/CoachDirectoryPage"
 import { VenuesPage } from "@/pages/VenuesPage"
-import { CheckInKioskPage } from "@/pages/CheckInKioskPage"
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage"
 import { AdminKycPage } from "@/pages/admin/AdminKycPage"
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage"
@@ -141,7 +140,6 @@ export const router = createBrowserRouter([
               { path: "courts", element: <OwnerCourtsPage /> },
               { path: "coaches", element: <OwnerCoachesPage /> },
               { path: "reports", element: <OwnerReportsPage /> },
-              { path: "checkin", element: <CheckInKioskPage /> },
             ],
           },
         ],

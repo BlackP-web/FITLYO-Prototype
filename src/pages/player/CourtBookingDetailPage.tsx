@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePaymentStore } from '@/store/usePaymentStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
+import { useCrossRoleStore } from '@/store/useCrossRoleStore'
 
 const formatMoney = (value: number) => `${value.toLocaleString('vi-VN')}đ`
 
@@ -70,7 +71,6 @@ export function CourtBookingDetailPage() {
   const schedule = usePlayerStore((state) => state.schedule)
   const venues = usePlayerStore((state) => state.venues)
   const profile = usePlayerStore((state) => state.profile)
-  const bookedSlotKeys = usePlayerStore((state) => state.bookedSlotKeys)
   const cancelCourtBooking = usePlayerStore((state) => state.cancelCourtBooking)
   const rescheduleCourtBooking = usePlayerStore((state) => state.rescheduleCourtBooking)
   const payments = usePaymentStore((state) => state.records)
@@ -161,7 +161,7 @@ export function CourtBookingDetailPage() {
         </div>
         <div className="grid gap-px bg-border/60 sm:grid-cols-3">
           <div className="bg-card p-5"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ngày chơi</p><p className="mt-2 font-black">{booking.dateLabel}</p></div>
-          <div className="bg-card p-5"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Khung giờ</p><p className="mt-2 font-black">Slot {booking.slotNumber ?? '—'} · {booking.timeRange}</p></div>
+          <div className="bg-card p-5"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Khung giờ</p><p className="mt-2 font-black">{booking.timeRange}</p></div>
           <div className="bg-card p-5"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Đã thanh toán</p><p className="mt-2 font-black text-emerald-600 dark:text-emerald-400">100% · {formatMoney(paidAmount)}</p></div>
         </div>
       </section>
@@ -171,7 +171,7 @@ export function CourtBookingDetailPage() {
           <section className="rounded-[1.75rem] border bg-card p-5 shadow-sm sm:p-6">
             <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary"><CalendarClock className="h-5 w-5" /></span><div><h2 className="text-lg font-black">Thông tin booking</h2><p className="text-sm text-muted-foreground">Thông tin dùng để check-in và nhận hỗ trợ.</p></div></div>
             <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-              {[['Cụm sân', booking.venueName], ['Sân con / loại sân', booking.courtName], ['Ngày và giờ', `${booking.dateLabel} · ${booking.timeRange}`], ['Slot đã đặt', booking.slotNumber ? `Slot ${booking.slotNumber}` : 'Chưa có dữ liệu'], ['Mã booking', booking.bookingCode ?? 'Chưa có dữ liệu'], ['Thời điểm đặt', formatBookedAt(booking.bookedAt)]].map(([label, value]) => <div key={label} className="rounded-2xl border border-border/60 bg-muted/20 p-4"><dt className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</dt><dd className="mt-1.5 text-sm font-black">{value}</dd></div>)}
+              {[['Cụm sân', booking.venueName], ['Sân con / loại sân', booking.courtName], ['Ngày và giờ', `${booking.dateLabel} · ${booking.timeRange}`], ['Khoảng đã đặt', booking.timeRange], ['Mã booking', booking.bookingCode ?? 'Chưa có dữ liệu'], ['Thời điểm đặt', formatBookedAt(booking.bookedAt)]].map(([label, value]) => <div key={label} className="rounded-2xl border border-border/60 bg-muted/20 p-4"><dt className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</dt><dd className="mt-1.5 text-sm font-black">{value}</dd></div>)}
             </dl>
           </section>
 
@@ -215,45 +215,52 @@ export function CourtBookingDetailPage() {
         </aside>
       </div>
 
-      {showQr && booking.bookingCode && <div className="fixed inset-0 z-[100] overflow-y-auto bg-foreground/70 p-4 backdrop-blur-sm"><div className="mx-auto flex min-h-full max-w-xl items-center py-6"><div className="w-full"><div className="mb-3 flex justify-end"><Button variant="secondary" size="icon" className="h-12 w-12 rounded-full" onClick={() => setShowQr(false)} aria-label="Đóng vé QR"><X /></Button></div><QrTicket ticketCode={booking.bookingCode} venueName={booking.venueName} courtName={court?.name ?? booking.courtName} slotNumber={booking.slotNumber ?? 0} timeRange={booking.timeRange} dateStr={booking.dateLabel} duprRange="Không áp dụng" format="Bao sân 90 phút" playerName={profile.name} paidAmount={paidAmount} onShare={shareBooking} /></div></div></div>}
+      {showQr && booking.bookingCode && <div className="fixed inset-0 z-[100] overflow-y-auto bg-foreground/70 p-4 backdrop-blur-sm"><div className="mx-auto flex min-h-full max-w-xl items-center py-6"><div className="w-full"><div className="mb-3 flex justify-end"><Button variant="secondary" size="icon" className="h-12 w-12 rounded-full" onClick={() => setShowQr(false)} aria-label="Đóng vé QR"><X /></Button></div><QrTicket ticketCode={booking.bookingCode} venueName={booking.venueName} courtName={court?.name ?? booking.courtName} slotNumber={booking.slotNumber ?? 0} timeRange={booking.timeRange} dateStr={booking.dateLabel} duprRange="Không áp dụng" format="Theo khoảng đặt" playerName={profile.name} paidAmount={paidAmount} onShare={shareBooking} /></div></div></div>}
 
       {showCancel && <div className="fixed inset-0 z-[100] grid place-items-center bg-foreground/60 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" className="w-full max-w-md rounded-[1.8rem] border bg-card p-6 shadow-2xl"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-destructive/10 text-destructive"><AlertTriangle /></span><h2 className="mt-4 text-xl font-black">Xác nhận hủy sân?</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{refund.label}. Số tiền dự kiến nhận lại là <strong className="text-foreground">{formatMoney(refund.refundAmount)}</strong>.</p><div className="mt-6 flex justify-end gap-2"><Button variant="outline" className="min-h-12" onClick={() => setShowCancel(false)}>Giữ lịch</Button><Button variant="destructive" className="min-h-12" onClick={confirmCancellation}>Xác nhận hủy</Button></div></section></div>}
 
-      {showReschedule && venue && <RescheduleDialog bookingId={booking.id} venue={venue} currentSlotKey={booking.slotKey} currentAmount={paidAmount} bookedSlotKeys={bookedSlotKeys} onClose={() => setShowReschedule(false)} onConfirm={(input) => { const result = rescheduleCourtBooking(booking.id, input); showToast(result.message, result.success ? 'success' : 'error'); if (result.success) setShowReschedule(false) }} />}
+      {showReschedule && venue && <RescheduleDialog bookingId={booking.id} venue={venue} currentDate={booking.date} currentTimeRange={booking.timeRange} currentAmount={paidAmount} onClose={() => setShowReschedule(false)} onConfirm={(input) => { const result = rescheduleCourtBooking(booking.id, input); showToast(result.message, result.success ? 'success' : 'error'); if (result.success) setShowReschedule(false) }} />}
     </div>
   )
 }
 
-function RescheduleDialog({ bookingId, venue, currentSlotKey, currentAmount, bookedSlotKeys, onClose, onConfirm }: {
+function RescheduleDialog({ bookingId, venue, currentDate, currentTimeRange, currentAmount, onClose, onConfirm }: {
   bookingId: string
   venue: ReturnType<typeof usePlayerStore.getState>['venues'][number]
-  currentSlotKey?: string
+  currentDate: string
+  currentTimeRange: string
   currentAmount: number
-  bookedSlotKeys: string[]
   onClose: () => void
-  onConfirm: (input: { date: string; dateLabel: string; courtId: string; slotNumber: number }) => void
+  onConfirm: (input: { date: string; dateLabel: string; courtId: string; startTime: string; endTime: string; availabilityId: string }) => void
 }) {
   const [date, setDate] = useState(todayInputValue())
   const [courtId, setCourtId] = useState(venue.courts[0]?.id ?? '')
-  const [slotNumber, setSlotNumber] = useState<number | null>(null)
-  const court = venue.courts.find((item) => item.id === courtId)
-  const slots = useMemo(() => court?.slots.filter((slot) => {
-    const key = `${date}:${venue.id}:${court.id}:${slot.slotNumber}`
-    return slot.status === 'AVAILABLE'
-      && key !== currentSlotKey
-      && !bookedSlotKeys.includes(key)
-      && hoursUntilEvent(date, slot.timeRange) > 0
-  }) ?? [], [bookedSlotKeys, court, currentSlotKey, date, venue.id])
-  const selectedSlot = slots.find((slot) => slot.slotNumber === slotNumber)
-  const difference = (selectedSlot?.price ?? currentAmount) - currentAmount
+  const [availabilityId, setAvailabilityId] = useState<string | null>(null)
+  const calendarEvents = useCrossRoleStore((state) => state.venueCalendarEvents)
+  const courtDisableSchedules = useCrossRoleStore((state) => state.courtDisableSchedules)
+  const availabilities = useMemo(() => calendarEvents
+    .filter((event) => event.type === 'AVAILABILITY' && event.venueId === venue.id && event.date === date && event.courtId === courtId && event.amount > 0)
+    .filter((event) => {
+      const endMinutes = Number(event.startTime.slice(0, 2)) * 60 + Number(event.startTime.slice(3, 5)) + event.durationMinutes
+      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
+      const timeRange = `${event.startTime} - ${endTime}`
+      const schedule = courtDisableSchedules[`${venue.id}:${courtId}`]
+      return !(date === currentDate && timeRange === currentTimeRange)
+        && hoursUntilEvent(date, timeRange) > 0
+        && !(schedule && schedule.startAt < `${date}T${endTime}` && schedule.endAt > `${date}T${event.startTime}`)
+    }), [calendarEvents, courtDisableSchedules, courtId, currentDate, currentTimeRange, date, venue.id])
+  const selectedAvailability = availabilities.find((event) => event.id === availabilityId)
+  const selectedEndMinutes = selectedAvailability ? Number(selectedAvailability.startTime.slice(0, 2)) * 60 + Number(selectedAvailability.startTime.slice(3, 5)) + selectedAvailability.durationMinutes : 0
+  const selectedTimeRange = selectedAvailability ? `${selectedAvailability.startTime} - ${String(Math.floor(selectedEndMinutes / 60)).padStart(2, '0')}:${String(selectedEndMinutes % 60).padStart(2, '0')}` : ''
+  const difference = (selectedAvailability?.amount ?? currentAmount) - currentAmount
 
   return <div className="fixed inset-0 z-[100] overflow-y-auto bg-foreground/60 p-4 backdrop-blur-sm"><div className="mx-auto flex min-h-full max-w-3xl items-center py-6"><section role="dialog" aria-modal="true" aria-labelledby={`${bookingId}-reschedule-title`} className="w-full rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-7">
     <div className="flex items-start justify-between gap-4"><div><Badge variant="outline" className="text-primary"><RefreshCw />ĐỔI LỊCH MỘT LẦN</Badge><h2 id={`${bookingId}-reschedule-title`} className="mt-3 text-2xl font-black">Chọn lịch sân mới</h2><p className="mt-1 text-sm text-muted-foreground">Giá cao hơn sẽ thanh toán thêm, giá thấp hơn sẽ hoàn chênh lệch qua VietQR.</p></div><Button variant="ghost" size="icon" className="h-12 w-12" onClick={onClose} aria-label="Đóng"><X /></Button></div>
     <div className="mt-6 grid gap-5 md:grid-cols-[220px_1fr]">
-      <div className="space-y-4"><label className="block text-sm font-black">Ngày mới<Input type="date" min={todayInputValue()} value={date} onChange={(event) => { setDate(event.target.value); setSlotNumber(null) }} className="mt-2 h-12" /></label><div><p className="text-sm font-black">Chọn sân</p><div className="mt-2 space-y-2">{venue.courts.map((item) => <button type="button" key={item.id} onClick={() => { setCourtId(item.id); setSlotNumber(null) }} className={cn('min-h-12 w-full rounded-xl border px-3 text-left text-sm font-bold transition', courtId === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted')}><span className="block">{item.name}</span><span className="text-xs font-normal text-muted-foreground">{item.type}</span></button>)}</div></div></div>
-      <div><p className="text-sm font-black">Slot còn trống · {formatDateLabel(date)}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{slots.map((slot) => <button type="button" key={slot.slotNumber} onClick={() => setSlotNumber(slot.slotNumber)} className={cn('rounded-2xl border p-4 text-left transition', slotNumber === slot.slotNumber ? 'border-primary bg-primary/10 ring-2 ring-primary/15' : 'border-border hover:border-primary/40')}><span className="flex items-center gap-2 text-sm font-black"><Clock3 className="h-4 w-4 text-primary" />{slot.timeRange}</span><span className="mt-2 block text-xs text-muted-foreground">Slot {slot.slotNumber}</span><span className="mt-1 block font-black text-primary">{formatMoney(slot.price)}</span></button>)}</div>{!slots.length && <div className="mt-3 rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Ngày và sân này chưa có slot phù hợp.</div>}</div>
+      <div className="space-y-4"><label className="block text-sm font-black">Ngày mới<Input type="date" min={todayInputValue()} value={date} onChange={(event) => { setDate(event.target.value); setAvailabilityId(null) }} className="mt-2 h-12" /></label><div><p className="text-sm font-black">Chọn sân</p><div className="mt-2 space-y-2">{venue.courts.map((item) => <button type="button" key={item.id} onClick={() => { setCourtId(item.id); setAvailabilityId(null) }} className={cn('min-h-12 w-full rounded-xl border px-3 text-left text-sm font-bold transition', courtId === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted')}><span className="block">{item.name}</span><span className="text-xs font-normal text-muted-foreground">{item.type}</span></button>)}</div></div></div>
+      <div><p className="text-sm font-black">Khoảng đặt còn trống · {formatDateLabel(date)}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{availabilities.map((availability) => { const endMinutes = Number(availability.startTime.slice(0, 2)) * 60 + Number(availability.startTime.slice(3, 5)) + availability.durationMinutes; const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`; return <button type="button" key={availability.id} onClick={() => setAvailabilityId(availability.id)} className={cn('rounded-2xl border p-4 text-left transition', availabilityId === availability.id ? 'border-primary bg-primary/10 ring-2 ring-primary/15' : 'border-border hover:border-primary/40')}><span className="flex items-center gap-2 text-sm font-black"><Clock3 className="h-4 w-4 text-primary" />{availability.startTime} - {endTime}</span><span className="mt-2 block text-xs text-muted-foreground">Khoảng đặt của Chủ sân</span><span className="mt-1 block font-black text-primary">{formatMoney(availability.amount)}</span></button> })}</div>{!availabilities.length && <div className="mt-3 rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Ngày và sân này chưa có khoảng đặt phù hợp do Chủ sân cấu hình.</div>}</div>
     </div>
-    <div className="mt-6 grid gap-3 rounded-2xl border bg-muted/20 p-4 sm:grid-cols-3"><div><p className="text-xs text-muted-foreground">Giá booking hiện tại</p><p className="mt-1 font-black">{formatMoney(currentAmount)}</p></div><div><p className="text-xs text-muted-foreground">Chênh lệch</p><p className={cn('mt-1 font-black', difference > 0 ? 'text-amber-600' : difference < 0 ? 'text-emerald-600' : '')}>{selectedSlot ? difference > 0 ? `Thanh toán thêm ${formatMoney(difference)}` : difference < 0 ? `Hoàn ${formatMoney(Math.abs(difference))}` : 'Không chênh lệch' : 'Chọn một slot'}</p></div><div><p className="text-xs text-muted-foreground">Điều chỉnh thanh toán</p><p className="mt-1 font-black">Qua VietQR</p></div></div>
-    <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" className="min-h-12" onClick={onClose}>Để sau</Button><Button className="min-h-12" disabled={!selectedSlot} onClick={() => selectedSlot && onConfirm({ date, dateLabel: formatDateLabel(date), courtId, slotNumber: selectedSlot.slotNumber })}><ShieldCheck />Xác nhận đổi lịch</Button></div>
+    <div className="mt-6 grid gap-3 rounded-2xl border bg-muted/20 p-4 sm:grid-cols-3"><div><p className="text-xs text-muted-foreground">Giá booking hiện tại</p><p className="mt-1 font-black">{formatMoney(currentAmount)}</p></div><div><p className="text-xs text-muted-foreground">Chênh lệch</p><p className={cn('mt-1 font-black', difference > 0 ? 'text-amber-600' : difference < 0 ? 'text-emerald-600' : '')}>{selectedAvailability ? difference > 0 ? `Thanh toán thêm ${formatMoney(difference)}` : difference < 0 ? `Hoàn ${formatMoney(Math.abs(difference))}` : 'Không chênh lệch' : 'Chọn một khoảng đặt'}</p></div><div><p className="text-xs text-muted-foreground">Điều chỉnh thanh toán</p><p className="mt-1 font-black">Qua VietQR</p></div></div>
+    <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" className="min-h-12" onClick={onClose}>Để sau</Button><Button className="min-h-12" disabled={!selectedAvailability} onClick={() => selectedAvailability && onConfirm({ date, dateLabel: formatDateLabel(date), courtId, startTime: selectedAvailability.startTime, endTime: selectedTimeRange.split(' - ')[1], availabilityId: selectedAvailability.id })}><ShieldCheck />Xác nhận đổi lịch</Button></div>
   </section></div></div>
 }

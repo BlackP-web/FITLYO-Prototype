@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import type { CourtDisableSchedule } from '@/lib/courtDisableSchedule'
 
 export type SharedBookingStatus = 'CONFIRMED' | 'CANCELLED'
 
@@ -42,7 +43,7 @@ export interface SharedSlotOverride {
   updatedAt: string
 }
 
-export type VenueCalendarEventType = 'WALK_IN' | 'SOCIAL' | 'COACHING' | 'MAINTENANCE' | 'PRIVATE'
+export type VenueCalendarEventType = 'WALK_IN' | 'SOCIAL' | 'COACHING' | 'MAINTENANCE' | 'PRIVATE' | 'AVAILABILITY'
 
 export interface VenueCalendarEvent {
   id: string
@@ -57,9 +58,13 @@ export interface VenueCalendarEvent {
   durationMinutes: number
   amount: number
   paymentMethod?: 'CASH' | 'VIETQR'
+  paymentConfirmed?: boolean
+  paymentConfirmedAt?: string
   contactName?: string
   contactPhone?: string
   note?: string
+  checkInCode?: string
+  checkedInAt?: string
   createdAt: string
   updatedAt: string
 }
@@ -68,6 +73,7 @@ interface CrossRoleState {
   courtBookings: SharedCourtBooking[]
   slotOverrides: SharedSlotOverride[]
   venueCalendarEvents: VenueCalendarEvent[]
+  courtDisableSchedules: Record<string, CourtDisableSchedule>
   upsertCourtBooking: (booking: SharedCourtBooking) => void
   cancelCourtBooking: (id: string) => void
   rescheduleCourtBooking: (id: string, changes: Pick<SharedCourtBooking, 'date' | 'dateLabel' | 'courtId' | 'courtName' | 'courtType' | 'slotNumber' | 'timeRange' | 'totalAmount' | 'paidAmount' | 'rescheduleCount'>) => void
@@ -76,6 +82,7 @@ interface CrossRoleState {
   createVenueCalendarEvent: (event: Omit<VenueCalendarEvent, 'id' | 'createdAt' | 'updatedAt'>) => string
   updateVenueCalendarEvent: (id: string, changes: Partial<Omit<VenueCalendarEvent, 'id' | 'createdAt'>>) => void
   removeVenueCalendarEvent: (id: string) => void
+  setCourtDisableSchedule: (venueId: string, courtId: string, schedule: CourtDisableSchedule | null) => void
   resetCrossRoleDemo: () => void
 }
 
@@ -87,6 +94,7 @@ export const useCrossRoleStore = create<CrossRoleState>()(
       courtBookings: [],
       slotOverrides: [],
       venueCalendarEvents: [],
+      courtDisableSchedules: {},
       upsertCourtBooking: (booking) => set((state) => ({
         courtBookings: [booking, ...state.courtBookings.filter((item) => item.id !== booking.id)],
       })),
@@ -111,7 +119,14 @@ export const useCrossRoleStore = create<CrossRoleState>()(
         venueCalendarEvents: state.venueCalendarEvents.map((event) => event.id === id ? { ...event, ...changes, updatedAt: new Date().toISOString() } : event),
       })),
       removeVenueCalendarEvent: (id) => set((state) => ({ venueCalendarEvents: state.venueCalendarEvents.filter((event) => event.id !== id) })),
-      resetCrossRoleDemo: () => set({ courtBookings: [], slotOverrides: [], venueCalendarEvents: [] }),
+      setCourtDisableSchedule: (venueId, courtId, schedule) => set((state) => {
+        const key = `${venueId}:${courtId}`
+        const nextSchedules = { ...state.courtDisableSchedules }
+        if (schedule) nextSchedules[key] = schedule
+        else delete nextSchedules[key]
+        return { courtDisableSchedules: nextSchedules }
+      }),
+      resetCrossRoleDemo: () => set({ courtBookings: [], slotOverrides: [], venueCalendarEvents: [], courtDisableSchedules: {} }),
     }),
     {
       name: crossRoleStorageKey,

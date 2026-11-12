@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { coachMale, communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
 import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
+import { scheduleOverlapsSlot } from '@/lib/courtDisableSchedule'
 import { usePlayerStore } from '@/store/usePlayerStore'
 import { useCrossRoleStore } from '@/store/useCrossRoleStore'
 import { useAuthStore, type AuthSession } from '@/store/useAuthStore'
@@ -1185,6 +1186,8 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     const sourceVenue = playerState.venues.find((venue) => venue.id === source.venueId)
     const sourceCourt = sourceVenue?.courts.find((court) => court.id === source.courtId)
     const sourceVenueSlot = sourceCourt?.slots.find((slot) => slot.slotNumber === source.slotNumber)
+    const disableSchedule = sharedState.courtDisableSchedules[`${source.venueId}:${source.courtId}`]
+    const courtIsDisabled = Boolean(disableSchedule && source.date && scheduleOverlapsSlot(disableSchedule, source.date, source.timeRange))
     const existingPlayerMatch = playerState.matches.some((match) => (
       match.status !== 'CANCELLED'
       && match.venueId === source.venueId
@@ -1206,8 +1209,8 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       && override.slotNumber === source.slotNumber
       && override.status !== 'AVAILABLE'
     ))
-    if (existingPlayerMatch || existingCourtBooking || blockingOverride || (sourceVenueSlot && sourceVenueSlot.status !== 'AVAILABLE')) {
-      get().showToast('Slot vừa được đặt hoặc đã có lịch khác. Không thể tạo kèo Social.', 'error')
+    if (courtIsDisabled || existingPlayerMatch || existingCourtBooking || blockingOverride || (sourceVenueSlot && sourceVenueSlot.status !== 'AVAILABLE')) {
+      get().showToast(courtIsDisabled ? 'Sân đang tắt. Không thể tạo kèo Social mới.' : 'Slot vừa được đặt hoặc đã có lịch khác. Không thể tạo kèo Social.', 'error')
       return
     }
 

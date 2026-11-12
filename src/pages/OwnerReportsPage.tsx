@@ -18,7 +18,7 @@ type Transaction = {
 }
 const formatVND = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
 const sourceLabel: Record<RevenueSource, string> = { COURT: 'Đặt sân Player', SOCIAL: 'Kèo Social', COACHING: 'Lớp Coach', WALK_IN: 'Khách vãng lai', PRIVATE: 'Khóa sân riêng', REFUND: 'Hoàn tiền' }
-const eventToSource: Record<VenueCalendarEventType, RevenueSource> = { SOCIAL: 'SOCIAL', COACHING: 'COACHING', WALK_IN: 'WALK_IN', PRIVATE: 'PRIVATE', MAINTENANCE: 'PRIVATE' }
+const eventToSource: Record<VenueCalendarEventType, RevenueSource> = { SOCIAL: 'SOCIAL', COACHING: 'COACHING', WALK_IN: 'WALK_IN', PRIVATE: 'PRIVATE', MAINTENANCE: 'PRIVATE', AVAILABILITY: 'COURT' }
 type MultiOption = { value: string; label: string; group?: string }
 type VenueCourtGroup = { venueId: string; venueName: string; courts: Array<{ id: string; name: string; value: number }> }
 
@@ -55,7 +55,7 @@ export function OwnerReportsPage() {
       paymentMethod: 'VIETQR', status: booking.status === 'CANCELLED' ? 'REFUNDED' : 'COMPLETED',
       owner: 'Field Manager', coach: '—',
     }))
-    const eventRows: Transaction[] = events.filter((event) => event.type !== 'MAINTENANCE' && event.amount > 0).map((event) => ({
+    const eventRows: Transaction[] = events.filter((event) => !['MAINTENANCE', 'AVAILABILITY'].includes(event.type) && event.amount > 0).map((event) => ({
       id: event.id, date: event.date, venueId: event.venueId, venueName: event.venueName,
       courtId: event.courtId, courtName: event.courtName, source: eventToSource[event.type],
       label: event.title, amount: event.amount, paymentMethod: event.paymentMethod ?? 'CASH',

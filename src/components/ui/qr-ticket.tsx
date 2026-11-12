@@ -64,7 +64,7 @@ export const QrTicket: React.FC<QrTicketProps> = ({
           <p className="text-sm font-medium text-primary flex items-center gap-1.5">
             <span>{courtName}</span>
             <span>•</span>
-            <span>Slot {slotNumber} ({timeRange})</span>
+            <span>{slotNumber > 0 ? `Slot ${slotNumber} · ` : ''}{timeRange}</span>
           </p>
           <p className="text-xs text-muted-foreground">{dateStr}</p>
         </div>

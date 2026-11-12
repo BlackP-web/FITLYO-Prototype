@@ -354,7 +354,7 @@ export function SCR_AUTH_02() {
                   <strong>2. Chế tài chống bỏ kèo:</strong> Người chơi hủy dưới 6 giờ hoặc vắng mặt không lý do chính đáng sẽ không được hoàn phí tham gia.
                 </p>
                 <p>
-                  <strong>3. Hoàn tiền do thời tiết:</strong> Trường hợp thời tiết khiến sân không thể vận hành, hệ thống hoàn 100% phí đã thanh toán về Ví FITLYO.
+                  <strong>3. Hoàn tiền do thời tiết:</strong> Trường hợp thời tiết khiến sân không thể vận hành, hệ thống hoàn 100% phí đã thanh toán qua VietQR.
                 </p>
               </div>
             )}

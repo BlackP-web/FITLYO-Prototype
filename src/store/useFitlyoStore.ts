@@ -765,7 +765,7 @@ const initialCoachWalletTransactions: CoachWalletTransaction[] = [
   { id: 'TX-8841', coachId: 'coach_dung', date: '14/10/2026', description: 'Giải ngân buổi 7/8', courseName: 'Boot Camp Bứt Phá DUPR 3.5', amount: 1080000, type: 'RELEASE', status: 'COMPLETED' },
   { id: 'TX-8838', coachId: 'coach_dung', date: '13/10/2026', description: 'Học phí học viên Ngô Kim Ngân', courseName: 'Chiến Thuật Đánh Đôi DUPR 3.0+', amount: 2200000, type: 'ESCROW_IN', status: 'HELD' },
   { id: 'TX-8832', coachId: 'coach_dung', date: '12/10/2026', description: 'Phí nền tảng 10%', courseName: 'PT 1-1 Nâng Cao Dinking & Drop Shot', amount: -180000, type: 'PLATFORM_FEE', status: 'COMPLETED' },
-  { id: 'TX-8819', coachId: 'coach_dung', date: '10/10/2026', description: 'Rút tiền về Vietcombank •7285', courseName: 'Ví FITLYO Coach', amount: -4500000, type: 'WITHDRAWAL', status: 'COMPLETED' },
+  { id: 'TX-8819', coachId: 'coach_dung', date: '10/10/2026', description: 'Rút tiền về Vietcombank •7285', courseName: 'Doanh thu Coach', amount: -4500000, type: 'WITHDRAWAL', status: 'COMPLETED' },
   { id: 'TX-8804', coachId: 'coach_dung', date: '08/10/2026', description: 'Giải ngân buổi 2/4', courseName: 'PT 1-1 Nâng Cao Dinking & Drop Shot', amount: 405000, type: 'RELEASE', status: 'COMPLETED' },
 ]
 
@@ -1149,7 +1149,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     set({ matches: updatedMatches })
     get().showToast(
       currentUser.isPremium
-        ? 'Hủy tham gia thành công. Đã hoàn 100% phí về Ví FITLYO.'
+        ? 'Hủy tham gia thành công. Đã hoàn 100% phí qua VietQR.'
         : 'Hủy tham gia thành công. Đã hoàn 100% phí theo chính sách.',
       'info'
     )
@@ -2184,7 +2184,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
       coachId: coachAccount.id,
       date: new Date().toLocaleDateString('vi-VN'),
       description: `Yêu cầu rút tiền về ${coachAccount.bankName} •••• ${coachAccount.bankAccountMasked.slice(-4)}`,
-      courseName: 'Ví FITLYO Coach',
+      courseName: 'Doanh thu Coach',
       amount: -amount,
       type: 'WITHDRAWAL',
       status: 'PENDING',

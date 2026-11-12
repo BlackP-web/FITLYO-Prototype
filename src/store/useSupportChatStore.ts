@@ -88,13 +88,13 @@ const replyFor = (message: string) => {
     return 'Booking Coach được gửi sang HLV duyệt tối đa 12 giờ. Sau khi Coach duyệt, bạn có 15 phút để thanh toán 100% học phí. Thanh toán thành công, toàn bộ lịch học được xác nhận.'
   }
   if (text.includes('social') || text.includes('kèo')) {
-    return 'Social Session yêu cầu thanh toán 100% phí tham gia. Nếu không đủ người, hệ thống tự hủy trước giờ chơi 60 phút và hoàn 100% về Ví FITLYO.'
+    return 'Social Session yêu cầu thanh toán 100% phí tham gia. Nếu không đủ người, hệ thống tự hủy trước giờ chơi 60 phút và hoàn 100% qua VietQR.'
   }
   if (text.includes('cọc') || text.includes('thanh toán') || text.includes('vietqr') || text.includes('ví')) {
-    return 'Tất cả dịch vụ gồm Social Session, đặt sân, Coach và FITLYO VIP đều thanh toán 100% trong một lần. Prototype hỗ trợ Ví FITLYO và VietQR mô phỏng. Tiền mặt chỉ áp dụng cho khách vãng lai tại quầy sân.'
+    return 'Tất cả dịch vụ gồm Social Session, đặt sân, Coach và FITLYO VIP đều thanh toán 100% trong một lần qua VietQR mô phỏng. Tiền mặt chỉ áp dụng cho khách vãng lai tại quầy sân.'
   }
   if (text.includes('hủy') || text.includes('hoàn')) {
-    return 'Tiền hoàn được chuyển về Ví FITLYO. Đặt sân và Social Session hoàn theo thời điểm hủy; lịch Coach hủy trước ít nhất 24 giờ được hoàn 100%. Nếu sân hoặc Coach chủ động hủy, bạn được hoàn 100% kèm voucher 10% giá trị booking, tối đa 100.000đ, dùng trong 30 ngày.'
+    return 'Tiền hoàn được chuyển qua VietQR. Đặt sân và Social Session hoàn theo thời điểm hủy; lịch Coach hủy trước ít nhất 24 giờ được hoàn 100%. Nếu sân hoặc Coach chủ động hủy, bạn được hoàn 100% kèm voucher 10% giá trị booking, tối đa 100.000đ, dùng trong 30 ngày.'
   }
   if (text.includes('giữ chỗ') || text.includes('hết hạn') || text.includes('trạng thái')) {
     return 'Đặt sân và Social Session thanh toán 100% ngay khi xác nhận. Riêng booking Coach sau khi được duyệt có cửa sổ thanh toán 15 phút; quá hạn, yêu cầu hết hiệu lực và lịch được mở lại.'

@@ -1,6 +1,6 @@
 import {
   ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Clock3, ExternalLink,
-  Heart, MapPin, Phone, QrCode, ShieldCheck, Sparkles, Star, WalletCards, X,
+  Heart, MapPin, Phone, QrCode, ShieldCheck, Sparkles, Star, X,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -38,7 +38,6 @@ export function VenueDetailPage() {
   const { venueId } = useParams()
   const navigate = useNavigate()
   const venue = usePlayerStore((state) => state.venues.find((item) => item.id === venueId))
-  const profile = usePlayerStore((state) => state.profile)
   const bookedSlotKeys = usePlayerStore((state) => state.bookedSlotKeys)
   const bookCourt = usePlayerStore((state) => state.bookCourt)
   const playerMatches = usePlayerStore((state) => state.matches)
@@ -48,7 +47,7 @@ export function VenueDetailPage() {
   const [imageIndex, setImageIndex] = useState(0)
   const [date, setDate] = useState(dates[0])
   const [selection, setSelection] = useState<{ court: VenueCourt; slot: VenueSlot } | null>(null)
-  const [payment, setPayment] = useState<'WALLET' | 'VIETQR'>('WALLET')
+  const [payment] = useState<'VIETQR'>('VIETQR')
   const [accepted, setAccepted] = useState(false)
   const [favorite, setFavorite] = useState(false)
   const dateScrollerRef = useRef<HTMLDivElement>(null)
@@ -71,7 +70,7 @@ export function VenueDetailPage() {
     const override = slotOverrides.find((item) => item.venueId === venue.id && item.date === date.value && item.courtId === court.id && item.slotNumber === slot.slotNumber)
     if (sharedBooking) return { ...slot, status: 'PRIVATE', label: 'Đã có Player đặt', price: sharedBooking.totalAmount }
     if (match) return { ...slot, status: 'SOCIAL', label: 'Kèo Social', duprRange: `${match.duprMin.toFixed(1)}–${match.duprMax.toFixed(1)}`, players: `${match.participants.length}/${match.maxPlayers}` }
-    if (override) return { ...slot, status: override.status === 'AVAILABLE' ? 'AVAILABLE' : override.status === 'MAINTENANCE' ? 'MAINTENANCE' : 'PRIVATE', label: override.status === 'MAINTENANCE' ? 'Bảo trì' : override.status === 'PRIVATE_BOOKED' ? 'Khách vãng lai' : undefined, price: override.price }
+    if (override) return { ...slot, status: override.status === 'AVAILABLE' ? 'AVAILABLE' : override.status === 'MAINTENANCE' ? 'MAINTENANCE' : override.status === 'MATCH_PUBLISHED' ? 'SOCIAL' : override.status === 'COACHING' ? 'COACHING' : 'PRIVATE', label: override.status === 'MAINTENANCE' ? 'Bảo trì' : override.status === 'PRIVATE_BOOKED' ? 'Khách vãng lai' : override.status === 'MATCH_PUBLISHED' ? 'Kèo Social' : override.status === 'COACHING' ? 'Lớp Coach' : undefined, price: override.price }
     return slot
   }
 
@@ -94,7 +93,6 @@ export function VenueDetailPage() {
 
   const selectSlot = (court: VenueCourt, slot: VenueSlot) => {
     setSelection({ court, slot })
-    setPayment('WALLET')
     setAccepted(false)
   }
 
@@ -171,9 +169,9 @@ export function VenueDetailPage() {
         <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[1.8rem] border border-border bg-card p-6 shadow-2xl sm:p-7">
           <div className="flex items-start justify-between"><div><p className="text-xs font-black uppercase tracking-wider text-primary">Đặt slot sân</p><h2 className="mt-1 text-2xl font-black">{selection.court.name} · Slot {selection.slot.slotNumber}</h2><p className="mt-1 text-sm text-muted-foreground">{date.label} · {selection.slot.timeRange}</p></div><Button size="icon" variant="ghost" onClick={() => setSelection(null)}><X className="h-5 w-5" /></Button></div>
           <div className="mt-6 rounded-2xl border border-primary bg-secondary/30 p-4 ring-1 ring-primary/20"><ShieldCheck className="h-5 w-5 text-primary" /><b className="mt-3 block">Bao trọn sân</b><p className="mt-1 text-xs text-muted-foreground">Không gian riêng cho nhóm trong 90 phút. Player không có quyền tạo kèo Social.</p><strong className="mt-3 block text-lg">{selection.slot.price.toLocaleString('vi-VN')}đ</strong></div>
-          <div className="mt-5 space-y-2"><p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Thanh toán mô phỏng</p><button type="button" onClick={() => setPayment('WALLET')} className={cn('flex w-full items-center gap-3 rounded-xl border p-3 text-left', payment === 'WALLET' && 'border-primary bg-primary/5')}><WalletCards className="h-4 w-4 text-primary" /><span className="flex-1 text-sm font-bold">Ví FITLYO · {profile.walletBalance.toLocaleString('vi-VN')}đ</span>{payment === 'WALLET' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button><button type="button" onClick={() => setPayment('VIETQR')} className={cn('flex w-full items-center gap-3 rounded-xl border p-3 text-left', payment === 'VIETQR' && 'border-primary bg-primary/5')}><QrCode className="h-4 w-4 text-primary" /><span className="flex-1 text-sm font-bold">VietQR · Không thu tiền thật</span>{payment === 'VIETQR' && <CheckCircle2 className="h-4 w-4 text-primary" />}</button></div>
+          <div className="mt-5 rounded-xl border border-primary/25 bg-primary/5 p-3 text-sm"><p className="flex items-center gap-2 font-bold"><QrCode className="h-4 w-4 text-primary" />VietQR mô phỏng</p><p className="mt-1 text-xs text-muted-foreground">Thanh toán 100% qua VietQR để xác nhận booking.</p></div>
           {payment === 'VIETQR' && <div className="mt-4 rounded-2xl border border-dashed border-primary/25 bg-white p-4 text-center text-[#143F42]"><QrCode className="mx-auto h-16 w-16" /><p className="mt-2 font-mono text-xs font-black">FITLYO-{venue.id.toUpperCase()}-S{selection.slot.slotNumber}</p></div>}
-          <div className="mt-5 rounded-2xl border border-border/70 p-4 text-xs leading-5 text-muted-foreground"><b className="text-foreground">Chính sách hủy:</b> trước 12 giờ hoàn 100% phí; từ 6–12 giờ hoàn 50% số tiền đã thanh toán; dưới 6 giờ không hoàn. Mọi khoản hoàn trả về Ví FITLYO.</div>
+          <div className="mt-5 rounded-2xl border border-border/70 p-4 text-xs leading-5 text-muted-foreground"><b className="text-foreground">Chính sách hủy:</b> trước 12 giờ hoàn 100% phí; từ 6–12 giờ hoàn 50% số tiền đã thanh toán; dưới 6 giờ không hoàn. Khoản hoàn được xử lý qua VietQR.</div>
           <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-0.5 accent-[#143F42]" /><span>Tôi đồng ý với chính sách đặt sân, hoàn tiền và quy định sử dụng cụm sân.</span></label>
           <div className="mt-5 space-y-3 rounded-2xl bg-muted/45 p-4"><div className="flex items-center justify-between text-sm"><span>Tổng giá trị booking</span><b>{selection.slot.price.toLocaleString('vi-VN')}đ</b></div><div className="flex items-center justify-between border-t border-border/60 pt-3 text-sm"><span>Thanh toán ngay · 100%</span><b className="text-xl text-primary">{selection.slot.price.toLocaleString('vi-VN')}đ</b></div><div className="flex items-center justify-between text-sm"><span>Còn lại tại quầy</span><b className="text-emerald-600">0đ</b></div></div>
           <Button disabled={!accepted} onClick={handleBooking} className="mt-5 h-12 w-full gap-2 rounded-xl bg-accent font-black text-accent-foreground hover:bg-accent/90"><Sparkles className="h-4 w-4" />Thanh toán 100% · {selection.slot.price.toLocaleString('vi-VN')}đ</Button>

@@ -38,15 +38,15 @@ export type RefundOutcome = {
 }
 
 export const socialRefundOutcome = (paidAmount: number, hoursBefore: number): RefundOutcome => {
-  if (hoursBefore >= 6) return { refundAmount: paidAmount, forfeitedAmount: 0, label: 'Hoàn 100% về Ví FITLYO' }
+  if (hoursBefore >= 6) return { refundAmount: paidAmount, forfeitedAmount: 0, label: 'Hoàn 100% qua VietQR' }
   return { refundAmount: 0, forfeitedAmount: paidAmount, label: 'Hủy dưới 6 giờ: mất 100% phí đã thanh toán' }
 }
 
 export const courtRefundOutcome = (paidAmount: number, hoursBefore: number): RefundOutcome => {
-  if (hoursBefore >= 12) return { refundAmount: paidAmount, forfeitedAmount: 0, label: 'Hoàn 100% phí đã thanh toán về Ví FITLYO' }
+  if (hoursBefore >= 12) return { refundAmount: paidAmount, forfeitedAmount: 0, label: 'Hoàn 100% phí đã thanh toán qua VietQR' }
   if (hoursBefore >= 6) {
     const refundAmount = Math.round(paidAmount / 2)
-    return { refundAmount, forfeitedAmount: paidAmount - refundAmount, label: 'Hoàn 50% số tiền đã thanh toán về Ví FITLYO' }
+    return { refundAmount, forfeitedAmount: paidAmount - refundAmount, label: 'Hoàn 50% số tiền đã thanh toán qua VietQR' }
   }
   return { refundAmount: 0, forfeitedAmount: paidAmount, label: 'Hủy dưới 6 giờ: không hoàn phí đã thanh toán' }
 }

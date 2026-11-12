@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, CheckCircle2, Clock3, ExternalLink, MapPin, QrCode, Share2, ShieldCheck, Sparkles, UserRound, WalletCards, X } from 'lucide-react'
+import { ArrowLeft, Check, CheckCircle2, Clock3, ExternalLink, MapPin, QrCode, Share2, ShieldCheck, Sparkles, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +20,7 @@ export function PlayerMatchDetailPage() {
   const processTimeBasedPolicies = usePlayerStore((state) => state.processTimeBasedPolicies)
   const showToast = useFitlyoStore((state) => state.showToast)
   const [showCheckout, setShowCheckout] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'WALLET' | 'VIETQR'>('WALLET')
+  const [paymentMethod] = useState<'VIETQR'>('VIETQR')
   const [accepted, setAccepted] = useState(false)
   const [processing, setProcessing] = useState(false)
 
@@ -107,8 +107,8 @@ export function PlayerMatchDetailPage() {
           </div>
 
           <aside className="space-y-5 bg-muted/20 p-5 sm:p-8">
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-4"><div className="flex items-center gap-2 font-black text-emerald-700 dark:text-emerald-300"><ShieldCheck className="h-5 w-5" /> Chính sách thanh toán & hoàn phí</div><ul className="mt-3 space-y-2 text-xs leading-5 text-muted-foreground"><li>• Thanh toán 100% phí tham gia: {formatMoney(matchFee)}.</li><li>• Hủy trước giờ đấu ít nhất 6 giờ: hoàn 100% về Ví FITLYO.</li><li>• Hủy dưới 6 giờ hoặc vắng mặt: mất toàn bộ phí.</li><li>• Kèo thiếu người sẽ tự hủy trước 60 phút và hoàn 100%.</li></ul></div>
-            <div className="rounded-2xl border border-border/70 bg-card p-5"><div className="flex items-center justify-between"><span className="flex items-center gap-2 text-sm font-bold"><WalletCards className="h-4 w-4 text-primary" /> Ví FITLYO</span><b>{formatMoney(profile.walletBalance)}</b></div><div className="my-4 border-t border-border/60" /><div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Phí tham gia · 100%</span><b>{formatMoney(matchFee)}</b></div><div className="mt-2 flex items-center justify-between text-sm"><span className="text-muted-foreground">Phí giao dịch</span><b className="text-emerald-600">0đ</b></div></div>
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-4"><div className="flex items-center gap-2 font-black text-emerald-700 dark:text-emerald-300"><ShieldCheck className="h-5 w-5" /> Chính sách thanh toán & hoàn phí</div><ul className="mt-3 space-y-2 text-xs leading-5 text-muted-foreground"><li>• Thanh toán 100% phí tham gia: {formatMoney(matchFee)} qua VietQR.</li><li>• Hủy trước giờ đấu ít nhất 6 giờ: hoàn 100% qua VietQR.</li><li>• Hủy dưới 6 giờ hoặc vắng mặt: mất toàn bộ phí.</li><li>• Kèo thiếu người sẽ tự hủy trước 60 phút và hoàn 100%.</li></ul></div>
+            <div className="rounded-2xl border border-border/70 bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><QrCode className="h-4 w-4 text-primary" /> Thanh toán VietQR</div><div className="my-4 border-t border-border/60" /><div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Phí tham gia · 100%</span><b>{formatMoney(matchFee)}</b></div><div className="mt-2 flex items-center justify-between text-sm"><span className="text-muted-foreground">Phí giao dịch</span><b className="text-emerald-600">0đ</b></div></div>
 
             {!inRange && !joined && <div className="rounded-2xl border border-orange-500/25 bg-orange-500/10 p-4 text-sm"><b className="text-orange-700 dark:text-orange-300">DUPR chưa phù hợp</b><p className="mt-1 text-xs text-muted-foreground">Kèo yêu cầu {match.duprMin.toFixed(2)}–{match.duprMax.toFixed(2)}, trong khi bạn đang ở mức {profile.dupr.toFixed(2)}.</p></div>}
 
@@ -143,10 +143,7 @@ export function PlayerMatchDetailPage() {
               <div className="mt-5 flex items-end justify-between border-t border-border/60 pt-5"><span className="text-lg font-black">Tổng phí</span><b className="text-3xl">{formatMoney(matchFee)}</b></div>
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <button type="button" onClick={() => setPaymentMethod('WALLET')} className={`flex items-center gap-3 rounded-[1.35rem] border p-4 text-left transition ${paymentMethod === 'WALLET' ? 'border-primary bg-secondary/25 ring-1 ring-primary/20' : 'border-border bg-card'}`}><WalletCards className="h-6 w-6 text-primary" /><span className="flex-1"><b className="block text-sm">Ví FITLYO</b><small className="text-muted-foreground">Số dư {formatMoney(profile.walletBalance)}</small></span>{paymentMethod === 'WALLET' && <CheckCircle2 className="h-5 w-5 text-primary" />}</button>
-              <button type="button" onClick={() => setPaymentMethod('VIETQR')} className={`flex items-center gap-3 rounded-[1.35rem] border p-4 text-left transition ${paymentMethod === 'VIETQR' ? 'border-primary bg-secondary/25 ring-1 ring-primary/20' : 'border-border bg-card'}`}><QrCode className="h-6 w-6 text-primary" /><span className="flex-1"><b className="block text-sm">Thanh toán mô phỏng</b><small className="text-muted-foreground">Bản demo không thu tiền thật</small></span>{paymentMethod === 'VIETQR' && <CheckCircle2 className="h-5 w-5 text-primary" />}</button>
-            </div>
+            <div className="mt-5 rounded-[1.35rem] border border-primary bg-secondary/25 p-4 text-sm"><p className="flex items-center gap-3 font-black"><QrCode className="h-6 w-6 text-primary" />Thanh toán qua VietQR</p><p className="mt-1 text-xs text-muted-foreground">Bản demo mô phỏng giao dịch, không thu tiền thật.</p></div>
             {paymentMethod === 'VIETQR' && <div className="mt-4 rounded-2xl border border-dashed border-primary/25 bg-white p-4 text-center text-[#143F42]"><QrCode className="mx-auto h-20 w-20" /><p className="mt-2 font-mono text-xs font-bold">FITLYO-{match.id.toUpperCase()}</p><p className="text-[10px] text-slate-500">Mã thanh toán mô phỏng</p></div>}
             <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-[1.35rem] border border-border bg-card p-4 text-sm"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-0.5 h-5 w-5 accent-[#143F42]" /><span>Tôi đã đọc và đồng ý với <button type="button" className="font-bold text-primary underline">điều kiện tham gia, hủy và hoàn phí</button>.</span></label>
             <Button onClick={confirmJoin} disabled={!accepted || processing} className="fitlyo-coral-button mt-5 h-14 w-full rounded-2xl border-0 font-black disabled:opacity-45">{processing ? 'Đang xác nhận thanh toán...' : `Thanh toán 100% · ${formatMoney(matchFee)}`}</Button>

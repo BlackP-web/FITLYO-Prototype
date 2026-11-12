@@ -34,12 +34,12 @@ interface PlayerState {
   bookedSlotKeys: string[]
   addFieldManagerMatch: (match: PlayerMatch) => void
   updateProfile: (changes: Partial<Pick<PlayerProfile, 'name' | 'username' | 'phone' | 'city' | 'avatarUrl'>>) => void
-  joinMatch: (matchId: string, method?: 'WALLET' | 'VIETQR') => ActionResult
+  joinMatch: (matchId: string, method?: 'VIETQR') => ActionResult
   cancelTicket: (ticketCode: string) => ActionResult
   completeMatch: (ticketCode: string) => ActionResult
   checkInTicket: (ticketCode: string) => ActionResult
   submitReview: (matchId: string, draft: ReviewDraft) => ActionResult
-  purchaseVip: (plan: 'MONTHLY' | 'YEARLY', method: 'WALLET' | 'VIETQR') => ActionResult
+  purchaseVip: (plan: 'MONTHLY' | 'YEARLY', method: 'VIETQR') => ActionResult
   cancelCourtBooking: (scheduleId: string) => ActionResult
   rescheduleCourtBooking: (scheduleId: string, input: {
     date: string
@@ -53,7 +53,7 @@ interface PlayerState {
     slotNumber: number
     date: string
     dateLabel: string
-    paymentMethod?: 'WALLET' | 'VIETQR'
+    paymentMethod?: 'VIETQR'
   }) => ActionResult
   recordCoachBooking: (input: {
     bookingId: string
@@ -68,7 +68,6 @@ interface PlayerState {
     paymentMethod: CoachPaymentMethod
     sessions: CoachBookingSession[]
   }) => ActionResult
-  creditWallet: (amount: number) => void
   creditVoucher: (amount: number) => void
   cancelCoachSchedule: (bookingId: string, subtitle: string, sessionId?: string) => void
   processTimeBasedPolicies: () => void
@@ -92,7 +91,6 @@ const initialProfile: PlayerProfile = {
   matchesPlayed: 28,
   wins: 19,
   losses: 9,
-  walletBalance: 1_200_000,
   voucherBalance: 0,
   isVip: false,
   skills: {
@@ -546,7 +544,7 @@ export const usePlayerStore = create<PlayerState>()(
 
       updateProfile: (changes) => set((state) => ({ profile: { ...state.profile, ...changes } })),
 
-      joinMatch: (matchId, method = 'WALLET') => {
+      joinMatch: (matchId, method = 'VIETQR') => {
         const state = get()
         const match = state.matches.find((item) => item.id === matchId)
         if (!match) return { success: false, message: 'Không tìm thấy kèo đấu.' }
@@ -562,10 +560,6 @@ export const usePlayerStore = create<PlayerState>()(
         if (state.profile.dupr < match.duprMin || state.profile.dupr > match.duprMax) {
           return { success: false, message: `Kèo yêu cầu DUPR ${match.duprMin.toFixed(2)} – ${match.duprMax.toFixed(2)}.` }
         }
-        if (method === 'WALLET' && state.profile.walletBalance < matchFee) {
-          return { success: false, message: 'Số dư Ví FITLYO không đủ để thanh toán phí tham gia.' }
-        }
-
         const code = ticketCodeFor(matchId)
         const paymentReferenceId = `social-${code}`
         usePaymentStore.getState().createAwaitingPayment({
@@ -579,10 +573,6 @@ export const usePlayerStore = create<PlayerState>()(
         const paymentResult = usePaymentStore.getState().confirmPayment(paymentReferenceId, method)
         if (!paymentResult.success) return paymentResult
         set((current) => ({
-          profile: {
-            ...current.profile,
-            walletBalance: method === 'WALLET' ? current.profile.walletBalance - matchFee : current.profile.walletBalance,
-          },
           matches: current.matches.map((item) => {
             if (item.id !== matchId) return item
             const participants = [...item.participants, currentParticipant(current.profile, matchFee)]
@@ -635,16 +625,15 @@ export const usePlayerStore = create<PlayerState>()(
           }
         }
         set((current) => ({
-          profile: { ...current.profile, walletBalance: current.profile.walletBalance + outcome.refundAmount },
           tickets: current.tickets.map((item) => item.code === ticketCode ? { ...item, status: 'CANCELLED' } : item),
           matches: current.matches.map((item) => item.id === match.id ? {
             ...item,
             participants: item.participants.filter((person) => person.id !== current.profile.id),
             status: 'OPEN',
           } : item),
-          schedule: current.schedule.map((item) => item.ticketCode === ticketCode ? { ...item, status: 'CANCELLED', subtitle: outcome.refundAmount > 0 ? `Đã hoàn ${outcome.refundAmount.toLocaleString('vi-VN')}đ về Ví FITLYO` : 'Hủy muộn · Mất 100% phí đã thanh toán' } : item),
+          schedule: current.schedule.map((item) => item.ticketCode === ticketCode ? { ...item, status: 'CANCELLED', subtitle: outcome.refundAmount > 0 ? `Đã hoàn ${outcome.refundAmount.toLocaleString('vi-VN')}đ qua VietQR` : 'Hủy muộn · Mất 100% phí đã thanh toán' } : item),
         }))
-        return { success: true, message: outcome.refundAmount > 0 ? `Đã hủy vé và hoàn ${outcome.refundAmount.toLocaleString('vi-VN')}đ về Ví FITLYO.` : 'Đã hủy vé. Do hủy dưới 6 giờ, toàn bộ phí tham gia bị khấu trừ.' }
+        return { success: true, message: outcome.refundAmount > 0 ? `Đã hủy vé và hoàn ${outcome.refundAmount.toLocaleString('vi-VN')}đ qua VietQR.` : 'Đã hủy vé. Do hủy dưới 6 giờ, toàn bộ phí tham gia bị khấu trừ.' }
       },
 
       completeMatch: (ticketCode) => {
@@ -699,9 +688,6 @@ export const usePlayerStore = create<PlayerState>()(
         const price = plan === 'MONTHLY' ? 99000 : 899000
         const state = get()
         if (state.profile.isVip) return { success: false, message: 'Tài khoản đang có gói FITLYO VIP hiệu lực.' }
-        if (method === 'WALLET' && state.profile.walletBalance < price) {
-          return { success: false, message: 'Số dư Ví FITLYO không đủ.' }
-        }
         const now = new Date()
         const expiresAt = new Date(now)
         if (plan === 'MONTHLY') expiresAt.setMonth(expiresAt.getMonth() + 1)
@@ -719,12 +705,7 @@ export const usePlayerStore = create<PlayerState>()(
         const paymentResult = usePaymentStore.getState().confirmPayment(paymentReferenceId, method)
         if (!paymentResult.success) return paymentResult
         set((current) => ({
-          profile: {
-            ...current.profile,
-            walletBalance: method === 'WALLET' ? current.profile.walletBalance - price : current.profile.walletBalance,
-            isVip: true,
-            vipExpiresAt: expires,
-          },
+          profile: { ...current.profile, isVip: true, vipExpiresAt: expires },
         }))
         return { success: true, message: `Đã thanh toán 100% và kích hoạt FITLYO VIP đến ${expires}. Gói đã kích hoạt không được hoàn tiền.` }
       },
@@ -750,8 +731,7 @@ export const usePlayerStore = create<PlayerState>()(
         const totalAmount = fmOverride?.price ?? slot.price
         const amount = totalAmount
         const remainingAmount = 0
-        const paymentMethod = input.paymentMethod ?? 'WALLET'
-        if (paymentMethod === 'WALLET' && state.profile.walletBalance < amount) return { success: false, message: 'Số dư Ví FITLYO không đủ.' }
+        const paymentMethod = input.paymentMethod ?? 'VIETQR'
 
         const ticketCode = `FTL-C${input.slotNumber}-${String(Date.now()).slice(-5)}`
         const scheduleId = `schedule-court-${Date.now()}`
@@ -768,10 +748,6 @@ export const usePlayerStore = create<PlayerState>()(
         const paymentResult = usePaymentStore.getState().confirmPayment(paymentReferenceId, paymentMethod)
         if (!paymentResult.success) return paymentResult
         set((current) => ({
-          profile: {
-            ...current.profile,
-            walletBalance: paymentMethod === 'WALLET' ? current.profile.walletBalance - amount : current.profile.walletBalance,
-          },
           bookedSlotKeys: [...current.bookedSlotKeys, slotKey],
           schedule: [{
             id: scheduleId,
@@ -845,7 +821,6 @@ export const usePlayerStore = create<PlayerState>()(
           }
         }
         set((current) => ({
-          profile: { ...current.profile, walletBalance: current.profile.walletBalance + outcome.refundAmount },
           bookedSlotKeys: booking.slotKey ? current.bookedSlotKeys.filter((key) => key !== booking.slotKey) : current.bookedSlotKeys,
           schedule: current.schedule.map((item) => item.id === scheduleId ? {
             ...item,
@@ -878,25 +853,20 @@ export const usePlayerStore = create<PlayerState>()(
 
         const currentAmount = booking.paidAmount ?? booking.amount
         const difference = slot.price - currentAmount
-        if (difference > 0 && state.profile.walletBalance < difference) return { success: false, message: `Ví FITLYO cần thêm ${difference.toLocaleString('vi-VN')}đ để đổi sang slot này.` }
 
         if (booking.paymentReferenceId) {
           usePaymentStore.getState().adjustConfirmedAmount(
             booking.paymentReferenceId,
             slot.price,
             difference > 0
-              ? `Đổi lịch sân · Thu thêm ${difference.toLocaleString('vi-VN')}đ từ Ví FITLYO`
+              ? `Đổi lịch sân · Thanh toán thêm ${difference.toLocaleString('vi-VN')}đ qua VietQR`
               : difference < 0
-                ? `Đổi lịch sân · Hoàn ${Math.abs(difference).toLocaleString('vi-VN')}đ về Ví FITLYO`
+                ? `Đổi lịch sân · Hoàn ${Math.abs(difference).toLocaleString('vi-VN')}đ qua VietQR`
                 : 'Đổi lịch sân · Không phát sinh chênh lệch',
           )
         }
 
         set((current) => ({
-          profile: {
-            ...current.profile,
-            walletBalance: current.profile.walletBalance - difference,
-          },
           bookedSlotKeys: [
             ...current.bookedSlotKeys.filter((key) => key !== booking.slotKey && key !== nextSlotKey),
             nextSlotKey,
@@ -935,9 +905,9 @@ export const usePlayerStore = create<PlayerState>()(
         return {
           success: true,
           message: difference > 0
-            ? `Đổi lịch thành công. Đã trừ thêm ${difference.toLocaleString('vi-VN')}đ từ Ví FITLYO.`
+            ? `Đổi lịch thành công. Đã thanh toán thêm ${difference.toLocaleString('vi-VN')}đ qua VietQR.`
             : difference < 0
-              ? `Đổi lịch thành công. Đã hoàn ${Math.abs(difference).toLocaleString('vi-VN')}đ về Ví FITLYO.`
+              ? `Đổi lịch thành công. Đã hoàn ${Math.abs(difference).toLocaleString('vi-VN')}đ qua VietQR.`
               : 'Đổi lịch thành công, không phát sinh chênh lệch.',
         }
       },
@@ -965,10 +935,6 @@ export const usePlayerStore = create<PlayerState>()(
           }
         }
 
-        if (input.paymentMethod === 'WALLET' && state.profile.walletBalance < input.paymentAmount) {
-          return { success: false, message: 'Số dư Ví FITLYO không đủ để thanh toán toàn bộ học phí.' }
-        }
-
         const scheduleItems: PlayerScheduleItem[] = input.sessions.map((session) => ({
           id: `schedule-coach-${input.bookingId}-${session.sequence}`,
           kind: 'COURSE',
@@ -994,21 +960,11 @@ export const usePlayerStore = create<PlayerState>()(
         }))
 
         set((current) => ({
-          profile: {
-            ...current.profile,
-            walletBalance: input.paymentMethod === 'WALLET'
-              ? current.profile.walletBalance - input.paymentAmount
-              : current.profile.walletBalance,
-          },
           schedule: [...scheduleItems, ...current.schedule],
         }))
         return { success: true, message: 'Đã thanh toán 100% học phí và thêm lịch học vào Lịch của tôi.' }
       },
 
-      creditWallet: (amount) => {
-        if (amount <= 0) return
-        set((state) => ({ profile: { ...state.profile, walletBalance: state.profile.walletBalance + amount } }))
-      },
 
       creditVoucher: (amount) => {
         if (amount <= 0) return
@@ -1040,11 +996,9 @@ export const usePlayerStore = create<PlayerState>()(
         const refundedTickets = state.tickets.filter((ticket) => ticket.status === 'ACTIVE' && autoCancelledMatchIds.includes(ticket.matchId))
         if (!autoCancelledMatchIds.length && !noShowTickets.length) return
 
-        let walletRefund = 0
         refundedTickets.forEach((ticket) => {
           const match = state.matches.find((item) => item.id === ticket.matchId)
           const amount = ticket.paidAmount ?? (match ? getPlayerMatchFee(match) : 0)
-          walletRefund += amount
           if (ticket.paymentReferenceId) usePaymentStore.getState().refundPayment({
             referenceId: ticket.paymentReferenceId,
             amount,
@@ -1057,14 +1011,13 @@ export const usePlayerStore = create<PlayerState>()(
         const affectedTicketCodes = new Set([...refundedTickets, ...noShowTickets].map((ticket) => ticket.code))
         const refundedCodes = new Set(refundedTickets.map((ticket) => ticket.code))
         set((current) => ({
-          profile: { ...current.profile, walletBalance: current.profile.walletBalance + walletRefund },
           matches: current.matches.map((match) => autoCancelledMatchIds.includes(match.id) ? { ...match, status: 'CANCELLED' } : match),
           tickets: current.tickets.map((ticket) => affectedTicketCodes.has(ticket.code) ? { ...ticket, status: 'CANCELLED' } : ticket),
           schedule: current.schedule.map((item) => item.ticketCode && affectedTicketCodes.has(item.ticketCode) ? {
             ...item,
             status: 'CANCELLED',
             subtitle: refundedCodes.has(item.ticketCode)
-              ? `Kèo thiếu người · Đã hoàn ${(item.paidAmount ?? item.amount).toLocaleString('vi-VN')}đ về Ví FITLYO`
+              ? `Kèo thiếu người · Đã hoàn ${(item.paidAmount ?? item.amount).toLocaleString('vi-VN')}đ qua VietQR`
               : 'Không đến · Mất 100% phí đã thanh toán',
           } : item),
         }))

@@ -154,11 +154,11 @@ export const usePaymentStore = create<PaymentState>()(
           timeline: [
             ...item.timeline,
             timelineEvent('CANCELLED', reason),
-            timelineEvent('REFUND_PENDING', `Đang hoàn ${safeAmount.toLocaleString('vi-VN')}đ về Ví FITLYO`),
-            timelineEvent(nextStatus, `Đã hoàn ${safeAmount.toLocaleString('vi-VN')}đ về Ví FITLYO`),
+            timelineEvent('REFUND_PENDING', `Đang hoàn ${safeAmount.toLocaleString('vi-VN')}đ qua VietQR`),
+            timelineEvent(nextStatus, `Đã hoàn ${safeAmount.toLocaleString('vi-VN')}đ qua VietQR`),
           ],
         } : item) }))
-        return { success: true, message: `Đã hoàn ${safeAmount.toLocaleString('vi-VN')}đ về Ví FITLYO.`, paymentId: record.id }
+        return { success: true, message: `Đã hoàn ${safeAmount.toLocaleString('vi-VN')}đ qua VietQR.`, paymentId: record.id }
       },
 
       forfeitPayment: (referenceId, reason) => {

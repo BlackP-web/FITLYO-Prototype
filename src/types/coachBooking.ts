@@ -8,7 +8,7 @@ export type CoachBookingStatus =
   | 'EXPIRED'
   | 'REFUNDED'
 
-export type CoachPaymentMethod = 'WALLET' | 'VIETQR'
+export type CoachPaymentMethod = 'VIETQR'
 export type CoachSlotState = 'AVAILABLE' | 'BOOKED' | 'PLAYER_CONFLICT'
 
 export interface CoachBookingSession {

@@ -16,7 +16,7 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
-  WalletCards,
+  CreditCard,
   X,
 } from 'lucide-react'
 import { PaymentStatusBadge } from '@/components/payment/PaymentStatusBadge'
@@ -196,17 +196,17 @@ export function CourtBookingDetailPage() {
           </section>
 
           <section className="rounded-[1.75rem] border bg-card p-5 shadow-sm sm:p-6">
-            <div className="flex items-center gap-3"><WalletCards className="h-5 w-5 text-primary" /><h2 className="text-lg font-black">Thanh toán & hoàn tiền</h2></div>
+            <div className="flex items-center gap-3"><CreditCard className="h-5 w-5 text-primary" /><h2 className="text-lg font-black">Thanh toán & hoàn tiền</h2></div>
             <div className="mt-5 rounded-2xl bg-emerald-500/10 p-4"><p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Đã thanh toán 100%</p><p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-300">{formatMoney(paidAmount)}</p></div>
             <div className={cn('mt-3 rounded-2xl border p-4', refund.refundAmount > 0 ? 'border-primary/20 bg-primary/5' : 'border-destructive/20 bg-destructive/5')}><p className="text-sm font-black">Nếu hủy lúc này</p><p className="mt-1 text-sm text-muted-foreground">{refund.label}</p><p className="mt-2 font-black">Dự kiến hoàn: {formatMoney(refund.refundAmount)}</p></div>
-            <p className="mt-3 text-xs leading-5 text-muted-foreground">Trước 12 giờ hoàn 100%; từ 6–12 giờ hoàn 50%; dưới 6 giờ không hoàn. Tiền hoàn về Ví FITLYO.</p>
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">Trước 12 giờ hoàn 100%; từ 6–12 giờ hoàn 50%; dưới 6 giờ không hoàn. Tiền hoàn qua VietQR.</p>
           </section>
 
           <section className="rounded-[1.75rem] border bg-card p-5 shadow-sm sm:p-6">
             <h2 className="text-lg font-black">Quản lý booking</h2>
             <div className="mt-4 space-y-2">
               <Button className="min-h-12 w-full" onClick={() => setShowReschedule(true)} disabled={!canReschedule}><RefreshCw />Đổi lịch</Button>
-              <p className="text-center text-xs leading-5 text-muted-foreground">{booking.status !== 'UPCOMING' ? 'Booking không còn hiệu lực.' : (booking.rescheduleCount ?? 0) >= 1 ? 'Booking đã đổi lịch một lần.' : hoursBefore < 12 ? 'Chỉ đổi lịch trước giờ chơi tối thiểu 12 giờ.' : 'Được đổi tối đa một lần; chênh lệch xử lý qua Ví FITLYO.'}</p>
+              <p className="text-center text-xs leading-5 text-muted-foreground">{booking.status !== 'UPCOMING' ? 'Booking không còn hiệu lực.' : (booking.rescheduleCount ?? 0) >= 1 ? 'Booking đã đổi lịch một lần.' : hoursBefore < 12 ? 'Chỉ đổi lịch trước giờ chơi tối thiểu 12 giờ.' : 'Được đổi tối đa một lần; chênh lệch xử lý qua VietQR.'}</p>
               <Button variant="outline" className="min-h-12 w-full" onClick={shareBooking}><Share2 />Chia sẻ booking</Button>
               {mapsUrl && <Button asChild variant="outline" className="min-h-12 w-full"><a href={mapsUrl} target="_blank" rel="noreferrer"><MapPin />Chỉ đường</a></Button>}
               <Button variant="destructive" className="min-h-12 w-full" onClick={() => setShowCancel(true)} disabled={booking.status !== 'UPCOMING'}>Hủy sân</Button>
@@ -219,17 +219,16 @@ export function CourtBookingDetailPage() {
 
       {showCancel && <div className="fixed inset-0 z-[100] grid place-items-center bg-foreground/60 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" className="w-full max-w-md rounded-[1.8rem] border bg-card p-6 shadow-2xl"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-destructive/10 text-destructive"><AlertTriangle /></span><h2 className="mt-4 text-xl font-black">Xác nhận hủy sân?</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{refund.label}. Số tiền dự kiến nhận lại là <strong className="text-foreground">{formatMoney(refund.refundAmount)}</strong>.</p><div className="mt-6 flex justify-end gap-2"><Button variant="outline" className="min-h-12" onClick={() => setShowCancel(false)}>Giữ lịch</Button><Button variant="destructive" className="min-h-12" onClick={confirmCancellation}>Xác nhận hủy</Button></div></section></div>}
 
-      {showReschedule && venue && <RescheduleDialog bookingId={booking.id} venue={venue} currentSlotKey={booking.slotKey} currentAmount={paidAmount} walletBalance={profile.walletBalance} bookedSlotKeys={bookedSlotKeys} onClose={() => setShowReschedule(false)} onConfirm={(input) => { const result = rescheduleCourtBooking(booking.id, input); showToast(result.message, result.success ? 'success' : 'error'); if (result.success) setShowReschedule(false) }} />}
+      {showReschedule && venue && <RescheduleDialog bookingId={booking.id} venue={venue} currentSlotKey={booking.slotKey} currentAmount={paidAmount} bookedSlotKeys={bookedSlotKeys} onClose={() => setShowReschedule(false)} onConfirm={(input) => { const result = rescheduleCourtBooking(booking.id, input); showToast(result.message, result.success ? 'success' : 'error'); if (result.success) setShowReschedule(false) }} />}
     </div>
   )
 }
 
-function RescheduleDialog({ bookingId, venue, currentSlotKey, currentAmount, walletBalance, bookedSlotKeys, onClose, onConfirm }: {
+function RescheduleDialog({ bookingId, venue, currentSlotKey, currentAmount, bookedSlotKeys, onClose, onConfirm }: {
   bookingId: string
   venue: ReturnType<typeof usePlayerStore.getState>['venues'][number]
   currentSlotKey?: string
   currentAmount: number
-  walletBalance: number
   bookedSlotKeys: string[]
   onClose: () => void
   onConfirm: (input: { date: string; dateLabel: string; courtId: string; slotNumber: number }) => void
@@ -249,13 +248,12 @@ function RescheduleDialog({ bookingId, venue, currentSlotKey, currentAmount, wal
   const difference = (selectedSlot?.price ?? currentAmount) - currentAmount
 
   return <div className="fixed inset-0 z-[100] overflow-y-auto bg-foreground/60 p-4 backdrop-blur-sm"><div className="mx-auto flex min-h-full max-w-3xl items-center py-6"><section role="dialog" aria-modal="true" aria-labelledby={`${bookingId}-reschedule-title`} className="w-full rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-7">
-    <div className="flex items-start justify-between gap-4"><div><Badge variant="outline" className="text-primary"><RefreshCw />ĐỔI LỊCH MỘT LẦN</Badge><h2 id={`${bookingId}-reschedule-title`} className="mt-3 text-2xl font-black">Chọn lịch sân mới</h2><p className="mt-1 text-sm text-muted-foreground">Giá cao hơn sẽ trừ thêm, giá thấp hơn sẽ hoàn chênh lệch về Ví FITLYO.</p></div><Button variant="ghost" size="icon" className="h-12 w-12" onClick={onClose} aria-label="Đóng"><X /></Button></div>
+    <div className="flex items-start justify-between gap-4"><div><Badge variant="outline" className="text-primary"><RefreshCw />ĐỔI LỊCH MỘT LẦN</Badge><h2 id={`${bookingId}-reschedule-title`} className="mt-3 text-2xl font-black">Chọn lịch sân mới</h2><p className="mt-1 text-sm text-muted-foreground">Giá cao hơn sẽ thanh toán thêm, giá thấp hơn sẽ hoàn chênh lệch qua VietQR.</p></div><Button variant="ghost" size="icon" className="h-12 w-12" onClick={onClose} aria-label="Đóng"><X /></Button></div>
     <div className="mt-6 grid gap-5 md:grid-cols-[220px_1fr]">
       <div className="space-y-4"><label className="block text-sm font-black">Ngày mới<Input type="date" min={todayInputValue()} value={date} onChange={(event) => { setDate(event.target.value); setSlotNumber(null) }} className="mt-2 h-12" /></label><div><p className="text-sm font-black">Chọn sân</p><div className="mt-2 space-y-2">{venue.courts.map((item) => <button type="button" key={item.id} onClick={() => { setCourtId(item.id); setSlotNumber(null) }} className={cn('min-h-12 w-full rounded-xl border px-3 text-left text-sm font-bold transition', courtId === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted')}><span className="block">{item.name}</span><span className="text-xs font-normal text-muted-foreground">{item.type}</span></button>)}</div></div></div>
       <div><p className="text-sm font-black">Slot còn trống · {formatDateLabel(date)}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{slots.map((slot) => <button type="button" key={slot.slotNumber} onClick={() => setSlotNumber(slot.slotNumber)} className={cn('rounded-2xl border p-4 text-left transition', slotNumber === slot.slotNumber ? 'border-primary bg-primary/10 ring-2 ring-primary/15' : 'border-border hover:border-primary/40')}><span className="flex items-center gap-2 text-sm font-black"><Clock3 className="h-4 w-4 text-primary" />{slot.timeRange}</span><span className="mt-2 block text-xs text-muted-foreground">Slot {slot.slotNumber}</span><span className="mt-1 block font-black text-primary">{formatMoney(slot.price)}</span></button>)}</div>{!slots.length && <div className="mt-3 rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Ngày và sân này chưa có slot phù hợp.</div>}</div>
     </div>
-    <div className="mt-6 grid gap-3 rounded-2xl border bg-muted/20 p-4 sm:grid-cols-3"><div><p className="text-xs text-muted-foreground">Giá booking hiện tại</p><p className="mt-1 font-black">{formatMoney(currentAmount)}</p></div><div><p className="text-xs text-muted-foreground">Chênh lệch</p><p className={cn('mt-1 font-black', difference > 0 ? 'text-amber-600' : difference < 0 ? 'text-emerald-600' : '')}>{selectedSlot ? difference > 0 ? `Thu thêm ${formatMoney(difference)}` : difference < 0 ? `Hoàn ${formatMoney(Math.abs(difference))}` : 'Không chênh lệch' : 'Chọn một slot'}</p></div><div><p className="text-xs text-muted-foreground">Số dư Ví FITLYO</p><p className="mt-1 font-black">{formatMoney(walletBalance)}</p></div></div>
-    {difference > walletBalance && <p className="mt-3 flex items-center gap-2 rounded-xl bg-destructive/10 px-3 py-2 text-sm font-bold text-destructive"><AlertTriangle className="h-4 w-4" />Số dư Ví FITLYO không đủ để trả phần chênh lệch.</p>}
-    <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" className="min-h-12" onClick={onClose}>Để sau</Button><Button className="min-h-12" disabled={!selectedSlot || difference > walletBalance} onClick={() => selectedSlot && onConfirm({ date, dateLabel: formatDateLabel(date), courtId, slotNumber: selectedSlot.slotNumber })}><ShieldCheck />Xác nhận đổi lịch</Button></div>
+    <div className="mt-6 grid gap-3 rounded-2xl border bg-muted/20 p-4 sm:grid-cols-3"><div><p className="text-xs text-muted-foreground">Giá booking hiện tại</p><p className="mt-1 font-black">{formatMoney(currentAmount)}</p></div><div><p className="text-xs text-muted-foreground">Chênh lệch</p><p className={cn('mt-1 font-black', difference > 0 ? 'text-amber-600' : difference < 0 ? 'text-emerald-600' : '')}>{selectedSlot ? difference > 0 ? `Thanh toán thêm ${formatMoney(difference)}` : difference < 0 ? `Hoàn ${formatMoney(Math.abs(difference))}` : 'Không chênh lệch' : 'Chọn một slot'}</p></div><div><p className="text-xs text-muted-foreground">Điều chỉnh thanh toán</p><p className="mt-1 font-black">Qua VietQR</p></div></div>
+    <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" className="min-h-12" onClick={onClose}>Để sau</Button><Button className="min-h-12" disabled={!selectedSlot} onClick={() => selectedSlot && onConfirm({ date, dateLabel: formatDateLabel(date), courtId, slotNumber: selectedSlot.slotNumber })}><ShieldCheck />Xác nhận đổi lịch</Button></div>
   </section></div></div>
 }

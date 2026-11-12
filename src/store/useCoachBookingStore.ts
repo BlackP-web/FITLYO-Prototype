@@ -353,9 +353,6 @@ export const useCoachBookingStore = create<CoachBookingState>()(
           const preview = previewBooking(booking.coachId, booking.firstDate, booking.preferredSlotNumber, booking.type, booking.id)
           if (!preview.success) return { success: false, message: preview.message }
           const confirmed = { ...booking, sessions: preview.sessions }
-          if (paymentMethod === 'WALLET' && usePlayerStore.getState().profile.walletBalance < booking.paymentAmount) {
-            return { success: false, message: 'Số dư Ví FITLYO không đủ để thanh toán toàn bộ học phí.' }
-          }
           if (!booking.paymentReferenceId) return { success: false, message: 'Không tìm thấy giao dịch thanh toán của lịch này.' }
           const paymentResult = usePaymentStore.getState().confirmPayment(booking.paymentReferenceId, paymentMethod)
           if (!paymentResult.success) return paymentResult
@@ -419,11 +416,10 @@ export const useCoachBookingStore = create<CoachBookingState>()(
           const refundablePaidAmount = Math.max(0, (payment?.paidAmount ?? booking.paymentAmount) - (payment?.refundAmount ?? 0))
           if (hoursBefore >= 24) {
             if (paymentReferenceId) usePaymentStore.getState().refundPayment({ referenceId: paymentReferenceId, amount: refundablePaidAmount, reason: 'Player hủy lịch Coach trước ít nhất 24 giờ.' })
-            usePlayerStore.getState().creditWallet(refundablePaidAmount)
-            usePlayerStore.getState().cancelCoachSchedule(bookingId, `Đã hoàn ${refundablePaidAmount.toLocaleString('vi-VN')}đ về Ví FITLYO`)
+            usePlayerStore.getState().cancelCoachSchedule(bookingId, `Đã hoàn ${refundablePaidAmount.toLocaleString('vi-VN')}đ qua VietQR`)
             set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? { ...item, status: 'REFUNDED' } : item) }))
-            appendSystemMessage(bookingId, `Player đã hủy đúng hạn. FITLYO hoàn toàn bộ ${refundablePaidAmount.toLocaleString('vi-VN')}đ đã thanh toán về Ví.`)
-            return { success: true, message: 'Đã hủy lịch và hoàn 100% khoản đã thanh toán về Ví FITLYO.', bookingId }
+            appendSystemMessage(bookingId, `Player đã hủy đúng hạn. FITLYO hoàn toàn bộ ${refundablePaidAmount.toLocaleString('vi-VN')}đ đã thanh toán qua VietQR.`)
+            return { success: true, message: 'Đã hủy lịch và hoàn 100% khoản đã thanh toán qua VietQR.', bookingId }
           }
 
           if (paymentReferenceId) usePaymentStore.getState().forfeitPayment(paymentReferenceId, 'Player tiếp tục hủy dưới 24 giờ sau khi đã dùng quyền đổi lịch: không hoàn toàn bộ học phí.')
@@ -459,7 +455,6 @@ export const useCoachBookingStore = create<CoachBookingState>()(
               voucherAmount,
               voucherExpiresAt: addDaysIso(30),
             })
-            usePlayerStore.getState().creditWallet(refundablePaidAmount)
           } else if (booking.paymentReferenceId) {
             usePaymentStore.getState().markExpired(booking.paymentReferenceId)
           }
@@ -489,7 +484,6 @@ export const useCoachBookingStore = create<CoachBookingState>()(
             voucherAmount,
             voucherExpiresAt: addDaysIso(30),
           })
-          usePlayerStore.getState().creditWallet(refundable)
           usePlayerStore.getState().creditVoucher(voucherAmount)
           usePlayerStore.getState().cancelCoachSchedule(bookingId, `Coach hủy buổi ${session.sequence}/8 · Hoàn ${refundable.toLocaleString('vi-VN')}đ`, sessionId)
           set((state) => ({ bookings: state.bookings.map((item) => item.id === bookingId ? {

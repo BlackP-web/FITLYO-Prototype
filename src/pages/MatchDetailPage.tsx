@@ -325,7 +325,7 @@ export const MatchDetailPage: React.FC = () => {
           <div className="rounded-xl bg-muted/40 p-3 space-y-1">
             <span className="text-xs text-muted-foreground">Quy định hủy và hoàn tiền:</span>
             <p className="text-xs font-medium text-foreground">
-              • Hủy trước từ 6 giờ trở lên: hoàn 100% về Ví FITLYO.
+              • Hủy trước từ 6 giờ trở lên: hoàn 100% qua VietQR.
             </p>
             <p className="text-xs font-medium text-destructive">
               • Hủy dưới 6 giờ hoặc không đến: không hoàn phí.
@@ -402,7 +402,7 @@ export const MatchDetailPage: React.FC = () => {
                   Xác nhận hủy tham gia phòng đấu?
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Hủy trước giờ chơi từ 6 giờ trở lên sẽ hoàn 100% số tiền đã thanh toán về Ví FITLYO. Hủy dưới 6 giờ hoặc không đến sẽ không được hoàn phí.
+                  Hủy trước giờ chơi từ 6 giờ trở lên sẽ hoàn 100% số tiền đã thanh toán qua VietQR. Hủy dưới 6 giờ hoặc không đến sẽ không được hoàn phí.
                 </p>
               </div>
             </div>

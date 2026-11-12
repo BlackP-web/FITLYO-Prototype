@@ -19,7 +19,6 @@ export interface PlayerProfile {
   matchesPlayed: number
   wins: number
   losses: number
-  walletBalance: number
   voucherBalance: number
   isVip: boolean
   vipExpiresAt?: string

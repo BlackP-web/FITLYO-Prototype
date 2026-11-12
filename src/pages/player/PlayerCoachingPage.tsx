@@ -10,7 +10,6 @@ import {
   MessageCircle,
   Send,
   ShieldCheck,
-  WalletCards,
   QrCode,
   XCircle,
 } from 'lucide-react'
@@ -53,7 +52,7 @@ export function PlayerCoachingPage() {
   const paymentRecords = usePaymentStore((state) => state.records)
   const showToast = useFitlyoStore((state) => state.showToast)
   const [draft, setDraft] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'WALLET' | 'VIETQR'>('VIETQR')
+  const [paymentMethod] = useState<'VIETQR'>('VIETQR')
 
   useEffect(() => {
     refreshExpirations()
@@ -144,10 +143,10 @@ export function PlayerCoachingPage() {
             </div>
 
             {selected.status === 'PENDING_COACH' && <div className="mx-5 mb-5 space-y-3 rounded-2xl border border-amber-300/40 bg-amber-500/10 p-4 text-sm"><div><strong>Đang chờ Coach duyệt giờ đề xuất.</strong><p className="mt-1 text-xs text-muted-foreground">Bạn chưa bị trừ tiền. Hết 12 giờ, yêu cầu tự hủy và giải phóng lịch.</p></div><HoldCountdown expiresAt={selected.approvalExpiresAt} label="Thời gian Coach còn lại" /></div>}
-            {selected.status === 'AWAITING_PAYMENT' && selected.paymentExpiresAt && <div className="mx-5 mb-5 space-y-4 rounded-2xl border border-blue-300/40 bg-blue-500/10 p-4"><div><strong>Coach đã đồng ý khung giờ.</strong><p className="mt-1 text-xs text-muted-foreground">Bạn có 15 phút để chọn phương thức và thanh toán 100% học phí.</p></div><HoldCountdown expiresAt={selected.paymentExpiresAt} onExpire={refreshExpirations} /><div className="grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => setPaymentMethod('WALLET')} className={cn('flex items-center gap-2 rounded-xl border p-3 text-left text-xs', paymentMethod === 'WALLET' ? 'border-primary bg-card' : 'border-border/70')}><WalletCards className="h-4 w-4 text-primary" /><span className="flex-1 font-bold">Ví · {formatMoney(profile.walletBalance)}</span></button><button type="button" onClick={() => setPaymentMethod('VIETQR')} className={cn('flex items-center gap-2 rounded-xl border p-3 text-left text-xs', paymentMethod === 'VIETQR' ? 'border-primary bg-card' : 'border-border/70')}><QrCode className="h-4 w-4 text-primary" /><span className="flex-1 font-bold">VietQR mô phỏng</span></button></div><Button onClick={payFullAmount} className="w-full">Thanh toán 100% · {formatMoney(selected.paymentAmount)}</Button></div>}
+            {selected.status === 'AWAITING_PAYMENT' && selected.paymentExpiresAt && <div className="mx-5 mb-5 space-y-4 rounded-2xl border border-blue-300/40 bg-blue-500/10 p-4"><div><strong>Coach đã đồng ý khung giờ.</strong><p className="mt-1 text-xs text-muted-foreground">Bạn có 15 phút để thanh toán 100% học phí qua VietQR.</p></div><HoldCountdown expiresAt={selected.paymentExpiresAt} onExpire={refreshExpirations} /><div className="flex items-center gap-2 rounded-xl border bg-card p-3 text-xs"><QrCode className="h-4 w-4 text-primary" /><span className="font-bold">VietQR mô phỏng</span></div><Button onClick={payFullAmount} className="w-full">Thanh toán 100% · {formatMoney(selected.paymentAmount)}</Button></div>}
             {selected.status === 'CONFIRMED' && <div className="mx-5 mb-5 flex flex-col gap-3 rounded-2xl border border-emerald-300/40 bg-emerald-500/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"><div><strong>Đã thanh toán 100% · Lịch đã xác nhận.</strong><p className="mt-1 text-xs text-muted-foreground">Hủy trước ít nhất 24 giờ hoàn 100%. Hủy dưới 24 giờ được đổi lịch một lần; lần hủy tiếp theo không hoàn học phí.</p>{selected.rescheduleUsed && <p className="mt-1 text-xs font-bold text-amber-700 dark:text-amber-300">Bạn đã sử dụng quyền đổi lịch một lần.</p>}</div><div className="flex shrink-0 gap-2">{!selected.rescheduleUsed && <Button variant="outline" onClick={handleReschedule}>Đổi lịch 1 lần</Button>}<Button variant="outline" onClick={handleCancel} className="text-destructive"><XCircle className="h-4 w-4" /> Hủy lịch</Button></div></div>}
             {selected.status === 'EXPIRED' && <div className="mx-5 mb-5 rounded-2xl border border-border bg-muted p-4 text-sm"><strong>Yêu cầu đã hết hạn.</strong><p className="mt-1 text-xs text-muted-foreground">Không phát sinh khoản thu và slot đã được mở lại.</p></div>}
-            {selected.status === 'REFUNDED' && <div className="mx-5 mb-5 rounded-2xl border border-violet-300/40 bg-violet-500/10 p-4 text-sm"><strong>Booking đã hủy và hoàn tiền.</strong><p className="mt-1 text-xs text-muted-foreground">Khoản hoàn được cộng vào Ví FITLYO; voucher bồi thường hiển thị trong số dư ưu đãi.</p></div>}
+            {selected.status === 'REFUNDED' && <div className="mx-5 mb-5 rounded-2xl border border-violet-300/40 bg-violet-500/10 p-4 text-sm"><strong>Booking đã hủy và hoàn tiền.</strong><p className="mt-1 text-xs text-muted-foreground">Khoản hoàn được xử lý qua VietQR; voucher bồi thường hiển thị trong ưu đãi.</p></div>}
           </section>
 
           {selected.sessions.length > 0 && (

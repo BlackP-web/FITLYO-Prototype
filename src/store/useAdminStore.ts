@@ -12,9 +12,7 @@ export interface AdminUserRecord {
   role: AdminUserRole
   dupr?: number
   reputation: number
-  walletBalance: number
   escrowBalance: number
-  walletFrozen?: boolean
   status: AdminUserStatus
   reports: number
   joinedAt: string
@@ -60,7 +58,7 @@ interface AdminState {
   users: AdminUserRecord[]
   disputes: AdminDispute[]
   config: PlatformConfig
-  applyUserAction: (userId: string, action: 'WARN' | 'FREEZE_WALLET' | 'SUSPEND_30' | 'UNLOCK', reason: string) => boolean
+  applyUserAction: (userId: string, action: 'WARN' | 'SUSPEND_30' | 'UNLOCK', reason: string) => boolean
   changeUserRole: (userId: string, role: AdminUserRole) => boolean
   resolveDispute: (id: string, resolution: 'REFUND' | 'REJECT' | 'LEGAL') => boolean
   saveConfig: (config: PlatformConfig) => void
@@ -68,12 +66,12 @@ interface AdminState {
 }
 
 const initialUsers: AdminUserRecord[] = [
-  { id: 'U1021', name: 'Nguyễn Văn An', email: 'player@fitlyo.vn', phone: '0912 345 678', role: 'VIP_PLAYER', dupr: 3.42, reputation: 98, walletBalance: 1200000, escrowBalance: 90000, status: 'ACTIVE', reports: 0, joinedAt: '08/08/2026', lastActive: '2 phút trước' },
-  { id: 'U1045', name: 'Lê Hoàng Dũng', email: 'coach@fitlyo.vn', phone: '0909 485 285', role: 'COACH', dupr: 4.85, reputation: 100, walletBalance: 6840000, escrowBalance: 14200000, status: 'ACTIVE', reports: 0, joinedAt: '15/06/2026', lastActive: '12 phút trước' },
-  { id: 'U0988', name: 'Trần Đình Trọng', email: 'trong.tran@example.vn', phone: '0988 127 433', role: 'PLAYER', dupr: 2.1, reputation: 45, walletBalance: 0, escrowBalance: 0, status: 'ACTIVE', reports: 3, joinedAt: '21/07/2026', lastActive: '1 giờ trước' },
-  { id: 'U1072', name: 'Nguyễn Quốc Bảo', email: 'owner@fitlyo.vn', phone: '0908 112 233', role: 'FIELD_MANAGER', reputation: 96, walletBalance: 18400000, escrowBalance: 32600000, status: 'ACTIVE', reports: 1, joinedAt: '01/05/2026', lastActive: '5 phút trước' },
-  { id: 'U1094', name: 'Phạm Thu Hà', email: 'phamthuha@example.vn', phone: '0938 663 118', role: 'PLAYER', dupr: 2.75, reputation: 82, walletBalance: 380000, escrowBalance: 45000, status: 'SUSPENDED', reports: 2, joinedAt: '19/09/2026', lastActive: '3 ngày trước' },
-  { id: 'U0881', name: 'Đặng Tuấn Kiệt', email: 'tuan.kiet@example.vn', phone: '0918 776 554', role: 'COACH', dupr: 4.62, reputation: 99, walletBalance: 9120000, escrowBalance: 8700000, status: 'ACTIVE', reports: 0, joinedAt: '12/04/2026', lastActive: '28 phút trước' },
+  { id: 'U1021', name: 'Nguyễn Văn An', email: 'player@fitlyo.vn', phone: '0912 345 678', role: 'VIP_PLAYER', dupr: 3.42, reputation: 98, escrowBalance: 90000, status: 'ACTIVE', reports: 0, joinedAt: '08/08/2026', lastActive: '2 phút trước' },
+  { id: 'U1045', name: 'Lê Hoàng Dũng', email: 'coach@fitlyo.vn', phone: '0909 485 285', role: 'COACH', dupr: 4.85, reputation: 100, escrowBalance: 14200000, status: 'ACTIVE', reports: 0, joinedAt: '15/06/2026', lastActive: '12 phút trước' },
+  { id: 'U0988', name: 'Trần Đình Trọng', email: 'trong.tran@example.vn', phone: '0988 127 433', role: 'PLAYER', dupr: 2.1, reputation: 45, escrowBalance: 0, status: 'ACTIVE', reports: 3, joinedAt: '21/07/2026', lastActive: '1 giờ trước' },
+  { id: 'U1072', name: 'Nguyễn Quốc Bảo', email: 'owner@fitlyo.vn', phone: '0908 112 233', role: 'FIELD_MANAGER', reputation: 96, escrowBalance: 32600000, status: 'ACTIVE', reports: 1, joinedAt: '01/05/2026', lastActive: '5 phút trước' },
+  { id: 'U1094', name: 'Phạm Thu Hà', email: 'phamthuha@example.vn', phone: '0938 663 118', role: 'PLAYER', dupr: 2.75, reputation: 82, escrowBalance: 45000, status: 'SUSPENDED', reports: 2, joinedAt: '19/09/2026', lastActive: '3 ngày trước' },
+  { id: 'U0881', name: 'Đặng Tuấn Kiệt', email: 'tuan.kiet@example.vn', phone: '0918 776 554', role: 'COACH', dupr: 4.62, reputation: 99, escrowBalance: 8700000, status: 'ACTIVE', reports: 0, joinedAt: '12/04/2026', lastActive: '28 phút trước' },
 ]
 
 const initialDisputes: AdminDispute[] = [
@@ -136,10 +134,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     set({
       users: get().users.map((user) => {
         if (user.id !== userId) return user
-        if (action === 'UNLOCK') return { ...user, status: 'ACTIVE', walletFrozen: false }
+        if (action === 'UNLOCK') return { ...user, status: 'ACTIVE' }
         if (action === 'WARN') return user
         if (action === 'SUSPEND_30') return { ...user, status: 'SUSPENDED' }
-        return { ...user, walletFrozen: true }
+        return user
       }),
     })
     return true
@@ -161,7 +159,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
               status: resolution === 'LEGAL' ? 'LEGAL_REVIEW' : 'RESOLVED',
               resolution:
                 resolution === 'REFUND'
-                  ? `Đã phê duyệt hoàn ${new Intl.NumberFormat('vi-VN').format(item.amount)}đ về Ví FITLYO.`
+                  ? `Đã phê duyệt hoàn ${new Intl.NumberFormat('vi-VN').format(item.amount)}đ qua VietQR.`
                   : resolution === 'LEGAL'
                     ? 'Đã chuyển hồ sơ sang bộ phận pháp lý để xem xét.'
                     : 'Khiếu nại không đủ căn cứ; Escrow được giải ngân theo giao dịch ban đầu.',

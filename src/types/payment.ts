@@ -1,6 +1,6 @@
 export type PaymentService = 'SOCIAL' | 'COURT' | 'COACH' | 'VIP'
 
-export type PaymentMethod = 'WALLET' | 'VIETQR' | 'CASH'
+export type PaymentMethod = 'VIETQR' | 'CASH'
 
 export type PaymentStatus =
   | 'AWAITING_PAYMENT'

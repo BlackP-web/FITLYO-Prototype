@@ -33,7 +33,7 @@ export interface SharedSlotOverride {
   date: string
   courtId: string
   slotNumber: number
-  status: 'AVAILABLE' | 'MAINTENANCE' | 'PRIVATE_BOOKED'
+  status: 'AVAILABLE' | 'MAINTENANCE' | 'PRIVATE_BOOKED' | 'MATCH_PUBLISHED' | 'COACHING'
   price: number
   maintenanceReason?: string
   customerName?: string
@@ -42,14 +42,40 @@ export interface SharedSlotOverride {
   updatedAt: string
 }
 
+export type VenueCalendarEventType = 'WALK_IN' | 'SOCIAL' | 'COACHING' | 'MAINTENANCE' | 'PRIVATE'
+
+export interface VenueCalendarEvent {
+  id: string
+  venueId: string
+  venueName: string
+  date: string
+  courtId: string
+  courtName: string
+  type: VenueCalendarEventType
+  title: string
+  startTime: string
+  durationMinutes: number
+  amount: number
+  paymentMethod?: 'CASH' | 'VIETQR'
+  contactName?: string
+  contactPhone?: string
+  note?: string
+  createdAt: string
+  updatedAt: string
+}
+
 interface CrossRoleState {
   courtBookings: SharedCourtBooking[]
   slotOverrides: SharedSlotOverride[]
+  venueCalendarEvents: VenueCalendarEvent[]
   upsertCourtBooking: (booking: SharedCourtBooking) => void
   cancelCourtBooking: (id: string) => void
   rescheduleCourtBooking: (id: string, changes: Pick<SharedCourtBooking, 'date' | 'dateLabel' | 'courtId' | 'courtName' | 'courtType' | 'slotNumber' | 'timeRange' | 'totalAmount' | 'paidAmount' | 'rescheduleCount'>) => void
   replaceSlotOverrides: (overrides: SharedSlotOverride[]) => void
   upsertSlotOverrides: (overrides: SharedSlotOverride[]) => void
+  createVenueCalendarEvent: (event: Omit<VenueCalendarEvent, 'id' | 'createdAt' | 'updatedAt'>) => string
+  updateVenueCalendarEvent: (id: string, changes: Partial<Omit<VenueCalendarEvent, 'id' | 'createdAt'>>) => void
+  removeVenueCalendarEvent: (id: string) => void
   resetCrossRoleDemo: () => void
 }
 
@@ -60,6 +86,7 @@ export const useCrossRoleStore = create<CrossRoleState>()(
     (set) => ({
       courtBookings: [],
       slotOverrides: [],
+      venueCalendarEvents: [],
       upsertCourtBooking: (booking) => set((state) => ({
         courtBookings: [booking, ...state.courtBookings.filter((item) => item.id !== booking.id)],
       })),
@@ -74,12 +101,22 @@ export const useCrossRoleStore = create<CrossRoleState>()(
         const keys = new Set(overrides.map((item) => item.key))
         return { slotOverrides: [...overrides, ...state.slotOverrides.filter((item) => !keys.has(item.key))] }
       }),
-      resetCrossRoleDemo: () => set({ courtBookings: [], slotOverrides: [] }),
+      createVenueCalendarEvent: (event) => {
+        const id = `fm-event-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+        const now = new Date().toISOString()
+        set((state) => ({ venueCalendarEvents: [{ ...event, id, createdAt: now, updatedAt: now }, ...state.venueCalendarEvents] }))
+        return id
+      },
+      updateVenueCalendarEvent: (id, changes) => set((state) => ({
+        venueCalendarEvents: state.venueCalendarEvents.map((event) => event.id === id ? { ...event, ...changes, updatedAt: new Date().toISOString() } : event),
+      })),
+      removeVenueCalendarEvent: (id) => set((state) => ({ venueCalendarEvents: state.venueCalendarEvents.filter((event) => event.id !== id) })),
+      resetCrossRoleDemo: () => set({ courtBookings: [], slotOverrides: [], venueCalendarEvents: [] }),
     }),
     {
       name: crossRoleStorageKey,
       storage: createJSONStorage(() => localStorage),
-      version: 1,
+      version: 2,
     },
   ),
 )

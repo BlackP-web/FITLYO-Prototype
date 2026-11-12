@@ -1,7 +1,0 @@
-{
-  "$schema": "https://unpkg.com/knip@5/overview/config-schema.json",
-  "project": ["src/**/*.{ts,tsx}"],
-  "ignore": [
-    "src/components/ui/**"
-  ]
-}

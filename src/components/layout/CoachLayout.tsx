@@ -156,7 +156,7 @@ export default function CoachLayout() {
         </aside>
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
-          {!session?.isVerified && <div className="mb-5 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200"><strong>Tài khoản Coach chưa được xác minh.</strong> Bạn chỉ có thể cập nhật hồ sơ và nộp chứng chỉ; lịch dạy, khóa học, học viên và ví đang bị khóa.</div>}
+          {!session?.isVerified && <div className="mb-5 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200"><strong>Tài khoản Coach chưa được xác minh.</strong> Bạn chỉ có thể cập nhật hồ sơ và nộp chứng chỉ; các chức năng vận hành đang bị khóa.</div>}
           {coachReady ? <Outlet /> : <div className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Đang tải đúng hồ sơ Coach…</div>}
         </main>
       </div>

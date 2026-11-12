@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { AlertTriangle, Building2, CalendarClock, CheckCircle2, Clock3, QrCode, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CoachBillingTabs } from '@/components/layout/CoachBillingTabs'
 import { COACH_LINK_FEE, COACH_LINK_FEE_DUE_DAYS, buildCoachLinkInvoices, nextCoachLinkInvoiceDate, type CoachLinkInvoice } from '@/lib/coachLinkFees'
 import { cn } from '@/lib/utils'
 import { useCoachLinkFeeStore } from '@/store/useCoachLinkFeeStore'
@@ -40,12 +41,14 @@ export function CoachLinkFeesPage() {
 
   return <div className="space-y-6 pb-12">
     <header className="border-b border-border/60 pb-5">
-      <p className="text-xs font-bold uppercase tracking-wider text-primary">Tài chính Coach</p>
-      <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Thanh toán phí</h1>
-      <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Mỗi cụm sân liên kết thành công, Coach thanh toán phí <b className="text-foreground">{formatVND(COACH_LINK_FEE)}/tháng</b>. Hoá đơn được phát hàng tháng theo <b className="text-foreground">ngày liên kết</b> của từng sân và thanh toán qua VietQR trong {COACH_LINK_FEE_DUE_DAYS} ngày kể từ ngày phát.</p>
+      <CoachBillingTabs />
+      <p className="mt-3 max-w-3xl text-sm text-muted-foreground">Mỗi cụm sân liên kết thành công, Coach thanh toán phí <b className="text-foreground">{formatVND(COACH_LINK_FEE)}/tháng</b>. Hoá đơn được phát hàng tháng theo <b className="text-foreground">ngày liên kết</b> của từng sân và thanh toán qua VietQR trong {COACH_LINK_FEE_DUE_DAYS} ngày kể từ ngày phát.</p>
     </header>
 
-    {overdue.length > 0 && <div className="flex items-start gap-3 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-800 dark:text-rose-200"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-black">Có {overdue.length} hoá đơn quá hạn</p><p className="mt-0.5">Tổng {formatVND(overdue.reduce((sum, invoice) => sum + invoice.amount, 0))}. Vui lòng thanh toán để duy trì liên kết với cụm sân.</p></div></div>}
+    {overdue.length > 0 && <div role="alert" className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-800 dark:text-rose-200">
+      <div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-black">Có {overdue.length} hoá đơn quá hạn</p><p className="mt-0.5">Tổng {formatVND(overdue.reduce((sum, invoice) => sum + invoice.amount, 0))}. Vui lòng thanh toán để duy trì liên kết với cụm sân.</p></div></div>
+      <Button size="sm" variant="destructive" onClick={() => setPaying(overdue)} className="gap-1.5"><QrCode className="h-4 w-4" />Thanh toán các khoản quá hạn</Button>
+    </div>}
 
     <section className="grid gap-4 sm:grid-cols-3">
       {[
@@ -99,7 +102,7 @@ function VietQrDialog({ invoices, coachId, onClose, onConfirm }: { invoices: Coa
   const [transferContent] = useState(() => `FITLYO LIENKET ${coachId.toUpperCase()} ${Date.now().toString().slice(-6)}`)
   const [confirming, setConfirming] = useState(false)
   return <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-foreground/55 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" aria-labelledby="coach-link-fee-title" className="w-full max-w-md rounded-3xl border bg-card p-6 shadow-2xl">
-    <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-wider text-primary">Thanh toán phí · VietQR</p><h2 id="coach-link-fee-title" className="mt-1 text-xl font-black">{invoices.length === 1 ? invoices[0].venueName : `${invoices.length} hoá đơn`}</h2></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng"><X /></Button></div>
+    <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-wider text-primary">Phí liên kết sân · VietQR</p><h2 id="coach-link-fee-title" className="mt-1 text-xl font-black">{invoices.length === 1 ? invoices[0].venueName : `${invoices.length} hoá đơn`}</h2></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="Đóng"><X /></Button></div>
     <div className="mt-5 rounded-2xl border border-dashed border-primary/25 bg-white p-5 text-center text-[#143F42]">
       <QrCode className="mx-auto h-28 w-28" />
       <p className="mt-2 text-xs font-semibold">Quét mã bằng ứng dụng ngân hàng (mô phỏng)</p>

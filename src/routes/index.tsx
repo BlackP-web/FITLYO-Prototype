@@ -19,9 +19,9 @@ import { OwnerCoachesPage } from "@/pages/OwnerCoachesPage"
 import { OwnerReportsPage } from "@/pages/OwnerReportsPage"
 import { OwnerPricingPage } from "@/pages/OwnerPricingPage"
 import { OwnerPackagesPage } from "@/pages/OwnerPackagesPage"
-import { OwnerInvoicesPage } from "@/pages/OwnerInvoicesPage"
 import { CoachDashboardPage } from "@/pages/CoachDashboardPage"
 import { CoachLinkFeesPage } from "@/pages/CoachLinkFeesPage"
+import { CoachCoachingFeesPage } from "@/pages/CoachCoachingFeesPage"
 import { CoachCoursesPage } from "@/pages/CoachCoursesPage"
 import { CoachAttendancePage } from "@/pages/CoachAttendancePage"
 import { CoachVenuesPage } from "@/pages/CoachVenuesPage"
@@ -119,7 +119,16 @@ export const router = createBrowserRouter([
               { path: "attendance", element: <CoachAttendancePage /> },
               { path: "venues", element: <CoachVenuesPage /> },
               { path: "bookings", element: <CoachBookingsPage /> },
-              { path: "fees", element: <CoachLinkFeesPage /> },
+              {
+                path: "billing",
+                children: [
+                  { index: true, element: <Navigate to="coaching" replace /> },
+                  { path: "coaching", element: <CoachCoachingFeesPage /> },
+                  { path: "link", element: <CoachLinkFeesPage /> },
+                ],
+              },
+              { path: "fees", element: <Navigate to="/coach/billing/link" replace /> },
+              { path: "coaching-fees", element: <Navigate to="/coach/billing/coaching" replace /> },
             ],
           },
         ],
@@ -143,7 +152,6 @@ export const router = createBrowserRouter([
               { path: "courts", element: <OwnerCourtsPage /> },
               { path: "pricing", element: <OwnerPricingPage /> },
               { path: "packages", element: <OwnerPackagesPage /> },
-              { path: "invoices", element: <OwnerInvoicesPage /> },
               { path: "coaches", element: <OwnerCoachesPage /> },
               { path: "reports", element: <OwnerReportsPage /> },
             ],

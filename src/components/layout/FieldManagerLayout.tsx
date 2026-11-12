@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Building2, CalendarDays, LogOut, PackageCheck, Receipt, Settings, ShieldCheck, Sparkles, Tags } from 'lucide-react'
+import { BarChart3, BookOpen, Building2, CalendarDays, LogOut, PackageCheck, Settings, ShieldCheck, Sparkles, Tags } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
@@ -43,11 +43,6 @@ const ownerNavigation = [
     label: 'Đăng kí gói',
     to: '/fm/packages',
     icon: PackageCheck,
-  },
-  {
-    label: 'Hoá đơn phí',
-    to: '/fm/invoices',
-    icon: Receipt,
   },
   {
     label: 'Xác minh hồ sơ',

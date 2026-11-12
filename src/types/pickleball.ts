@@ -228,8 +228,6 @@ export interface CoachAccount {
   serviceAreas: string[]
   ratePerSession: number
   ratePerCourse: number
-  bankName: string
-  bankAccountMasked: string
 }
 
 export interface CoachVenueAffiliation {
@@ -263,24 +261,6 @@ export interface CoachAffiliationNotification {
   message: string
   createdAt: string
   tone: 'success' | 'info' | 'error'
-}
-
-export interface CoachWalletTransaction {
-  id: string
-  coachId: string
-  date: string
-  description: string
-  courseName: string
-  amount: number
-  type: 'ESCROW_IN' | 'RELEASE' | 'WITHDRAWAL' | 'PLATFORM_FEE'
-  status: 'COMPLETED' | 'PENDING' | 'HELD'
-}
-
-export interface CoachWalletSummary {
-  availableBalance: number
-  escrowBalance: number
-  pendingPayout: number
-  earnedThisMonth: number
 }
 
 export interface AuditDocument {

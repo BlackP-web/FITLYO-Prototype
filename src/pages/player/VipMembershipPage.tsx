@@ -8,7 +8,7 @@ import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
 
 const benefits = [
-  ['Đặt giữ sân trước', 'Tối đa 3 ngày', 'Tối đa 14 ngày'], ['Phí nạp / rút Escrow', '2,5%', 'Miễn phí'], ['Ghép kèo Slot 5', 'Xếp hàng thường', 'Ưu tiên'], ['Giảm giá sân liên kết', '0%', 'Giảm 5%'], ['Huy hiệu hồ sơ', 'Không có', 'Vương miện vàng'], ['Bảo hiểm chấn thương', 'Không có', 'Gói PTI cơ bản'],
+  ['Đặt giữ sân trước', 'Tối đa 3 ngày', 'Tối đa 14 ngày'], ['Ghép kèo Slot 5', 'Xếp hàng thường', 'Ưu tiên'], ['Giảm giá sân liên kết', '0%', 'Giảm 5%'], ['Huy hiệu hồ sơ', 'Không có', 'Vương miện vàng'], ['Bảo hiểm chấn thương', 'Không có', 'Gói PTI cơ bản'],
 ]
 
 export function VipMembershipPage() {

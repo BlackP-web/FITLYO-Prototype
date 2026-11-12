@@ -90,7 +90,7 @@ const replyFor = (message: string) => {
   if (text.includes('social') || text.includes('kèo')) {
     return 'Social Session yêu cầu thanh toán 100% phí tham gia. Nếu không đủ người, hệ thống tự hủy trước giờ chơi 60 phút và hoàn 100% qua VietQR.'
   }
-  if (text.includes('cọc') || text.includes('thanh toán') || text.includes('vietqr') || text.includes('ví')) {
+  if (text.includes('cọc') || text.includes('thanh toán') || text.includes('vietqr')) {
     return 'Tất cả dịch vụ gồm Social Session, đặt sân, Coach và FITLYO VIP đều thanh toán 100% trong một lần qua VietQR mô phỏng. Tiền mặt chỉ áp dụng cho khách vãng lai tại quầy sân.'
   }
   if (text.includes('hủy') || text.includes('hoàn')) {

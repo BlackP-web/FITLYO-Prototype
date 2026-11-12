@@ -14,8 +14,6 @@ import type {
   CoachAccount,
   CoachVenueAffiliation,
   CoachAffiliationNotification,
-  CoachWalletTransaction,
-  CoachWalletSummary,
   StudentProgress,
   AuditApplication,
   VenueItem,
@@ -79,8 +77,6 @@ interface FitlyoState {
   coaches: CoachItem[]
   coachAffiliations: CoachVenueAffiliation[]
   coachAffiliationNotifications: CoachAffiliationNotification[]
-  coachWalletTransactions: CoachWalletTransaction[]
-  coachWalletSummary: CoachWalletSummary
 
   // Admin Portal
   auditApplications: AuditApplication[]
@@ -161,7 +157,6 @@ interface FitlyoState {
   unlinkCoachAffiliation: (affiliationId: string, initiatedBy: 'coach' | 'fm') => boolean
   activateCoachSession: (session: AuthSession) => void
   updateCoachProfile: (changes: Partial<CoachAccount>) => boolean
-  requestCoachWithdrawal: (amount: number) => boolean
   approveAuditApplication: (id: string) => void
   rejectAuditApplication: (id: string, reason: string) => void
   requestAuditSupplement: (id: string, reason: string) => void
@@ -601,8 +596,6 @@ const initialCoachAccount: CoachAccount = {
   serviceAreas: ['Thảo Điền', 'An Phú', 'Thủ Đức'],
   ratePerSession: 450000,
   ratePerCourse: 2400000,
-  bankName: 'Vietcombank',
-  bankAccountMasked: '•••• •••• 7285',
 }
 
 const normalizeCertificateTitle = (value: unknown) => typeof value === 'string'
@@ -760,21 +753,6 @@ const persistCoachAffiliationNotifications = (notifications: CoachAffiliationNot
   if (typeof window !== 'undefined') {
     window.localStorage.setItem(coachAffiliationNotificationsStorageKey, JSON.stringify(notifications))
   }
-}
-
-const initialCoachWalletTransactions: CoachWalletTransaction[] = [
-  { id: 'TX-8841', coachId: 'coach_dung', date: '14/10/2026', description: 'Giải ngân buổi 7/8', courseName: 'Boot Camp Bứt Phá DUPR 3.5', amount: 1080000, type: 'RELEASE', status: 'COMPLETED' },
-  { id: 'TX-8838', coachId: 'coach_dung', date: '13/10/2026', description: 'Học phí học viên Ngô Kim Ngân', courseName: 'Chiến Thuật Đánh Đôi DUPR 3.0+', amount: 2200000, type: 'ESCROW_IN', status: 'HELD' },
-  { id: 'TX-8832', coachId: 'coach_dung', date: '12/10/2026', description: 'Phí nền tảng 10%', courseName: 'PT 1-1 Nâng Cao Dinking & Drop Shot', amount: -180000, type: 'PLATFORM_FEE', status: 'COMPLETED' },
-  { id: 'TX-8819', coachId: 'coach_dung', date: '10/10/2026', description: 'Rút tiền về Vietcombank •7285', courseName: 'Doanh thu Coach', amount: -4500000, type: 'WITHDRAWAL', status: 'COMPLETED' },
-  { id: 'TX-8804', coachId: 'coach_dung', date: '08/10/2026', description: 'Giải ngân buổi 2/4', courseName: 'PT 1-1 Nâng Cao Dinking & Drop Shot', amount: 405000, type: 'RELEASE', status: 'COMPLETED' },
-]
-
-const initialCoachWalletSummary: CoachWalletSummary = {
-  availableBalance: 6840000,
-  escrowBalance: 14200000,
-  pendingPayout: 2160000,
-  earnedThisMonth: 12840000,
 }
 
 const initialCoaches: CoachItem[] = [
@@ -1029,8 +1007,6 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
   coaches: initialCoaches,
   coachAffiliations: readCoachAffiliations(),
   coachAffiliationNotifications: readCoachAffiliationNotifications(),
-  coachWalletTransactions: initialCoachWalletTransactions,
-  coachWalletSummary: initialCoachWalletSummary,
 
   auditApplications: readAuditApplications(),
   selectedAuditId: 'FM-APP-0128',
@@ -2105,7 +2081,7 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     const current = get().coachAccount
     if (session.id === initialCoachAccount.id) {
       if (current.id === session.id) return
-      set({ coachAccount: initialCoachAccount, coachWalletSummary: initialCoachWalletSummary })
+      set({ coachAccount: initialCoachAccount })
       return
     }
 
@@ -2155,14 +2131,6 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
         serviceAreas,
         ratePerSession: rate,
         ratePerCourse: 0,
-        bankName: 'Chưa cập nhật',
-        bankAccountMasked: 'Chưa cập nhật',
-      },
-      coachWalletSummary: {
-        availableBalance: 0,
-        escrowBalance: 0,
-        pendingPayout: 0,
-        earnedThisMonth: 0,
       },
     })
   },
@@ -2172,35 +2140,6 @@ export const useFitlyoStore = create<FitlyoState>((set, get) => ({
     const protectedChanges = { ...changes, id: coachAccount.id, verificationStatus: 'APPROVED' as const }
     set({ coachAccount: { ...coachAccount, ...protectedChanges } })
     get().showToast('Đã cập nhật hồ sơ Coach.', 'success')
-    return true
-  },
-
-  requestCoachWithdrawal: (amount) => {
-    const { coachAccount, coachWalletSummary } = get()
-    if (amount <= 0 || amount > coachWalletSummary.availableBalance) {
-      get().showToast('Số tiền rút không hợp lệ hoặc vượt quá số dư khả dụng.', 'error')
-      return false
-    }
-
-    const transaction: CoachWalletTransaction = {
-      id: `TX-${Date.now().toString().slice(-6)}`,
-      coachId: coachAccount.id,
-      date: new Date().toLocaleDateString('vi-VN'),
-      description: `Yêu cầu rút tiền về ${coachAccount.bankName} •••• ${coachAccount.bankAccountMasked.slice(-4)}`,
-      courseName: 'Doanh thu Coach',
-      amount: -amount,
-      type: 'WITHDRAWAL',
-      status: 'PENDING',
-    }
-    set((state) => ({
-      coachWalletTransactions: [transaction, ...state.coachWalletTransactions],
-      coachWalletSummary: {
-        ...state.coachWalletSummary,
-        availableBalance: state.coachWalletSummary.availableBalance - amount,
-        pendingPayout: state.coachWalletSummary.pendingPayout + amount,
-      },
-    }))
-    get().showToast('Đã gửi yêu cầu rút tiền. Dự kiến xử lý trong 1–2 ngày làm việc.', 'success')
     return true
   },
 

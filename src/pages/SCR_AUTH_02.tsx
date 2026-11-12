@@ -348,7 +348,7 @@ export function SCR_AUTH_02() {
             ) : (
               <div className="text-xs text-muted-foreground space-y-3 leading-relaxed">
                 <p>
-                  <strong>1. Cơ chế bảo vệ thanh toán:</strong> Khi tham gia ghép kèo, 100% phí tham gia được ghi nhận trong ví Ký quỹ Escrow và chỉ giải ngân cho chủ sân khi trận đấu hoàn tất.
+                  <strong>1. Cơ chế bảo vệ thanh toán:</strong> Khi tham gia ghép kèo, 100% phí tham gia được ghi nhận trong Ký quỹ Escrow và chỉ giải ngân cho chủ sân khi trận đấu hoàn tất.
                 </p>
                 <p>
                   <strong>2. Chế tài chống bỏ kèo:</strong> Người chơi hủy dưới 6 giờ hoặc vắng mặt không lý do chính đáng sẽ không được hoàn phí tham gia.

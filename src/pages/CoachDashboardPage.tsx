@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowRight,
-  BadgeDollarSign,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  CircleDollarSign,
   Clock3,
   MapPin,
   Plus,
@@ -19,12 +17,6 @@ import { Button } from '@/components/ui/button'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { useCoachBookingStore } from '@/store/useCoachBookingStore'
 import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
-
-const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', {
-  style: 'currency',
-  currency: 'VND',
-  maximumFractionDigits: 0,
-}).format(value)
 
 const localDateKey = (value: Date) => [
   value.getFullYear(),
@@ -54,7 +46,7 @@ const slots = COURT_SLOT_TIMES.map((slot) => ({ number: slot.slotNumber, time: s
 
 export function CoachDashboardPage() {
   const navigate = useNavigate()
-  const { coachAccount, coachCourses, coachWalletSummary, coachAffiliations } = useFitlyoStore()
+  const { coachAccount, coachCourses, coachAffiliations } = useFitlyoStore()
   const coachBookings = useCoachBookingStore((state) => state.bookings)
   const refreshExpirations = useCoachBookingStore((state) => state.refreshExpirations)
   const calendarDays = useMemo(() => buildCalendarDays(), [])
@@ -145,11 +137,10 @@ export function CoachDashboardPage() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-3">
         {[
           { label: 'Buổi học đã xác nhận', value: `${confirmedSessionCount} buổi`, note: 'Đồng bộ từ lịch Player đã thanh toán', icon: CalendarDays, color: 'text-primary bg-secondary/55 dark:bg-secondary/15' },
           { label: 'Học viên đang học', value: `${isDungDemoAccount ? studentCount + 17 : studentCount} học viên`, note: `${ownCourses.length} khóa đang quản lý`, icon: Users, color: 'text-violet-700 bg-violet-50 dark:bg-violet-500/10 dark:text-violet-300' },
-          { label: 'Ký quỹ đang giữ', value: formatCurrency(coachWalletSummary.escrowBalance), note: 'Giải ngân theo tiến độ', icon: CircleDollarSign, color: 'text-teal-700 bg-teal-50 dark:bg-teal-500/10 dark:text-teal-300' },
           { label: 'Cụm sân đã liên kết', value: `${coachAffiliations.filter((item) => item.coachId === coachAccount.id && item.status === 'ACTIVE').length} đối tác`, note: `${coachAffiliations.filter((item) => item.coachId === coachAccount.id && item.status === 'PENDING').length} yêu cầu đang chờ`, icon: MapPin, color: 'text-amber-700 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-300' },
         ].map((item) => {
           const Icon = item.icon
@@ -242,13 +233,6 @@ export function CoachDashboardPage() {
         </div>
       </section>
 
-      <section className="flex flex-col justify-between gap-4 rounded-2xl border border-primary/15 bg-secondary/35 p-5 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-primary p-2.5 text-primary-foreground"><BadgeDollarSign className="h-5 w-5" /></div>
-          <div><p className="font-black text-foreground">Đối soát tiếp theo: {calendarDays[7].date}</p><p className="text-xs text-muted-foreground">Dự kiến giải ngân {formatCurrency(coachWalletSummary.pendingPayout)} sau khi hoàn tất buổi học.</p></div>
-        </div>
-        <Button onClick={() => navigate('/coach/wallet')}>Xem thu nhập <ArrowRight /></Button>
-      </section>
     </div>
   )
 }

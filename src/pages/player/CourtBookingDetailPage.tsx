@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   CalendarClock,
   CheckCircle2,
-  Clock3,
   Download,
   ExternalLink,
   MapPin,
@@ -24,6 +23,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { QrTicket } from '@/components/ui/qr-ticket'
+import { bookingEndOptions, bookingStartOptions, buildOccupiedBlocks, formatBookingDuration, slotMinutes } from '@/lib/courtBookingSlots'
+import { scheduleOverlapsSlot } from '@/lib/courtDisableSchedule'
+import { quoteCourtPrice, resolveCourtPricing } from '@/lib/courtPricing'
 import { courtRefundOutcome, hoursUntilEvent } from '@/lib/paymentPolicies'
 import { cn } from '@/lib/utils'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
@@ -74,6 +76,7 @@ export function CourtBookingDetailPage() {
   const cancelCourtBooking = usePlayerStore((state) => state.cancelCourtBooking)
   const rescheduleCourtBooking = usePlayerStore((state) => state.rescheduleCourtBooking)
   const payments = usePaymentStore((state) => state.records)
+  const sharedCourtBookings = useCrossRoleStore((state) => state.courtBookings)
   const showToast = useFitlyoStore((state) => state.showToast)
   const [showQr, setShowQr] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
@@ -91,11 +94,18 @@ export function CourtBookingDetailPage() {
     : undefined
 
   const paidAmount = booking?.paidAmount ?? booking?.amount ?? 0
+  // Booking mới: giữ sân trước, thanh toán tại quầy khi đến sân.
+  const payAtVenue = booking?.paymentMode === 'AT_VENUE'
+  const bookingAmount = payAtVenue ? booking?.totalAmount ?? booking?.amount ?? 0 : paidAmount
+  // Chủ sân đã xác nhận thu tiền tại sân → booking coi như đã thanh toán, không tự huỷ/đổi lịch.
+  const sharedBooking = booking ? sharedCourtBookings.find((item) => item.id === booking.id) : undefined
+  const paidAtVenue = payAtVenue && sharedBooking?.paymentStatus === 'PAID'
   const hoursBefore = booking ? hoursUntilEvent(booking.date, booking.timeRange) : 0
   const refund = courtRefundOutcome(paidAmount, hoursBefore)
   const canReschedule = !!booking
+    && !paidAtVenue
     && booking.status === 'UPCOMING'
-    && hoursBefore >= 12
+    && hoursBefore > 6
     && (booking.rescheduleCount ?? 0) < 1
   const mapsUrl = venue
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}`
@@ -162,7 +172,7 @@ export function CourtBookingDetailPage() {
         <div className="grid gap-px bg-border/60 sm:grid-cols-3">
           <div className="bg-card p-5"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ngày chơi</p><p className="mt-2 font-black">{booking.dateLabel}</p></div>
           <div className="bg-card p-5"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Khung giờ</p><p className="mt-2 font-black">{booking.timeRange}</p></div>
-          <div className="bg-card p-5"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Đã thanh toán</p><p className="mt-2 font-black text-emerald-600 dark:text-emerald-400">100% · {formatMoney(paidAmount)}</p></div>
+          <div className="bg-card p-5"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{payAtVenue && !paidAtVenue ? 'Thanh toán' : 'Đã thanh toán'}</p><p className={cn('mt-2 font-black', payAtVenue && !paidAtVenue ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400')}>{payAtVenue ? `${paidAtVenue ? 'Đã thu tại sân' : 'Tại sân'} · ${formatMoney(bookingAmount)}` : `100% · ${formatMoney(paidAmount)}`}</p></div>
         </div>
       </section>
 
@@ -197,19 +207,27 @@ export function CourtBookingDetailPage() {
 
           <section className="rounded-[1.75rem] border bg-card p-5 shadow-sm sm:p-6">
             <div className="flex items-center gap-3"><CreditCard className="h-5 w-5 text-primary" /><h2 className="text-lg font-black">Thanh toán & hoàn tiền</h2></div>
-            <div className="mt-5 rounded-2xl bg-emerald-500/10 p-4"><p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Đã thanh toán 100%</p><p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-300">{formatMoney(paidAmount)}</p></div>
+            {paidAtVenue ? <>
+              <div className="mt-5 rounded-2xl bg-emerald-500/10 p-4"><p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Đã thanh toán tại sân</p><p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-300">{formatMoney(bookingAmount)}</p><p className="mt-1 text-xs text-muted-foreground">{sharedBooking?.paidMethod === 'VIETQR' ? 'Chuyển khoản' : 'Tiền mặt'}{sharedBooking?.paidAt ? ` · ${new Date(sharedBooking.paidAt).toLocaleString('vi-VN')}` : ''}</p></div>
+              <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-4"><p className="text-sm font-black">Cần hủy hoặc đổi lịch?</p><p className="mt-1 text-sm text-muted-foreground">Booking đã thanh toán tại sân, vui lòng liên hệ Chủ sân để được hỗ trợ.</p></div>
+            </> : payAtVenue ? <>
+              <div className="mt-5 rounded-2xl bg-amber-500/10 p-4"><p className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">Thanh toán tại sân</p><p className="mt-1 text-2xl font-black text-amber-700 dark:text-amber-300">{formatMoney(bookingAmount)}</p><p className="mt-1 text-xs text-muted-foreground">Thanh toán tại quầy khi đến sân (tiền mặt hoặc chuyển khoản). Xuất trình vé QR để check-in.</p></div>
+              <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-4"><p className="text-sm font-black">Nếu hủy lúc này</p><p className="mt-1 text-sm text-muted-foreground">Bạn chưa thanh toán nên hủy không phát sinh phí.</p></div>
+            </> : <>
+              <div className="mt-5 rounded-2xl bg-emerald-500/10 p-4"><p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Đã thanh toán 100%</p><p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-300">{formatMoney(paidAmount)}</p></div>
             <div className={cn('mt-3 rounded-2xl border p-4', refund.refundAmount > 0 ? 'border-primary/20 bg-primary/5' : 'border-destructive/20 bg-destructive/5')}><p className="text-sm font-black">Nếu hủy lúc này</p><p className="mt-1 text-sm text-muted-foreground">{refund.label}</p><p className="mt-2 font-black">Dự kiến hoàn: {formatMoney(refund.refundAmount)}</p></div>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">Trước 12 giờ hoàn 100%; từ 6–12 giờ hoàn 50%; dưới 6 giờ không hoàn. Tiền hoàn qua VietQR.</p>
+            </>}
           </section>
 
           <section className="rounded-[1.75rem] border bg-card p-5 shadow-sm sm:p-6">
             <h2 className="text-lg font-black">Quản lý booking</h2>
             <div className="mt-4 space-y-2">
               <Button className="min-h-12 w-full" onClick={() => setShowReschedule(true)} disabled={!canReschedule}><RefreshCw />Đổi lịch</Button>
-              <p className="text-center text-xs leading-5 text-muted-foreground">{booking.status !== 'UPCOMING' ? 'Booking không còn hiệu lực.' : (booking.rescheduleCount ?? 0) >= 1 ? 'Booking đã đổi lịch một lần.' : hoursBefore < 12 ? 'Chỉ đổi lịch trước giờ chơi tối thiểu 12 giờ.' : 'Được đổi tối đa một lần; chênh lệch xử lý qua VietQR.'}</p>
+              <p className="text-center text-xs leading-5 text-muted-foreground">{booking.status !== 'UPCOMING' ? 'Booking không còn hiệu lực.' : paidAtVenue ? 'Booking đã thanh toán tại sân, liên hệ Chủ sân nếu cần đổi lịch.' : (booking.rescheduleCount ?? 0) >= 1 ? 'Booking đã đổi lịch một lần.' : hoursBefore <= 6 ? 'Chỉ chỉnh sửa lịch khi còn hơn 6 tiếng trước giờ chơi.' : payAtVenue ? 'Được chỉnh sửa tối đa một lần khi còn hơn 6 tiếng; tiền sân tính lại và trả tại sân.' : 'Được chỉnh sửa tối đa một lần khi còn hơn 6 tiếng; chênh lệch xử lý qua VietQR.'}</p>
               <Button variant="outline" className="min-h-12 w-full" onClick={shareBooking}><Share2 />Chia sẻ booking</Button>
               {mapsUrl && <Button asChild variant="outline" className="min-h-12 w-full"><a href={mapsUrl} target="_blank" rel="noreferrer"><MapPin />Chỉ đường</a></Button>}
-              <Button variant="destructive" className="min-h-12 w-full" onClick={() => setShowCancel(true)} disabled={booking.status !== 'UPCOMING'}>Hủy sân</Button>
+              <Button variant="destructive" className="min-h-12 w-full" onClick={() => setShowCancel(true)} disabled={booking.status !== 'UPCOMING' || paidAtVenue}>Hủy sân</Button>
             </div>
           </section>
         </aside>
@@ -217,50 +235,69 @@ export function CourtBookingDetailPage() {
 
       {showQr && booking.bookingCode && <div className="fixed inset-0 z-[100] overflow-y-auto bg-foreground/70 p-4 backdrop-blur-sm"><div className="mx-auto flex min-h-full max-w-xl items-center py-6"><div className="w-full"><div className="mb-3 flex justify-end"><Button variant="secondary" size="icon" className="h-12 w-12 rounded-full" onClick={() => setShowQr(false)} aria-label="Đóng vé QR"><X /></Button></div><QrTicket ticketCode={booking.bookingCode} venueName={booking.venueName} courtName={court?.name ?? booking.courtName} slotNumber={booking.slotNumber ?? 0} timeRange={booking.timeRange} dateStr={booking.dateLabel} duprRange="Không áp dụng" format="Theo khoảng đặt" playerName={profile.name} paidAmount={paidAmount} onShare={shareBooking} /></div></div></div>}
 
-      {showCancel && <div className="fixed inset-0 z-[100] grid place-items-center bg-foreground/60 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" className="w-full max-w-md rounded-[1.8rem] border bg-card p-6 shadow-2xl"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-destructive/10 text-destructive"><AlertTriangle /></span><h2 className="mt-4 text-xl font-black">Xác nhận hủy sân?</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{refund.label}. Số tiền dự kiến nhận lại là <strong className="text-foreground">{formatMoney(refund.refundAmount)}</strong>.</p><div className="mt-6 flex justify-end gap-2"><Button variant="outline" className="min-h-12" onClick={() => setShowCancel(false)}>Giữ lịch</Button><Button variant="destructive" className="min-h-12" onClick={confirmCancellation}>Xác nhận hủy</Button></div></section></div>}
+      {showCancel && <div className="fixed inset-0 z-[100] grid place-items-center bg-foreground/60 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" className="w-full max-w-md rounded-[1.8rem] border bg-card p-6 shadow-2xl"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-destructive/10 text-destructive"><AlertTriangle /></span><h2 className="mt-4 text-xl font-black">Xác nhận hủy sân?</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{payAtVenue ? 'Bạn chưa thanh toán nên hủy không phát sinh phí. Khung giờ sẽ được mở lại cho người khác đặt.' : <>{refund.label}. Số tiền dự kiến nhận lại là <strong className="text-foreground">{formatMoney(refund.refundAmount)}</strong>.</>}</p><div className="mt-6 flex justify-end gap-2"><Button variant="outline" className="min-h-12" onClick={() => setShowCancel(false)}>Giữ lịch</Button><Button variant="destructive" className="min-h-12" onClick={confirmCancellation}>Xác nhận hủy</Button></div></section></div>}
 
-      {showReschedule && venue && <RescheduleDialog bookingId={booking.id} venue={venue} currentDate={booking.date} currentTimeRange={booking.timeRange} currentAmount={paidAmount} onClose={() => setShowReschedule(false)} onConfirm={(input) => { const result = rescheduleCourtBooking(booking.id, input); showToast(result.message, result.success ? 'success' : 'error'); if (result.success) setShowReschedule(false) }} />}
+      {showReschedule && venue && <RescheduleDialog bookingId={booking.id} venue={venue} currentDate={booking.date} currentTimeRange={booking.timeRange} currentCourtId={court?.id} currentAmount={bookingAmount} payAtVenue={payAtVenue} onClose={() => setShowReschedule(false)} onConfirm={(input) => { const result = rescheduleCourtBooking(booking.id, input); showToast(result.message, result.success ? 'success' : 'error'); if (result.success) setShowReschedule(false) }} />}
     </div>
   )
 }
 
-function RescheduleDialog({ bookingId, venue, currentDate, currentTimeRange, currentAmount, onClose, onConfirm }: {
+function RescheduleDialog({ bookingId, venue, currentDate, currentTimeRange, currentCourtId, currentAmount, payAtVenue = false, onClose, onConfirm }: {
   bookingId: string
   venue: ReturnType<typeof usePlayerStore.getState>['venues'][number]
   currentDate: string
   currentTimeRange: string
+  currentCourtId?: string
   currentAmount: number
+  payAtVenue?: boolean
   onClose: () => void
-  onConfirm: (input: { date: string; dateLabel: string; courtId: string; startTime: string; endTime: string; availabilityId: string }) => void
+  onConfirm: (input: { date: string; dateLabel: string; courtId: string; startTime: string; endTime: string }) => void
 }) {
-  const [date, setDate] = useState(todayInputValue())
-  const [courtId, setCourtId] = useState(venue.courts[0]?.id ?? '')
-  const [availabilityId, setAvailabilityId] = useState<string | null>(null)
+  const today = todayInputValue()
+  const [date, setDate] = useState(currentDate >= today ? currentDate : today)
+  const [courtId, setCourtId] = useState(currentCourtId ?? venue.courts[0]?.id ?? '')
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
+  const matches = usePlayerStore((state) => state.matches)
   const calendarEvents = useCrossRoleStore((state) => state.venueCalendarEvents)
+  const slotOverrides = useCrossRoleStore((state) => state.slotOverrides)
   const courtDisableSchedules = useCrossRoleStore((state) => state.courtDisableSchedules)
-  const availabilities = useMemo(() => calendarEvents
-    .filter((event) => event.type === 'AVAILABILITY' && event.venueId === venue.id && event.date === date && event.courtId === courtId && event.amount > 0)
-    .filter((event) => {
-      const endMinutes = Number(event.startTime.slice(0, 2)) * 60 + Number(event.startTime.slice(3, 5)) + event.durationMinutes
-      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
-      const timeRange = `${event.startTime} - ${endTime}`
-      const schedule = courtDisableSchedules[`${venue.id}:${courtId}`]
-      return !(date === currentDate && timeRange === currentTimeRange)
-        && hoursUntilEvent(date, timeRange) > 0
-        && !(schedule && schedule.startAt < `${date}T${endTime}` && schedule.endAt > `${date}T${event.startTime}`)
-    }), [calendarEvents, courtDisableSchedules, courtId, currentDate, currentTimeRange, date, venue.id])
-  const selectedAvailability = availabilities.find((event) => event.id === availabilityId)
-  const selectedEndMinutes = selectedAvailability ? Number(selectedAvailability.startTime.slice(0, 2)) * 60 + Number(selectedAvailability.startTime.slice(3, 5)) + selectedAvailability.durationMinutes : 0
-  const selectedTimeRange = selectedAvailability ? `${selectedAvailability.startTime} - ${String(Math.floor(selectedEndMinutes / 60)).padStart(2, '0')}:${String(selectedEndMinutes % 60).padStart(2, '0')}` : ''
-  const difference = (selectedAvailability?.amount ?? currentAmount) - currentAmount
+  const courtBookings = useCrossRoleStore((state) => state.courtBookings)
+  const courtPricing = useCrossRoleStore((state) => state.courtPricing)
 
-  return <div className="fixed inset-0 z-[100] overflow-y-auto bg-foreground/60 p-4 backdrop-blur-sm"><div className="mx-auto flex min-h-full max-w-3xl items-center py-6"><section role="dialog" aria-modal="true" aria-labelledby={`${bookingId}-reschedule-title`} className="w-full rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-7">
-    <div className="flex items-start justify-between gap-4"><div><Badge variant="outline" className="text-primary"><RefreshCw />ĐỔI LỊCH MỘT LẦN</Badge><h2 id={`${bookingId}-reschedule-title`} className="mt-3 text-2xl font-black">Chọn lịch sân mới</h2><p className="mt-1 text-sm text-muted-foreground">Giá cao hơn sẽ thanh toán thêm, giá thấp hơn sẽ hoàn chênh lệch qua VietQR.</p></div><Button variant="ghost" size="icon" className="h-12 w-12" onClick={onClose} aria-label="Đóng"><X /></Button></div>
-    <div className="mt-6 grid gap-5 md:grid-cols-[220px_1fr]">
-      <div className="space-y-4"><label className="block text-sm font-black">Ngày mới<Input type="date" min={todayInputValue()} value={date} onChange={(event) => { setDate(event.target.value); setAvailabilityId(null) }} className="mt-2 h-12" /></label><div><p className="text-sm font-black">Chọn sân</p><div className="mt-2 space-y-2">{venue.courts.map((item) => <button type="button" key={item.id} onClick={() => { setCourtId(item.id); setAvailabilityId(null) }} className={cn('min-h-12 w-full rounded-xl border px-3 text-left text-sm font-bold transition', courtId === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted')}><span className="block">{item.name}</span><span className="text-xs font-normal text-muted-foreground">{item.type}</span></button>)}</div></div></div>
-      <div><p className="text-sm font-black">Khoảng đặt còn trống · {formatDateLabel(date)}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{availabilities.map((availability) => { const endMinutes = Number(availability.startTime.slice(0, 2)) * 60 + Number(availability.startTime.slice(3, 5)) + availability.durationMinutes; const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`; return <button type="button" key={availability.id} onClick={() => setAvailabilityId(availability.id)} className={cn('rounded-2xl border p-4 text-left transition', availabilityId === availability.id ? 'border-primary bg-primary/10 ring-2 ring-primary/15' : 'border-border hover:border-primary/40')}><span className="flex items-center gap-2 text-sm font-black"><Clock3 className="h-4 w-4 text-primary" />{availability.startTime} - {endTime}</span><span className="mt-2 block text-xs text-muted-foreground">Khoảng đặt của Chủ sân</span><span className="mt-1 block font-black text-primary">{formatMoney(availability.amount)}</span></button> })}</div>{!availabilities.length && <div className="mt-3 rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">Ngày và sân này chưa có khoảng đặt phù hợp do Chủ sân cấu hình.</div>}</div>
+  // Cùng quy tắc với lúc đặt sân: mốc 30 phút, chỉ giờ còn trống, không chọn giờ đã qua.
+  // Bỏ qua chính booking đang đổi để khung giờ cũ của nó vẫn hiện là trống.
+  const occupiedBlocks = useMemo(() => buildOccupiedBlocks({ venue, date, courtBookings, matches, events: calendarEvents, overrides: slotOverrides, excludeBookingId: bookingId }), [bookingId, calendarEvents, courtBookings, date, matches, slotOverrides, venue])
+  const isDisabled = (targetCourtId: string, timeRange: string) => {
+    const schedule = courtDisableSchedules[`${venue.id}:${targetCourtId}`]
+    return Boolean(schedule && scheduleOverlapsSlot(schedule, date, timeRange))
+  }
+  const startOptions = bookingStartOptions(occupiedBlocks, courtId, date, isDisabled)
+  const endOptions = bookingEndOptions(occupiedBlocks, courtId, startTime, isDisabled)
+  const selectedTimeRange = startTime && endTime ? `${startTime} - ${endTime}` : ''
+  const unchanged = date === currentDate && courtId === currentCourtId && selectedTimeRange === currentTimeRange
+  const court = venue.courts.find((item) => item.id === courtId)
+  const newAmount = selectedTimeRange && court
+    ? quoteCourtPrice(resolveCourtPricing(courtPricing, venue.id, courtId), court.slots, startTime, slotMinutes(endTime) - slotMinutes(startTime))
+    : null
+  const difference = (newAmount ?? currentAmount) - currentAmount
+  const resetTimes = () => { setStartTime(''); setEndTime('') }
+  const changeStart = (value: string) => {
+    setStartTime(value)
+    if (endTime && !bookingEndOptions(occupiedBlocks, courtId, value, isDisabled).includes(endTime)) setEndTime('')
+  }
+  const selectClass = 'mt-2 h-12 w-full rounded-xl border bg-background px-3 text-sm font-bold disabled:opacity-60 [&>option]:bg-card [&>option]:text-foreground'
+
+  return <div className="fixed inset-0 z-[100] overflow-y-auto bg-foreground/60 p-4 backdrop-blur-sm"><div className="mx-auto flex min-h-full max-w-2xl items-center py-6"><section role="dialog" aria-modal="true" aria-labelledby={`${bookingId}-reschedule-title`} className="w-full rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-7">
+    <div className="flex items-start justify-between gap-4"><div><Badge variant="outline" className="text-primary"><RefreshCw />ĐỔI LỊCH MỘT LẦN</Badge><h2 id={`${bookingId}-reschedule-title`} className="mt-3 text-2xl font-black">Chỉnh sửa lịch đặt sân</h2><p className="mt-1 text-sm text-muted-foreground">Lịch hiện tại: {formatDateLabel(currentDate)} · {currentTimeRange}. {payAtVenue ? 'Tiền sân được tính lại theo lịch mới và thanh toán tại quầy khi đến sân.' : 'Giá cao hơn sẽ thanh toán thêm, giá thấp hơn sẽ hoàn chênh lệch qua VietQR.'}</p></div><Button variant="ghost" size="icon" className="h-12 w-12" onClick={onClose} aria-label="Đóng"><X /></Button></div>
+    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      <label className="block text-sm font-black">Ngày mới<Input type="date" min={today} value={date} onChange={(event) => { setDate(event.target.value); resetTimes() }} className="mt-2 h-12" /></label>
+      <label className="block text-sm font-black">Sân<select value={courtId} onChange={(event) => { setCourtId(event.target.value); resetTimes() }} className={selectClass}>{venue.courts.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.type}</option>)}</select></label>
+      <label className="block text-sm font-black">Bắt đầu<select value={startTime} onChange={(event) => changeStart(event.target.value)} className={selectClass}><option value="" disabled>Chọn giờ bắt đầu</option>{startOptions.map((time) => <option key={time} value={time}>{time}</option>)}</select><span className="mt-1 block text-[11px] font-normal text-muted-foreground">{startOptions.length ? `Còn ${startOptions.length} mốc trống, cách nhau 30 phút` : 'Không còn mốc trống: sân đã kín lịch hoặc đã qua giờ'}</span></label>
+      <label className="block text-sm font-black">Kết thúc<select disabled={!startTime} value={endTime} onChange={(event) => setEndTime(event.target.value)} className={selectClass}><option value="" disabled>{startTime ? 'Chọn giờ kết thúc' : 'Chọn giờ bắt đầu trước'}</option>{endOptions.map((time) => <option key={time} value={time}>{time} · {formatBookingDuration(slotMinutes(time) - slotMinutes(startTime))}</option>)}</select><span className="mt-1 block text-[11px] font-normal text-muted-foreground">{startTime ? `Chỉ hiện giờ sau ${startTime}, tối đa đến lịch kế tiếp` : 'Chọn giờ bắt đầu để mở danh sách'}</span></label>
     </div>
-    <div className="mt-6 grid gap-3 rounded-2xl border bg-muted/20 p-4 sm:grid-cols-3"><div><p className="text-xs text-muted-foreground">Giá booking hiện tại</p><p className="mt-1 font-black">{formatMoney(currentAmount)}</p></div><div><p className="text-xs text-muted-foreground">Chênh lệch</p><p className={cn('mt-1 font-black', difference > 0 ? 'text-amber-600' : difference < 0 ? 'text-emerald-600' : '')}>{selectedAvailability ? difference > 0 ? `Thanh toán thêm ${formatMoney(difference)}` : difference < 0 ? `Hoàn ${formatMoney(Math.abs(difference))}` : 'Không chênh lệch' : 'Chọn một khoảng đặt'}</p></div><div><p className="text-xs text-muted-foreground">Điều chỉnh thanh toán</p><p className="mt-1 font-black">Qua VietQR</p></div></div>
-    <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" className="min-h-12" onClick={onClose}>Để sau</Button><Button className="min-h-12" disabled={!selectedAvailability} onClick={() => selectedAvailability && onConfirm({ date, dateLabel: formatDateLabel(date), courtId, startTime: selectedAvailability.startTime, endTime: selectedTimeRange.split(' - ')[1], availabilityId: selectedAvailability.id })}><ShieldCheck />Xác nhận đổi lịch</Button></div>
+    {unchanged && <p className="mt-4 rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-700 dark:text-amber-300">Lịch mới đang trùng với lịch hiện tại.</p>}
+    <div className="mt-6 grid gap-3 rounded-2xl border bg-muted/20 p-4 sm:grid-cols-3"><div><p className="text-xs text-muted-foreground">Giá booking hiện tại</p><p className="mt-1 font-black">{formatMoney(currentAmount)}</p></div><div><p className="text-xs text-muted-foreground">{payAtVenue ? 'Tiền sân mới' : 'Chênh lệch'}</p><p className={cn('mt-1 font-black', !payAtVenue && difference > 0 ? 'text-amber-600' : !payAtVenue && difference < 0 ? 'text-emerald-600' : '')}>{newAmount === null ? 'Chọn giờ để báo giá' : payAtVenue ? formatMoney(newAmount) : difference > 0 ? `Thanh toán thêm ${formatMoney(difference)}` : difference < 0 ? `Hoàn ${formatMoney(Math.abs(difference))}` : 'Không chênh lệch'}</p></div><div><p className="text-xs text-muted-foreground">Điều chỉnh thanh toán</p><p className="mt-1 font-black">{payAtVenue ? 'Tại sân' : 'Qua VietQR'}</p></div></div>
+    <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" className="min-h-12" onClick={onClose}>Để sau</Button><Button className="min-h-12" disabled={!selectedTimeRange || unchanged} onClick={() => onConfirm({ date, dateLabel: formatDateLabel(date), courtId, startTime, endTime })}><ShieldCheck />Xác nhận đổi lịch</Button></div>
   </section></div></div>
 }

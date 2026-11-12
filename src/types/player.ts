@@ -110,6 +110,8 @@ export interface PlayerScheduleItem {
   totalAmount?: number
   paidAmount?: number
   remainingAmount?: number
+  /** AT_VENUE: Player giữ sân trước, thanh toán tại quầy khi đến sân. */
+  paymentMode?: 'ONLINE' | 'AT_VENUE'
   slotKey?: string
   bookingCode?: string
   bookedAt?: string

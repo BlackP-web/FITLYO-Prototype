@@ -17,12 +17,15 @@ import { OwnerCourtsPage } from "@/pages/OwnerCourtsPage"
 import { OwnerSettingsPage } from "@/pages/OwnerSettingsPage"
 import { OwnerCoachesPage } from "@/pages/OwnerCoachesPage"
 import { OwnerReportsPage } from "@/pages/OwnerReportsPage"
+import { OwnerPricingPage } from "@/pages/OwnerPricingPage"
+import { OwnerPackagesPage } from "@/pages/OwnerPackagesPage"
+import { OwnerInvoicesPage } from "@/pages/OwnerInvoicesPage"
 import { CoachDashboardPage } from "@/pages/CoachDashboardPage"
+import { CoachLinkFeesPage } from "@/pages/CoachLinkFeesPage"
 import { CoachCoursesPage } from "@/pages/CoachCoursesPage"
 import { CoachAttendancePage } from "@/pages/CoachAttendancePage"
 import { CoachVenuesPage } from "@/pages/CoachVenuesPage"
 import { CoachProfilePage } from "@/pages/CoachProfilePage"
-import { CoachWalletPage } from "@/pages/CoachWalletPage"
 import { CoachDirectoryPage } from "@/pages/CoachDirectoryPage"
 import { VenuesPage } from "@/pages/VenuesPage"
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage"
@@ -115,8 +118,8 @@ export const router = createBrowserRouter([
               { path: "courses", element: <CoachCoursesPage /> },
               { path: "attendance", element: <CoachAttendancePage /> },
               { path: "venues", element: <CoachVenuesPage /> },
-              { path: "wallet", element: <CoachWalletPage /> },
               { path: "bookings", element: <CoachBookingsPage /> },
+              { path: "fees", element: <CoachLinkFeesPage /> },
             ],
           },
         ],
@@ -138,6 +141,9 @@ export const router = createBrowserRouter([
             children: [
               { path: "calendar", element: <CourtCalendarPage /> },
               { path: "courts", element: <OwnerCourtsPage /> },
+              { path: "pricing", element: <OwnerPricingPage /> },
+              { path: "packages", element: <OwnerPackagesPage /> },
+              { path: "invoices", element: <OwnerInvoicesPage /> },
               { path: "coaches", element: <OwnerCoachesPage /> },
               { path: "reports", element: <OwnerReportsPage /> },
             ],

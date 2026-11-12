@@ -16,3 +16,80 @@ export const COURT_SLOT_TIMES = [
 ].map((slot) => ({ ...slot, timeRange: `${slot.start} - ${slot.end}` }))
 
 export const COURT_SLOT_NUMBERS = COURT_SLOT_TIMES.map((slot) => slot.slotNumber)
+
+/**
+ * Khoảng đặt mà Player được phép đặt cho 1 sân trong 1 ngày.
+ * - Nếu Chủ sân đã tạo "Khoảng đặt" (event AVAILABILITY) cho sân/ngày đó → chỉ dùng các khoảng này.
+ * - Nếu Chủ sân chưa cấu hình → dùng khung giờ mặc định của sân (10 slot 90 phút) để Player vẫn đặt được.
+ *   Giá khung mặc định lấy từ bảng giá theo giờ Chủ sân thiết lập (trang "Chỉnh sửa giá cả");
+ *   nếu chưa có bảng giá thì dùng giá gốc của slot.
+ */
+import { priceForTimeRange, type CourtPricing } from '@/lib/courtPricing'
+
+export const DEFAULT_AVAILABILITY_PREFIX = 'default-availability'
+
+export interface BookableAvailability {
+  id: string
+  venueId: string
+  courtId: string
+  courtName: string
+  date: string
+  title: string
+  startTime: string
+  durationMinutes: number
+  amount: number
+  isDefault: boolean
+}
+
+type AvailabilityEventLike = {
+  id: string
+  type: string
+  venueId: string
+  date: string
+  courtId: string
+  courtName: string
+  title: string
+  startTime: string
+  durationMinutes: number
+  amount: number
+}
+
+type CourtLike = {
+  id: string
+  name: string
+  slots: Array<{ slotNumber: number; timeRange: string; price: number; status: string }>
+}
+
+const toMinutes = (time: string) => {
+  const [hour, minute] = time.split(':').map(Number)
+  return hour * 60 + minute
+}
+
+export const getCourtAvailabilities = (
+  events: AvailabilityEventLike[],
+  venueId: string,
+  court: CourtLike,
+  date: string,
+  pricing?: CourtPricing,
+): BookableAvailability[] => {
+  const configured = events.filter((event) => event.type === 'AVAILABILITY'
+    && event.venueId === venueId && event.courtId === court.id && event.date === date && event.amount > 0)
+  if (configured.length) {
+    return configured.map((event) => ({
+      id: event.id, venueId, courtId: court.id, courtName: event.courtName || court.name, date,
+      title: event.title, startTime: event.startTime, durationMinutes: event.durationMinutes, amount: event.amount, isDefault: false,
+    }))
+  }
+  return court.slots
+    .filter((slot) => slot.status === 'AVAILABLE' && (pricing ? pricing.basePricePerHour > 0 : slot.price > 0))
+    .map((slot) => {
+      const [start, end] = slot.timeRange.split(' - ')
+      const durationMinutes = toMinutes(end) - toMinutes(start)
+      return {
+        id: `${DEFAULT_AVAILABILITY_PREFIX}:${venueId}:${court.id}:${date}:${slot.slotNumber}`,
+        venueId, courtId: court.id, courtName: court.name, date,
+        title: 'Khung giờ mặc định',
+        startTime: start, durationMinutes, amount: pricing ? priceForTimeRange(pricing, start, durationMinutes) : slot.price, isDefault: true,
+      }
+    })
+}

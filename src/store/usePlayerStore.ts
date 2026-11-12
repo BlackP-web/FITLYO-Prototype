@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
 import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
+import { quoteCourtPrice, resolveCourtPricing } from '@/lib/courtPricing'
 import { scheduleOverlapsSlot } from '@/lib/courtDisableSchedule'
 import { courtRefundOutcome, hoursUntilEvent, socialRefundOutcome } from '@/lib/paymentPolicies'
 import { getPlayerMatchFee } from '@/lib/playerMatch'
@@ -48,7 +49,7 @@ interface PlayerState {
     courtId: string
     startTime: string
     endTime: string
-    availabilityId: string
+    availabilityId?: string
   }) => ActionResult
   bookCourt: (input: {
     venueId: string
@@ -520,6 +521,9 @@ const syncCourtBookingsToShared = (state: Pick<PlayerState, 'profile' | 'venues'
     const court = venue?.courts.find((candidate) => candidate.id === item.courtId || item.courtName.startsWith(candidate.name))
     const slot = court?.slots.find((candidate) => candidate.slotNumber === item.slotNumber || candidate.timeRange === item.timeRange)
     if (!venue || !court || !item.timeRange) return
+    // Không ghi đè trạng thái "đã thu tiền tại sân" do Chủ sân xác nhận.
+    const existing = useCrossRoleStore.getState().courtBookings.find((booking) => booking.id === item.id)
+    const confirmedAtVenue = existing?.paymentStatus === 'PAID' && item.paymentMode === 'AT_VENUE'
     useCrossRoleStore.getState().upsertCourtBooking({
       id: item.id,
       bookingCode: item.bookingCode,
@@ -537,8 +541,10 @@ const syncCourtBookingsToShared = (state: Pick<PlayerState, 'profile' | 'venues'
       slotNumber: slot?.slotNumber ?? 0,
       timeRange: item.timeRange,
       totalAmount: item.totalAmount ?? item.amount,
-      paidAmount: item.paidAmount ?? item.amount,
-      paymentStatus: 'PAID',
+      paidAmount: confirmedAtVenue ? existing.paidAmount : item.paymentMode === 'AT_VENUE' ? item.paidAmount ?? 0 : item.paidAmount ?? item.amount,
+      paymentStatus: confirmedAtVenue || item.paymentMode !== 'AT_VENUE' ? 'PAID' : 'PAY_AT_VENUE',
+      paidAt: confirmedAtVenue ? existing.paidAt : undefined,
+      paidMethod: confirmedAtVenue ? existing.paidMethod : undefined,
       status: 'CONFIRMED',
       bookedAt: item.bookedAt,
       rescheduleCount: item.rescheduleCount ?? 0,
@@ -741,20 +747,14 @@ export const usePlayerStore = create<PlayerState>()(
         const slotKey = `${input.date}:${input.venueId}:${input.courtId}:${timeRange}`
         if (state.bookedSlotKeys.includes(slotKey)) return { success: false, message: 'Bạn đã đặt slot này.' }
         const sharedState = useCrossRoleStore.getState()
-        const availability = sharedState.venueCalendarEvents.find((event) => event.type === 'AVAILABILITY'
-          && event.id === input.availabilityId
-          && event.venueId === input.venueId
-          && event.date === input.date
-          && event.courtId === input.courtId
-          && event.startTime === input.startTime
-          && event.startTime && event.durationMinutes === timeRangeMinutes(timeRange)[1] - timeRangeMinutes(timeRange)[0])
-          ?? sharedState.venueCalendarEvents.find((event) => event.type === 'AVAILABILITY'
-            && event.venueId === input.venueId
-            && event.date === input.date
-            && event.courtId === input.courtId
-            && event.startTime === input.startTime
-            && event.durationMinutes === timeRangeMinutes(timeRange)[1] - timeRangeMinutes(timeRange)[0])
-        if (!availability) return { success: false, message: 'Khoảng thời gian này không còn trống để đặt.' }
+        // Player tự chọn giờ bắt đầu/kết thúc (mốc 30 phút, 06:00–21:00) giống Chủ sân tạo event;
+        // tiền sân do hệ thống báo giá theo bảng giá Chủ sân, không lấy từ client.
+        const [bookingStart, bookingEnd] = timeRangeMinutes(timeRange)
+        const bookingDuration = bookingEnd - bookingStart
+        if (bookingStart < 6 * 60 || bookingEnd > 21 * 60 || bookingDuration < 30 || bookingStart % 30 !== 0 || bookingEnd % 30 !== 0) return { success: false, message: 'Giờ đặt phải theo mốc 30 phút, trong khoảng 06:00–21:00.' }
+        if (hoursUntilEvent(input.date, timeRange) <= 0) return { success: false, message: 'Khung giờ này đã qua, vui lòng chọn giờ khác.' }
+        const quotedAmount = quoteCourtPrice(resolveCourtPricing(sharedState.courtPricing, venue.id, court.id), court.slots, input.startTime, bookingDuration)
+        if (quotedAmount <= 0) return { success: false, message: 'Sân chưa có bảng giá, vui lòng liên hệ Chủ sân.' }
         const disableSchedule = sharedState.courtDisableSchedules[`${input.venueId}:${input.courtId}`]
         const courtIsDisabled = Boolean(disableSchedule && scheduleOverlapsSlot(disableSchedule, input.date, timeRange))
         const occupiedByBooking = sharedState.courtBookings.some((item) => item.status === 'CONFIRMED' && item.venueId === input.venueId && item.date === input.date && item.courtId === input.courtId && timeRangesOverlap(item.timeRange, timeRange))
@@ -768,32 +768,22 @@ export const usePlayerStore = create<PlayerState>()(
         if (occupiedByBooking || occupiedByEvent || occupiedBySocial || occupiedByOverride) return { success: false, message: 'Khoảng thời gian vừa được cập nhật hoặc đã có người đặt. Vui lòng chọn khoảng khác.' }
         const conflict = state.schedule.find((item) => item.status === 'UPCOMING' && item.date === input.date && timeRangesOverlap(item.timeRange, timeRange))
         if (conflict) return { success: false, message: `Bạn đã trùng lịch với “${conflict.title}” trong khung giờ ${timeRange}.` }
-        const totalAmount = availability.amount
+        // Player giữ sân trước, thanh toán toàn bộ tại quầy khi đến sân (không thu online).
+        const totalAmount = quotedAmount
         const amount = totalAmount
-        const remainingAmount = 0
-        const paymentMethod = input.paymentMethod ?? 'VIETQR'
+        const paidAmount = 0
+        const remainingAmount = totalAmount
 
         const ticketCode = `FTL-C-${String(Date.now()).slice(-6)}`
         const scheduleId = `schedule-court-${Date.now()}`
         const bookedAt = new Date().toISOString()
-        const paymentReferenceId = `court-${ticketCode}`
-        usePaymentStore.getState().createAwaitingPayment({
-          referenceId: paymentReferenceId,
-          service: 'COURT',
-          title: `${venue.name} · ${court.name}`,
-          totalAmount,
-          paidAmount: amount,
-          remainingAmount,
-        })
-        const paymentResult = usePaymentStore.getState().confirmPayment(paymentReferenceId, paymentMethod)
-        if (!paymentResult.success) return paymentResult
         set((current) => ({
           bookedSlotKeys: [...current.bookedSlotKeys, slotKey],
           schedule: [{
             id: scheduleId,
             kind: 'COURT',
             title: `Đặt sân ${timeRange}`,
-            subtitle: `Đã thanh toán 100% · ${amount.toLocaleString('vi-VN')}đ · Vé QR sẵn sàng`,
+            subtitle: `Thanh toán tại sân · ${amount.toLocaleString('vi-VN')}đ · Vé QR sẵn sàng`,
             venueName: venue.name,
             courtName: `${court.name} · ${court.type}`,
             date: input.date,
@@ -801,10 +791,10 @@ export const usePlayerStore = create<PlayerState>()(
             timeRange,
             status: 'UPCOMING',
             amount,
-            paymentReferenceId,
             totalAmount,
-            paidAmount: amount,
+            paidAmount,
             remainingAmount,
+            paymentMode: 'AT_VENUE',
             slotKey,
             bookingCode: ticketCode,
             bookedAt,
@@ -834,19 +824,30 @@ export const usePlayerStore = create<PlayerState>()(
           slotNumber: court.slots.find((slot) => slot.timeRange === timeRange)?.slotNumber ?? 0,
           timeRange,
           totalAmount,
-          paidAmount: amount,
-          paymentStatus: 'PAID',
+          paidAmount,
+          paymentStatus: 'PAY_AT_VENUE',
           status: 'CONFIRMED',
           bookedAt,
           rescheduleCount: 0,
         })
-        return { success: true, message: `Đã thanh toán 100% phí đặt sân (${amount.toLocaleString('vi-VN')}đ).`, ticketCode }
+        return { success: true, message: `Đặt sân thành công! Vui lòng thanh toán ${amount.toLocaleString('vi-VN')}đ tại quầy khi đến sân.`, ticketCode }
       },
 
       cancelCourtBooking: (scheduleId) => {
         const state = get()
         const booking = state.schedule.find((item) => item.id === scheduleId && item.kind === 'COURT')
         if (!booking || booking.status !== 'UPCOMING') return { success: false, message: 'Lượt đặt sân không thể hủy ở trạng thái hiện tại.' }
+        const sharedBooking = useCrossRoleStore.getState().courtBookings.find((item) => item.id === scheduleId)
+        if (booking.paymentMode === 'AT_VENUE' && sharedBooking?.paymentStatus === 'PAID') return { success: false, message: 'Booking đã được thanh toán tại sân. Vui lòng liên hệ Chủ sân để được hỗ trợ.' }
+        if (booking.paymentMode === 'AT_VENUE') {
+          // Chưa thu tiền online nên huỷ không phát sinh phí hay hoàn tiền.
+          set((current) => ({
+            bookedSlotKeys: booking.slotKey ? current.bookedSlotKeys.filter((key) => key !== booking.slotKey) : current.bookedSlotKeys,
+            schedule: current.schedule.map((item) => item.id === scheduleId ? { ...item, status: 'CANCELLED', subtitle: 'Đã huỷ · Chưa thanh toán nên không phát sinh phí' } : item),
+          }))
+          useCrossRoleStore.getState().cancelCourtBooking(scheduleId)
+          return { success: true, message: 'Đã huỷ đặt sân. Bạn chưa thanh toán nên không phát sinh phí.' }
+        }
         const paidAmount = booking.paidAmount ?? booking.amount
         const outcome = courtRefundOutcome(paidAmount, hoursUntilEvent(booking.date, booking.timeRange))
         if (booking.paymentReferenceId) {
@@ -876,7 +877,7 @@ export const usePlayerStore = create<PlayerState>()(
         const state = get()
         const booking = state.schedule.find((item) => item.id === scheduleId && item.kind === 'COURT')
         if (!booking || booking.status !== 'UPCOMING') return { success: false, message: 'Lượt đặt sân không thể đổi lịch ở trạng thái hiện tại.' }
-        if (hoursUntilEvent(booking.date, booking.timeRange) < 12) return { success: false, message: 'Chỉ có thể đổi lịch trước giờ chơi tối thiểu 12 giờ.' }
+        if (hoursUntilEvent(booking.date, booking.timeRange) <= 6) return { success: false, message: 'Chỉ có thể đổi lịch khi còn hơn 6 tiếng trước giờ chơi.' }
         if ((booking.rescheduleCount ?? 0) >= 1) return { success: false, message: 'Booking này đã sử dụng quyền đổi lịch một lần.' }
 
         const venue = state.venues.find((item) => item.id === (booking.venueId ?? booking.slotKey?.split(':')[1]))
@@ -884,14 +885,11 @@ export const usePlayerStore = create<PlayerState>()(
         const nextTimeRange = `${input.startTime} - ${input.endTime}`
         const [nextStart, nextEnd] = timeRangeMinutes(nextTimeRange)
         const sharedState = useCrossRoleStore.getState()
-        const availability = sharedState.venueCalendarEvents.find((event) => event.type === 'AVAILABILITY'
-          && event.id === input.availabilityId
-          && event.venueId === venue?.id
-          && event.date === input.date
-          && event.courtId === input.courtId
-          && event.startTime === input.startTime
-          && event.durationMinutes === nextEnd - nextStart)
-        if (!venue || !court || !availability || !Number.isFinite(nextStart) || !Number.isFinite(nextEnd) || nextEnd <= nextStart) return { success: false, message: 'Khoảng đặt mới không còn khả dụng.' }
+        // Giờ mới do Player chọn theo mốc 30 phút (06:00–21:00); tiền sân tính lại theo bảng giá Chủ sân.
+        if (!venue || !court || !Number.isFinite(nextStart) || !Number.isFinite(nextEnd) || nextEnd <= nextStart
+          || nextStart < 6 * 60 || nextEnd > 21 * 60 || nextStart % 30 !== 0 || nextEnd % 30 !== 0) return { success: false, message: 'Khung giờ mới không hợp lệ. Vui lòng chọn theo mốc 30 phút, trong 06:00–21:00.' }
+        const availability = { amount: quoteCourtPrice(resolveCourtPricing(sharedState.courtPricing, venue.id, court.id), court.slots, input.startTime, nextEnd - nextStart) }
+        if (availability.amount <= 0) return { success: false, message: 'Sân chưa có bảng giá, vui lòng liên hệ Chủ sân.' }
         const disableSchedule = sharedState.courtDisableSchedules[`${venue.id}:${court.id}`]
         if (disableSchedule && scheduleOverlapsSlot(disableSchedule, input.date, nextTimeRange)) return { success: false, message: 'Sân đang tắt và chưa nhận đổi lịch sang sân này.' }
         if (hoursUntilEvent(input.date, nextTimeRange) <= 0) return { success: false, message: 'Khung giờ mới phải nằm trong tương lai.' }
@@ -900,13 +898,20 @@ export const usePlayerStore = create<PlayerState>()(
         if (state.bookedSlotKeys.includes(nextSlotKey) && nextSlotKey !== booking.slotKey) return { success: false, message: 'Slot mới vừa được người khác đặt.' }
         const occupiedByBooking = sharedState.courtBookings.some((item) => item.id !== scheduleId && item.status === 'CONFIRMED' && item.venueId === venue.id && item.date === input.date && item.courtId === court.id && timeRangesOverlap(item.timeRange, nextTimeRange))
         const occupiedByEvent = sharedState.venueCalendarEvents.some((event) => event.type !== 'AVAILABILITY' && event.venueId === venue.id && event.date === input.date && event.courtId === court.id && timeRangesOverlap(`${event.startTime} - ${timeForMinutes(event.startTime, event.durationMinutes)}`, nextTimeRange))
+        const occupiedBySocial = state.matches.some((item) => item.status !== 'CANCELLED' && item.venueId === venue.id && item.date === input.date && (item.courtId ? item.courtId === court.id : item.courtName.startsWith(court.name)) && timeRangesOverlap(item.timeRange, nextTimeRange))
+        const occupiedByOverride = sharedState.slotOverrides.some((override) => {
+          const slot = court.slots.find((item) => item.slotNumber === override.slotNumber)
+          return override.venueId === venue.id && override.date === input.date && override.courtId === court.id && override.status !== 'AVAILABLE' && Boolean(slot && timeRangesOverlap(slot.timeRange, nextTimeRange))
+        })
         const conflict = state.schedule.find((item) => item.id !== scheduleId && item.status === 'UPCOMING' && item.date === input.date && item.timeRange && timeRangesOverlap(item.timeRange, nextTimeRange))
-        if (occupiedByBooking || occupiedByEvent || conflict) return { success: false, message: 'Khoảng đặt mới vừa được cập nhật hoặc đã có lịch khác.' }
+        if (occupiedByBooking || occupiedByEvent || occupiedBySocial || occupiedByOverride || conflict) return { success: false, message: 'Khoảng đặt mới vừa được cập nhật hoặc đã có lịch khác.' }
 
-        const currentAmount = booking.paidAmount ?? booking.amount
+        const payAtVenue = booking.paymentMode === 'AT_VENUE'
+        if (payAtVenue && sharedState.courtBookings.find((item) => item.id === scheduleId)?.paymentStatus === 'PAID') return { success: false, message: 'Booking đã được thanh toán tại sân nên không thể tự đổi lịch. Vui lòng liên hệ Chủ sân.' }
+        const currentAmount = payAtVenue ? booking.totalAmount ?? booking.amount : booking.paidAmount ?? booking.amount
         const difference = availability.amount - currentAmount
 
-        if (booking.paymentReferenceId) {
+        if (!payAtVenue && booking.paymentReferenceId) {
           usePaymentStore.getState().adjustConfirmedAmount(
             booking.paymentReferenceId,
             availability.amount,
@@ -931,14 +936,14 @@ export const usePlayerStore = create<PlayerState>()(
             courtName: `${court.name} · ${court.type}`,
             amount: availability.amount,
             totalAmount: availability.amount,
-            paidAmount: availability.amount,
-            remainingAmount: 0,
+            paidAmount: payAtVenue ? 0 : availability.amount,
+            remainingAmount: payAtVenue ? availability.amount : 0,
             slotKey: nextSlotKey,
             venueId: venue.id,
             courtId: court.id,
             slotNumber: court.slots.find((slot) => slot.timeRange === nextTimeRange)?.slotNumber ?? 0,
             rescheduleCount: 1,
-            subtitle: `Đã đổi lịch 1 lần · Thanh toán 100% · ${availability.amount.toLocaleString('vi-VN')}đ`,
+            subtitle: `Đã đổi lịch 1 lần · ${payAtVenue ? 'Thanh toán tại sân' : 'Thanh toán 100%'} · ${availability.amount.toLocaleString('vi-VN')}đ`,
           } : item),
         }))
         useCrossRoleStore.getState().rescheduleCourtBooking(scheduleId, {
@@ -950,10 +955,11 @@ export const usePlayerStore = create<PlayerState>()(
           slotNumber: court.slots.find((slot) => slot.timeRange === nextTimeRange)?.slotNumber ?? 0,
           timeRange: nextTimeRange,
           totalAmount: availability.amount,
-          paidAmount: availability.amount,
+          paidAmount: payAtVenue ? 0 : availability.amount,
           rescheduleCount: 1,
         })
 
+        if (payAtVenue) return { success: true, message: `Đổi lịch thành công. Tiền sân mới ${availability.amount.toLocaleString('vi-VN')}đ, thanh toán tại quầy khi đến sân.` }
         return {
           success: true,
           message: difference > 0
@@ -1107,3 +1113,32 @@ if (typeof window !== 'undefined') {
     if (event.key === playerStorageKey) void usePlayerStore.persist.rehydrate()
   })
 }
+
+/**
+ * Chủ sân xác nhận "đã thu tiền tại sân" trên dữ liệu dùng chung (useCrossRoleStore).
+ * Đồng bộ ngược trạng thái đó vào lịch của Player để "Lịch của tôi" hiển thị đúng số đã trả.
+ */
+const syncVenuePaymentsFromShared = () => {
+  const sharedBookings = useCrossRoleStore.getState().courtBookings
+  const { schedule } = usePlayerStore.getState()
+  let changed = false
+  const nextSchedule = schedule.map((item) => {
+    if (item.kind !== 'COURT' || item.paymentMode !== 'AT_VENUE') return item
+    const shared = sharedBookings.find((booking) => booking.id === item.id)
+    if (shared?.paymentStatus !== 'PAID') return item
+    const paidAmount = shared.paidAmount || shared.totalAmount
+    if (item.paidAmount === paidAmount && (item.remainingAmount ?? 0) === 0) return item
+    changed = true
+    return {
+      ...item,
+      paidAmount,
+      remainingAmount: 0,
+      subtitle: `Đã thanh toán tại sân · ${paidAmount.toLocaleString('vi-VN')}đ · ${shared.paidMethod === 'VIETQR' ? 'Chuyển khoản' : 'Tiền mặt'}`,
+    }
+  })
+  if (changed) usePlayerStore.setState({ schedule: nextSchedule })
+}
+
+useCrossRoleStore.subscribe(syncVenuePaymentsFromShared)
+usePlayerStore.persist.onFinishHydration(syncVenuePaymentsFromShared)
+syncVenuePaymentsFromShared()

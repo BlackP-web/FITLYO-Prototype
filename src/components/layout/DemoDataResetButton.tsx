@@ -35,7 +35,7 @@ export function DemoDataResetButton() {
           <DialogHeader className="mt-5 text-left">
             <DialogTitle className="text-xl font-black">Đặt lại dữ liệu thử nghiệm?</DialogTitle>
             <DialogDescription className="pt-2 text-sm leading-6">
-              Booking, lịch, giao dịch, số dư ví, hội thoại và các trạng thái đã thao tác sẽ trở về dữ liệu mẫu ban đầu.
+              Booking, lịch, giao dịch, hội thoại và các trạng thái đã thao tác sẽ trở về dữ liệu mẫu ban đầu.
             </DialogDescription>
           </DialogHeader>
 

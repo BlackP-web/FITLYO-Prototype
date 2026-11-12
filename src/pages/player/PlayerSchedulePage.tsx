@@ -59,9 +59,14 @@ export function PlayerSchedulePage() {
     if (result.success) setCancelCourt(null)
   }
 
+  // Booking "Thanh toán tại sân" chưa trả: huỷ không phát sinh phí; đã trả tại sân thì không tự huỷ được.
+  const cancelPayAtVenue = cancelCourt?.paymentMode === 'AT_VENUE'
   const courtCancellation = cancelCourt
-    ? courtRefundOutcome(cancelCourt.paidAmount ?? cancelCourt.amount, hoursUntilEvent(cancelCourt.date, cancelCourt.timeRange))
+    ? cancelPayAtVenue
+      ? { label: 'Bạn chưa thanh toán nên hủy không phát sinh phí', refundAmount: 0, forfeitedAmount: 0 }
+      : courtRefundOutcome(cancelCourt.paidAmount ?? cancelCourt.amount, hoursUntilEvent(cancelCourt.date, cancelCourt.timeRange))
     : undefined
+  const paidAtVenue = (item: PlayerScheduleItem) => item.paymentMode === 'AT_VENUE' && (item.paidAmount ?? 0) > 0 && (item.remainingAmount ?? 0) === 0
 
   return (
     <div className="space-y-7 pb-10">
@@ -103,7 +108,7 @@ export function PlayerSchedulePage() {
                 </div>
                 <div className="flex flex-col justify-center gap-2 border-t border-border/60 p-4 md:border-l md:border-t-0">
                   <Button onClick={() => primaryAction(item)} variant={item.status === 'UPCOMING' ? 'default' : 'outline'} className="w-full gap-2 whitespace-nowrap rounded-xl">{item.ticketCode || item.kind === 'COURT' ? <QrCode className="h-4 w-4" /> : null}{item.kind === 'COURT' ? 'Xem chi tiết' : item.status === 'UPCOMING' ? item.ticketCode ? 'Mở vé QR' : 'Xem chi tiết' : item.status === 'COMPLETED' && item.matchId && !reviewed ? 'Đánh giá trận' : 'Xem lại'}<ChevronRight className="h-4 w-4" /></Button>
-                  {item.kind === 'COURT' && item.status === 'UPCOMING' && <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setCancelCourt(item)}>Hủy sân</Button>}
+                  {item.kind === 'COURT' && item.status === 'UPCOMING' && !paidAtVenue(item) && <Button variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setCancelCourt(item)}>Hủy sân</Button>}
                 </div>
               </div>
             </article>
@@ -111,7 +116,7 @@ export function PlayerSchedulePage() {
         }) : <div className="rounded-[2rem] border border-dashed border-primary/25 bg-secondary/15 py-16 text-center"><CalendarDays className="mx-auto h-10 w-10 text-primary" /><h2 className="mt-4 text-xl font-black">Chưa có hoạt động</h2><p className="mt-2 text-sm text-muted-foreground">Các lượt đặt sân, kèo và buổi học sẽ xuất hiện tại đây.</p><Button onClick={() => navigate('/player/matches')} className="mt-5">Tìm kèo ngay</Button></div>}
       </div>
 
-      {cancelCourt && courtCancellation && <div className="fixed inset-0 z-[80] grid place-items-center bg-foreground/55 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" aria-labelledby="cancel-court-title" className="w-full max-w-md rounded-[1.8rem] border border-border bg-card p-6 shadow-2xl"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-destructive/10 text-destructive"><AlertTriangle className="h-5 w-5" /></span><h2 id="cancel-court-title" className="mt-4 text-xl font-black">Xác nhận hủy sân?</h2><div className={cn('mt-4 rounded-2xl border p-4', courtCancellation.refundAmount > 0 ? 'border-emerald-400/30 bg-emerald-500/10' : 'border-destructive/25 bg-destructive/10')}><p className="text-sm font-black">{courtCancellation.label}</p><p className="mt-1 text-xs text-muted-foreground">Số tiền nhận lại: {courtCancellation.refundAmount.toLocaleString('vi-VN')}đ · Không hoàn: {courtCancellation.forfeitedAmount.toLocaleString('vi-VN')}đ</p></div><p className="mt-3 text-xs leading-5 text-muted-foreground">Trước 12 giờ hoàn 100%; từ 6–12 giờ hoàn 50% số tiền đã thanh toán; dưới 6 giờ không hoàn. Khoản hoàn được trả qua VietQR.</p><div className="mt-6 flex justify-end gap-2"><Button variant="outline" onClick={() => setCancelCourt(null)}>Giữ lịch</Button><Button variant="destructive" onClick={confirmCancelCourt}>Xác nhận hủy</Button></div></section></div>}
+      {cancelCourt && courtCancellation && <div className="fixed inset-0 z-[80] grid place-items-center bg-foreground/55 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" aria-labelledby="cancel-court-title" className="w-full max-w-md rounded-[1.8rem] border border-border bg-card p-6 shadow-2xl"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-destructive/10 text-destructive"><AlertTriangle className="h-5 w-5" /></span><h2 id="cancel-court-title" className="mt-4 text-xl font-black">Xác nhận hủy sân?</h2><div className={cn('mt-4 rounded-2xl border p-4', courtCancellation.refundAmount > 0 || cancelPayAtVenue ? 'border-emerald-400/30 bg-emerald-500/10' : 'border-destructive/25 bg-destructive/10')}><p className="text-sm font-black">{courtCancellation.label}</p>{!cancelPayAtVenue && <p className="mt-1 text-xs text-muted-foreground">Số tiền nhận lại: {courtCancellation.refundAmount.toLocaleString('vi-VN')}đ · Không hoàn: {courtCancellation.forfeitedAmount.toLocaleString('vi-VN')}đ</p>}</div><p className="mt-3 text-xs leading-5 text-muted-foreground">{cancelPayAtVenue ? 'Khung giờ sẽ được mở lại cho người khác đặt.' : 'Trước 12 giờ hoàn 100%; từ 6–12 giờ hoàn 50% số tiền đã thanh toán; dưới 6 giờ không hoàn. Khoản hoàn được trả qua VietQR.'}</p><div className="mt-6 flex justify-end gap-2"><Button variant="outline" onClick={() => setCancelCourt(null)}>Giữ lịch</Button><Button variant="destructive" onClick={confirmCancelCourt}>Xác nhận hủy</Button></div></section></div>}
     </div>
   )
 }

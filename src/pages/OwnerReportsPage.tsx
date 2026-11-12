@@ -5,20 +5,11 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useFitlyoStore } from '@/store/useFitlyoStore'
 import { usePlayerStore } from '@/store/usePlayerStore'
-import { useCrossRoleStore, type VenueCalendarEventType } from '@/store/useCrossRoleStore'
+import { useCrossRoleStore } from '@/store/useCrossRoleStore'
 import { usePaymentStore } from '@/store/usePaymentStore'
-import { getPlayerMatchFee } from '@/lib/playerMatch'
-import { ownerRevenueSample } from '@/mocks/ownerRevenueSample'
+import { buildOwnerTransactions, sourceLabel, type RevenueSource, type Transaction } from '@/lib/ownerRevenue'
 
-type RevenueSource = 'COURT' | 'SOCIAL' | 'COACHING' | 'WALK_IN' | 'PRIVATE' | 'REFUND'
-type Transaction = {
-  id: string; date: string; venueId: string; venueName: string; courtId: string; courtName: string
-  source: RevenueSource; label: string; amount: number; paymentMethod: 'VIETQR' | 'CASH'
-  status: 'COMPLETED' | 'REFUNDED'; owner: string; coach: string
-}
 const formatVND = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
-const sourceLabel: Record<RevenueSource, string> = { COURT: 'Đặt sân Player', SOCIAL: 'Kèo Social', COACHING: 'Lớp Coach', WALK_IN: 'Khách vãng lai', PRIVATE: 'Khóa sân riêng', REFUND: 'Hoàn tiền' }
-const eventToSource: Record<VenueCalendarEventType, RevenueSource> = { SOCIAL: 'SOCIAL', COACHING: 'COACHING', WALK_IN: 'WALK_IN', PRIVATE: 'PRIVATE', MAINTENANCE: 'PRIVATE', AVAILABILITY: 'COURT' }
 type MultiOption = { value: string; label: string; group?: string }
 type VenueCourtGroup = { venueId: string; venueName: string; courts: Array<{ id: string; name: string; value: number }> }
 
@@ -47,45 +38,7 @@ export function OwnerReportsPage() {
   const [selectedBarCourtIds, setSelectedBarCourtIds] = useState<string[]>([])
   const [coachKeys, setCoachKeys] = useState<string[]>([])
 
-  const transactions = useMemo<Transaction[]>(() => {
-    const courtRows: Transaction[] = bookings.map((booking) => ({
-      id: booking.id, date: booking.date, venueId: booking.venueId, venueName: booking.venueName,
-      courtId: booking.courtId, courtName: booking.courtName, source: 'COURT',
-      label: 'Player đặt sân · ' + booking.playerName, amount: booking.status === 'CANCELLED' ? -booking.paidAmount : booking.paidAmount,
-      paymentMethod: 'VIETQR', status: booking.status === 'CANCELLED' ? 'REFUNDED' : 'COMPLETED',
-      owner: 'Field Manager', coach: '—',
-    }))
-    const eventRows: Transaction[] = events.filter((event) => !['MAINTENANCE', 'AVAILABILITY'].includes(event.type) && event.amount > 0).map((event) => ({
-      id: event.id, date: event.date, venueId: event.venueId, venueName: event.venueName,
-      courtId: event.courtId, courtName: event.courtName, source: eventToSource[event.type],
-      label: event.title, amount: event.amount, paymentMethod: event.paymentMethod ?? 'CASH',
-      status: 'COMPLETED', owner: 'Field Manager', coach: event.type === 'COACHING' ? event.contactName ?? 'Chưa có dữ liệu' : '—',
-    }))
-    const socialRows: Transaction[] = matches.filter((match) => match.status !== 'CANCELLED').map((match) => ({
-      id: 'match-' + match.id, date: match.date, venueId: match.venueId ?? '', venueName: match.venueName,
-      courtId: match.courtId ?? '', courtName: match.courtName, source: 'SOCIAL', label: match.title,
-      amount: getPlayerMatchFee(match) * match.participants.length, paymentMethod: 'VIETQR',
-      status: 'COMPLETED', owner: 'Field Manager', coach: '—',
-    }))
-    const refundRows: Transaction[] = payments.filter((payment) => ['REFUNDED', 'PARTIALLY_REFUNDED'].includes(payment.status) && (payment.service === 'COURT' || payment.service === 'SOCIAL')).map((payment) => ({
-      id: 'refund-' + payment.id, date: (payment.refundedAt ?? payment.createdAt).slice(0, 10),
-      venueId: '', venueName: 'Chưa có dữ liệu', courtId: '', courtName: 'Chưa có dữ liệu',
-      source: 'REFUND', label: 'Hoàn tiền · ' + payment.title, amount: -(payment.refundAmount ?? 0),
-      paymentMethod: 'VIETQR', status: 'REFUNDED', owner: 'Field Manager', coach: '—',
-    }))
-    // Dữ liệu mẫu doanh thu của các cụm sân hiện có (chỉ để demo biểu đồ).
-    const sampleRows: Transaction[] = ownerRevenueSample.flatMap((record) => {
-      const venue = venues.find((item) => item.id === record.venueId)
-      const court = venue?.courts.find((item) => item.id === record.courtId)
-      if (!venue || !court) return []
-      return [{
-        id: record.id, date: record.date, venueId: venue.id, venueName: venue.name, courtId: court.id, courtName: court.name,
-        source: record.source, label: record.label, amount: record.amount, paymentMethod: record.paymentMethod,
-        status: 'COMPLETED' as const, owner: 'Field Manager', coach: record.coach ?? '—',
-      }]
-    })
-    return [...courtRows, ...eventRows, ...socialRows, ...refundRows, ...sampleRows].sort((a, b) => b.date.localeCompare(a.date))
-  }, [bookings, events, matches, payments, venues])
+  const transactions = useMemo<Transaction[]>(() => buildOwnerTransactions({ bookings, events, matches, payments, venues }), [bookings, events, matches, payments, venues])
 
   const scopedVenues = useMemo(() => venueIds.length ? venues.filter((venue) => venueIds.includes(venue.id)) : venues, [venueIds, venues])
   const courts = scopedVenues.flatMap((venue) => venue.courts.map((court) => ({ ...court, venueId: venue.id, venueName: venue.name })))

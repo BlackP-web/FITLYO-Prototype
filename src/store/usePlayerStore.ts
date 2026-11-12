@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { communityHero, matchNewbie, matchWeekend, venueIndoor } from '@/assets/pickleball'
 import { COURT_SLOT_TIMES } from '@/lib/courtSchedule'
+import { buildSamplePlayerCourtBookings } from '@/mocks/calendarSample'
 import { quoteCourtPrice, resolveCourtPricing } from '@/lib/courtPricing'
 import { scheduleOverlapsSlot } from '@/lib/courtDisableSchedule'
 import { courtRefundOutcome, hoursUntilEvent, socialRefundOutcome } from '@/lib/paymentPolicies'
@@ -414,6 +415,8 @@ const initialSchedule: PlayerScheduleItem[] = [
     amount: 45000,
     matchId: 'history-match-01',
   },
+  // Booking "Thanh toán tại sân" mẫu của Player demo.
+  ...buildSamplePlayerCourtBookings(),
 ]
 
 const playerStorageKey = 'fitlyo-player-portal-v1'

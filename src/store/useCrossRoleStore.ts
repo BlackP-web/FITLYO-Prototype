@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import type { CourtPricing, CourtPricingMap } from '@/lib/courtPricing'
 import type { VenueSubscription } from '@/lib/venuePackages'
 import type { InvoicePayment } from '@/lib/platformInvoices'
+import { buildSampleCalendarEvents } from '@/mocks/calendarSample'
 import type { CourtDisableSchedule } from '@/lib/courtDisableSchedule'
 
 export type SharedBookingStatus = 'CONFIRMED' | 'CANCELLED'
@@ -114,7 +115,8 @@ export const useCrossRoleStore = create<CrossRoleState>()(
     (set, get) => ({
       courtBookings: [],
       slotOverrides: [],
-      venueCalendarEvents: [],
+      // Dữ liệu mẫu Lịch sân (event Chủ sân) cho 3 cụm sân hiện có.
+      venueCalendarEvents: buildSampleCalendarEvents(),
       courtDisableSchedules: {},
       courtPricing: {},
       venueSubscriptions: {},
@@ -169,7 +171,7 @@ export const useCrossRoleStore = create<CrossRoleState>()(
         set((state) => ({ platformInvoicePayments: { ...state.platformInvoicePayments, [payment.invoiceId]: payment } }))
         return true
       },
-      resetCrossRoleDemo: () => set({ courtBookings: [], slotOverrides: [], venueCalendarEvents: [], courtDisableSchedules: {}, courtPricing: {}, venueSubscriptions: {}, platformInvoicePayments: {} }),
+      resetCrossRoleDemo: () => set({ courtBookings: [], slotOverrides: [], venueCalendarEvents: buildSampleCalendarEvents(), courtDisableSchedules: {}, courtPricing: {}, venueSubscriptions: {}, platformInvoicePayments: {} }),
     }),
     {
       name: crossRoleStorageKey,

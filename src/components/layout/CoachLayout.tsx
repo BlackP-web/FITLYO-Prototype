@@ -26,7 +26,7 @@ const coachNavigation = [
   { label: 'Khóa học', shortLabel: 'Khóa học', to: '/coach/courses', icon: BookOpenCheck },
   { label: 'Điểm danh / Đánh giá', shortLabel: 'Đánh giá', to: '/coach/attendance', icon: ClipboardCheck },
   { label: 'Cụm sân liên kết', shortLabel: 'Cụm sân', to: '/coach/venues', icon: Building2 },
-  { label: 'Thanh toán phí', shortLabel: 'Phí', to: '/coach/fees', icon: Receipt },
+  { label: 'Thanh toán hoá đơn', shortLabel: 'Hoá đơn', to: '/coach/billing', icon: Receipt },
   { label: 'Hồ sơ của tôi', shortLabel: 'Hồ sơ', to: '/coach/profile', icon: UserRound },
   { label: 'Xác minh hồ sơ', shortLabel: 'Xác minh', to: '/coach/verification', icon: ShieldCheck },
 ]
